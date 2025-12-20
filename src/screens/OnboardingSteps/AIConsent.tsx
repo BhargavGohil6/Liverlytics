@@ -1,0 +1,250 @@
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+} from 'react-native';
+import responsive from '../../theme/responsive';
+import {
+  CoolGray,
+  PRIMARY_COLOR,
+  LightgrayColor,
+  Navyblue,
+  BlueishGray,
+} from '../../theme/color';
+import Icon from 'react-native-vector-icons/FontAwesome5';
+import Icon1 from 'react-native-vector-icons/Feather';
+import { setAIConsentOption, setAIConsentData } from './slices/onboardingSlice';
+import { useDispatch, useSelector } from 'react-redux';
+import axios from 'axios';
+import Toast from 'react-native-toast-message';
+import RadioButton from 'react-native-radio-buttons-group';
+
+const AIConsent = () => {
+  const dispatch = useDispatch();
+  const selectedOption = useSelector(
+    (state: RootState) => state.onboarding.aiConsentOption,
+  );
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<any>(null);
+
+  useEffect(() => {
+    fetchAIConsentData();
+  }, []);
+
+  const fetchAIConsentData = async () => {
+    try {
+      const response = await axios.get(
+        'https://cirrhosis.mukesoft.com/api/method/cirrhosis_custom.cirrhosis_ai_assistant_settings.get_ai_assistant_settings',
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: 'token 72b96de8ae8c469:96b6b5699febb74',
+          },
+        },
+      );
+
+      if (response.data.message.status === 'success') {
+        setData(response.data.message);
+        dispatch(setAIConsentData(response.data.message));
+      }
+    } catch (error: any) {
+      // Alert.alert('Error', 'Failed to load AI consent settings.');
+      console.error(error.response?.data || error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const radioButtons = [
+    {
+      id: 'on_device',
+      label: data?.option_1 || 'Use AI (On-Device Only)',
+      description: data?.option_1_description,
+      selected: selectedOption === 'on_device',
+    },
+    {
+      id: 'cloud_support',
+      label: data?.option_2 || 'Use AI with Cloud Support',
+      description: data?.option_2_description,
+      selected: selectedOption === 'cloud_support',
+    },
+    {
+      id: 'no_ai',
+      label: data?.option_3 || 'Do Not Use AI Features',
+      description: data?.option_3_description,
+      selected: selectedOption === 'no_ai',
+    },
+  ];
+
+  const handleSelect = (id: string) => {
+    console.log(id);
+    dispatch(setAIConsentOption(id as any));
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={PRIMARY_COLOR} />
+      </View>
+    );
+  }
+
+  return (
+    <ScrollView>
+      <View style={styles.headingContainer}>
+        <Text style={styles.heading}>AI Assistance Consent</Text>
+        <Text style={styles.description}>
+          AI helps interpret your vitals and lab reports. Processing happens
+          on-device for privacy. Cloud processing is only used if you opt in.
+        </Text>
+      </View>
+      <View style={styles.container}>
+        <View style={styles.subcontainer}>
+          <Icon name="brain" size={30} />
+          <Text style={styles.subtitle}>
+            Smarter insights from trends in steps, heart rate, sleep, weight,
+            and labs.
+          </Text>
+        </View>
+        <View style={styles.subcontainer}>
+          <Icon1 name="shield" size={30} />
+          <Text style={styles.subtitle}>
+            Smarter insights from trends in steps, heart rate, sleep, weight,
+            and labs.
+          </Text>
+        </View>
+      </View>
+      <RadioButton
+        radioButtons={radioButtons.map(btn => ({
+          id: btn.id,
+          label: (
+            <View style={styles.radioLabelContainer}>
+              <Text style={styles.radioTitle}>{btn.label}</Text>
+              {btn.description && (
+                <Text style={styles.radioDescription}>{btn.description}</Text>
+              )}
+            </View>
+          ),
+          value: btn.id,
+          selected: btn.x,
+          layout: 'column',
+          containerStyle: styles.radioContainer,
+          onPress: handleSelect,
+          color: PRIMARY_COLOR,
+        }))}
+        selectedId={selectedOption}
+        onPress={handleSelect}
+        layout="column"
+      />
+    </ScrollView>
+  );
+};
+
+export default AIConsent;
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    // flexDirection: 'row',
+    padding: responsive.padding(12),
+    borderWidth: 1,
+    borderColor: CoolGray,
+    borderRadius: responsive.borderRadius(10),
+    justifyContent: 'center',
+    marginVertical: responsive.margin(10),
+    alignItems: 'center',
+    width:responsive.width(320),
+    //  paddingHorizontal: responsive.padding(16),
+    marginHorizontal: responsive.margin(16),
+  },
+  heading: {
+    fontSize: responsive.fontSize(24),
+    fontWeight: '700',
+    // marginBottom: 20,
+    color: Navyblue,
+  },
+  description: {
+    fontSize: responsive.fontSize(13),
+    color: BlueishGray,
+    // width:responsive.width(330),
+  },
+  title: {
+    fontSize: responsive.fontSize(15),
+    color: Navyblue,
+    marginLeft: responsive.margin(10),
+    fontWeight: '600',
+    width: responsive.width(210),
+  },
+  subtitle: {
+    fontSize: responsive.fontSize(12),
+    color: BlueishGray,
+    marginLeft: responsive.margin(10),
+  },
+  reqired: {
+    fontSize: responsive.fontSize(12),
+    borderWidth: 1,
+    // backgroundColor:LightgrayColor,
+    borderRadius: responsive.borderRadius(10),
+    color: PRIMARY_COLOR,
+    padding: responsive.padding(5),
+  },
+  subcontainer: {
+    padding: responsive.padding(10),
+    marginTop: responsive.margin(10),
+    borderRadius: responsive.borderRadius(10),
+    flexDirection: 'row',
+  },
+  radioContainer: {
+    marginBottom: responsive.margin(16),
+    padding: responsive.padding(12),
+    backgroundColor: '#fff',
+    borderRadius: responsive.borderRadius(12),
+    borderWidth: 1,
+    borderColor: CoolGray,
+    flexDirection: 'row',
+    // marginVertical: responsive.margin(10),
+    // width: responsive.width(290),
+    // width:responsive.width(300),
+    // alignItems:'center',
+    // alignSelf:'center',
+    // marginLeft:responsive.margin(-60),
+    justifyContent:'flex-start',
+  },
+  radioLabelContainer: { marginLeft: responsive.margin(5), },
+  radioTitle: {
+    fontSize: responsive.fontSize(15),
+    // font established: '600',
+    color: Navyblue,
+    width:responsive.width(265),
+    
+  },
+  radioDescription: {
+    fontSize: responsive.fontSize(12),
+    color: BlueishGray,
+    marginTop: 4,
+    width:responsive.width(265),
+  },
+  selectedBox: {
+    marginTop: 20,
+    padding: 12,
+    backgroundColor: PRIMARY_COLOR + '10',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  selectedText: {
+    color: PRIMARY_COLOR,
+    fontWeight: '600',
+  },
+  headingContainer: {
+     flex: 1,
+    // padding: responsive.padding(12),   
+    justifyContent: 'center',
+    marginVertical: responsive.margin(10),
+    alignItems: 'center',
+    width:responsive.width(320),
+    marginHorizontal: responsive.margin(16),
+  },
+});

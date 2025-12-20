@@ -8,8 +8,9 @@
       android:icon="@mipmap/ic_launcher"
       android:roundIcon="@mipmap/ic_launcher_round"
       android:allowBackup="false"
-      android:theme="@style/AppTheme"
+      android:theme="@style/AppThemeLight"
       android:usesCleartextTraffic="${usesCleartextTraffic}"
+      android:forceDarkAllowed="false"
       android:supportsRtl="true">
       <activity
         android:name=".MainActivity"

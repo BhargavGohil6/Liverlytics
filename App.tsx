@@ -1,45 +1,44 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
+import React from 'react';
+import Login from './src/screens/auth/Login';
+import AuthNavigation from './src/navigation/AuthNavigation';
+import { NavigationContainer } from '@react-navigation/native';
+import { Provider } from 'react-redux';
+import { store, persistor } from './src/redux/store';
+import Toast from 'react-native-toast-message';
+import { useSelector } from 'react-redux';
+import StackNavigation from './src/navigation/StackNavigation';
+import EncryptedStorage from 'react-native-encrypted-storage';
+import { PersistGate } from 'redux-persist/integration/react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import VitalsOverviewScreen from './src/screens/dashboard/VitalsOverviewScreen';
+import ProfileMainScreen from './src/screens/newscreens/ProfileMainScreen'
 
-import { NewAppScreen } from '@react-native/new-app-screen';
-import { StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
-import {
-  SafeAreaProvider,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
-
-function App() {
-  const isDarkMode = useColorScheme() === 'dark';
+function MainApp() {
+  // const isLoggedIn = EncryptedStorage.getItem('user_sid');
+  // useSelector((state: any) => state);
+  // console.log('isLoggedIn', isLoggedIn);
+  // AsyncStorage.clear();
+  const isLoggedIn = useSelector((state: any) => state.auth);
+  console.log('isLoggedIn', isLoggedIn.login);
 
   return (
-    <SafeAreaProvider>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <AppContent />
-    </SafeAreaProvider>
+    <NavigationContainer>
+      {isLoggedIn.login ? <StackNavigation /> : <AuthNavigation />}
+    </NavigationContainer>
+    // <AIChate/> 
   );
 }
 
-function AppContent() {
-  const safeAreaInsets = useSafeAreaInsets();
-
+const App = () => {
   return (
-    <View style={styles.container}>
-      <NewAppScreen
-        templateFileName="App.tsx"
-        safeAreaInsets={safeAreaInsets}
-      />
-    </View>
+    <Provider store={store}>
+      <PersistGate loading={null} persistor={persistor}>
+        <MainApp />
+      </PersistGate>
+      <Toast />
+    </Provider>
+    // <ProfileMainScreen/>
   );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-});
+};
 
 export default App;

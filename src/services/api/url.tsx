@@ -1,0 +1,1 @@
+export const BASE_URL = 'https://cirrhosis.mukesoft.com/api/method';
