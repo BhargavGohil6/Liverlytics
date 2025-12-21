@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,17 +8,45 @@ import {
   StyleSheet,
   SafeAreaView,
   StatusBar,
+  ActivityIndicator,
 } from 'react-native';
 
 // Note: Install react-native-vector-icons or use expo icons
 // npm install react-native-vector-icons
 import Icon from 'react-native-vector-icons/Feather';
-import {useNavigation} from '@react-navigation/native';
-import {colors, font} from '../../theme/index';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useDispatch, useSelector } from 'react-redux';
+import { addVitals, updateVitals, VitalsData, clearVitalsState, fetchTodayVitals, fetchTodayVitalsById, VitalsApiResponse, VitalRecord } from './slices/vitalsSlice';
+import { RootState, AppDispatch } from '../../redux/store';
+import { colors, font } from '../../theme/index';
 import responsive from '../../theme/responsive';
+
+interface UserData {
+  email?: string;
+  full_name?: string;
+}
 
 export default function AddVitalsScreen() {
   const navigation = useNavigation();
+  const dispatch: AppDispatch = useDispatch();
+  
+  // Get user data from auth state
+  const { user } = useSelector((state: RootState) => state.auth);
+  
+  // Get vitals state
+  const vitalsState = useSelector((state: RootState) => state.vitals);
+  const { loading, success, todayData } = vitalsState as { loading: boolean; success: boolean; todayData: VitalsApiResponse | null };
+  
+  // Debug log to see vitals state changes
+  useEffect(() => {
+    console.log('Vitals State Updated:', vitalsState);
+  }, [vitalsState]);
+  
+  // Debug log to see success state changes
+  useEffect(() => {
+    console.log('Success state changed:', success);
+  }, [success]);
+  
   const [heartRate, setHeartRate] = useState('');
   const [restingHR, setRestingHR] = useState('');
   const [steps, setSteps] = useState('');
@@ -29,6 +57,213 @@ export default function AddVitalsScreen() {
   const [systolic, setSystolic] = useState('');
   const [diastolic, setDiastolic] = useState('');
   const [showUnitPicker, setShowUnitPicker] = useState(false);
+  const [vitalId, setVitalId] = useState<string | null>(null);
+
+  // Handle form submission
+  const handleSaveVitals = () => {
+    // Validate required fields
+    if (!heartRate && !restingHR && !steps && !sleepMinutes && !spo2 && !weight && !systolic && !diastolic) {
+      alert('Please enter at least one vital reading');
+      return;
+    }
+
+    // Prepare data for submission
+    const vitalsData: VitalsData = {
+      heart_rate: heartRate ? parseFloat(heartRate) : undefined,
+      resting_heart_rate: restingHR ? parseFloat(restingHR) : undefined,
+      steps: steps ? parseInt(steps, 10) : undefined,
+      sleep_minutes: sleepMinutes ? parseInt(sleepMinutes, 10) : undefined,
+      spo2: spo2 ? parseFloat(spo2) : undefined,
+      weight: weight ? parseFloat(weight) : undefined,
+      weight_unit: weightUnit,
+      systolic: systolic ? parseInt(systolic, 10) : undefined,
+      diastolic: diastolic ? parseInt(diastolic, 10) : undefined,
+      user: user?.email || '',
+    };
+
+    // Dispatch the action to save vitals
+    if (vitalId) {
+      // Update existing vital record
+      dispatch(updateVitals({...vitalsData, vital_id: vitalId}));
+    } else {
+      // Add new vital record
+      dispatch(addVitals(vitalsData));
+    }
+  };
+
+  // Navigate to success screen when submission is successful
+  // Use a ref to track if we've just cleared the state to prevent immediate navigation
+  const hasClearedState = React.useRef(false);
+  
+  // Handle component mount
+  useEffect(() => {
+    console.log('AddVitalsScreen mounted, current success state:', success);
+  }, []);
+  
+  // Handle component focus (when navigating back from success screen)
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('AddVitalsScreen focused, current success state:', success);
+      // Clear any previous success state when screen comes into focus
+      dispatch(clearVitalsState());
+      hasClearedState.current = true;
+      console.log('Cleared vitals state on focus');
+      
+      // Add a small delay to ensure component is fully mounted
+      const timer = setTimeout(() => {
+        console.log('Fetching today vitals after clearing state');
+        // Fetch today's vitals for the current user
+        dispatch(fetchTodayVitals());
+      }, 100);
+      
+      // To fetch vitals by ID, use:
+      // dispatch(fetchTodayVitalsById('vital_id_here'));
+      
+      // Cleanup timer
+      return () => clearTimeout(timer);
+    }, [dispatch])
+  );
+  
+  useEffect(() => {
+    // Reset the ref when success becomes false
+    if (!success) {
+      hasClearedState.current = false;
+    }
+    
+    if (success && !hasClearedState.current) {
+      console.log('Success state detected, navigating to success screen');
+      // Reset form
+      setHeartRate('');
+      setRestingHR('');
+      setSteps('');
+      setSleepMinutes('');
+      setSpo2('');
+      setWeight('');
+      setSystolic('');
+      setDiastolic('');
+      setVitalId(null);
+      
+      // Navigate to success screen
+      navigation.navigate('VitalsSavedSuccessScreen');
+    } else if (success && hasClearedState.current) {
+      console.log('Ignoring success state as we just cleared it');
+      hasClearedState.current = false;
+    }
+  }, [success, navigation]);
+
+  // Clear success state when component unmounts
+  useEffect(() => {
+    return () => {
+      dispatch(clearVitalsState());
+    };
+  }, [dispatch]);
+  
+  // Populate form fields when todayData is available
+  useEffect(() => {
+    // Check if component is still mounted
+    let isMounted = true;
+    
+    if (todayData && todayData.data && isMounted) {
+      console.log('Today Data:', todayData);
+      console.log('Current User:', user);
+      // Check if todayData.data is an array (multiple records)
+      if (Array.isArray(todayData.data)) {
+        console.log('Multiple records found:', todayData.data);
+        // Find the record that belongs to the current user
+        const currentUserEmail = user?.email || '';
+        let userRecord = todayData.data.find(record => record.user === currentUserEmail);
+        
+        // If no record found for current user, use the first record
+        if (!userRecord && todayData.data.length > 0) {
+          userRecord = todayData.data[0];
+          console.log('Using first record as fallback:', userRecord);
+        }
+        
+        if (userRecord && isMounted) {
+          console.log('User record found:', userRecord);
+          populateFormFields(userRecord);
+        } else {
+          console.log('No record found for user:', currentUserEmail);
+        }
+      } else {
+        // Single record
+        console.log('Single record found:', todayData.data);
+        if (isMounted) {
+          populateFormFields(todayData.data as VitalRecord);
+        }
+      }
+    }
+    
+    // Cleanup function
+    return () => {
+      isMounted = false;
+    };
+  }, [todayData, user]);
+  
+  const populateFormFields = (record: VitalRecord) => {
+    console.log('Populating form fields with record:', record);
+    // Store the vital_id if it exists
+    if (record.name) {
+      setVitalId(record.name);
+      console.log('Setting vitalId:', record.name);
+    }
+    
+    // Map API response fields to form fields
+    if (record.heart_rate !== undefined && record.heart_rate !== null) {
+      const heartRateValue = record.heart_rate.toString();
+      setHeartRate(heartRateValue);
+      console.log('Setting heartRate:', heartRateValue);
+    }
+    if (record.weight !== undefined && record.weight !== null) {
+      const weightValue = record.weight.toString();
+      setWeight(weightValue);
+      console.log('Setting weight:', weightValue);
+    }
+    // Note: API uses 'sleep' but form uses 'sleepMinutes'
+    if (record.sleep !== undefined && record.sleep !== null) {
+      const sleepValue = record.sleep.toString();
+      setSleepMinutes(sleepValue);
+      console.log('Setting sleepMinutes:', sleepValue);
+    }
+    if (record.steps !== undefined && record.steps !== null) {
+      const stepsValue = record.steps.toString();
+      setSteps(stepsValue);
+      console.log('Setting steps:', stepsValue);
+    }
+    // Note: API uses 'spo2' but form uses 'spo2'
+    if (record.spo2 !== undefined && record.spo2 !== null) {
+      const spo2Value = record.spo2.toString();
+      setSpo2(spo2Value);
+      console.log('Setting spo2:', spo2Value);
+    }
+    
+    // Parse blood pressure if available
+    if (record.blood_pressure) {
+      const bpParts = record.blood_pressure.split('/');
+      if (bpParts.length === 2) {
+        setSystolic(bpParts[0]);
+        setDiastolic(bpParts[1]);
+        console.log('Setting BP:', bpParts[0], '/', bpParts[1]);
+      } else {
+        // If it's a single number, we'll put it in systolic for now
+        setSystolic(record.blood_pressure);
+        console.log('Setting systolic BP:', record.blood_pressure);
+      }
+    }
+    
+    // Also populate resting heart rate if available
+    if (record.resting_heart_rate !== undefined && record.resting_heart_rate !== null) {
+      const restingHRValue = record.resting_heart_rate.toString();
+      setRestingHR(restingHRValue);
+      console.log('Setting restingHR:', restingHRValue);
+    }
+    
+    // Handle weight unit if available in the record
+    if (record.weight_unit) {
+      setWeightUnit(record.weight_unit);
+      console.log('Setting weightUnit:', record.weight_unit);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -283,10 +518,17 @@ export default function AddVitalsScreen() {
         </View>
 
         {/* Save Button */}
-        <TouchableOpacity style={styles.saveButton} onPress={()=>navigation.navigate('VitalsSavedSuccessScreen')}>
-          <Text style={styles.saveButtonText}>Save Vitals</Text>
+        <TouchableOpacity 
+          style={[styles.saveButton, loading && styles.disabledButton]} 
+          onPress={handleSaveVitals}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color={colors.white} size="small" />
+          ) : (
+            <Text style={styles.saveButtonText}>Save Vitals</Text>
+          )}
         </TouchableOpacity>
-
         <View style={{ height: 40 }} />
       </ScrollView>
     </SafeAreaView>
@@ -518,5 +760,8 @@ const styles = StyleSheet.create({
     fontSize: font.lg,
     fontWeight: '600',
     color: colors.white,
+  },
+  disabledButton: {
+    backgroundColor: colors.gray666,
   },
 });

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image,TouchableOpacity, Alert,KeyboardAvoidingView, ScrollView,Platform  } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, Alert, KeyboardAvoidingView, ScrollView, Platform } from 'react-native';
 import CommonButton from '../../components/CommonButton';
 import CommonTextInput from '../../components/CommonTextInput';
 import responsive from '../../theme/responsive';
@@ -7,13 +7,14 @@ import responsive from '../../theme/responsive';
 import { useDispatch, useSelector } from 'react-redux';
 import { loginUser } from './slices/authSlice';
 import Toast from 'react-native-toast-message';
+import { AppDispatch, RootState } from '../../redux/store';
 export default function Login({ navigation }) {
 
 const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
 
   const dispatch = useDispatch<AppDispatch>();
-  const { loading, error } = useSelector((state: RootState) => state.auth);
+  const { loading, error, login } = useSelector((state: RootState) => state.auth);
 
   const handleLogin = async () => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -46,11 +47,24 @@ const [email, setEmail] = useState<string>('');
 
   try {
     await dispatch(loginUser({ email: email.trim(), password })).unwrap();
-    Toast.show({
-      type: 'success',
-      text1: 'Login Success',
-    });
-    navigation.navigate('OnboardingSteps');
+    
+    // Check if login was successful
+    if (login) {
+      Toast.show({
+        type: 'success',
+        text1: 'Login Success',
+        text2: 'Welcome back!',
+      });
+      // Navigate to dashboard after successful login
+      navigation.navigate('Dashboard');
+    } else {
+      // Login failed, show error message
+      Toast.show({
+        type: 'error',
+        text1: 'Login Failed',
+        text2: error || 'Invalid credentials',
+      });
+    }
   } catch (err: any) {
     Toast.show({
       type: 'error',
@@ -93,7 +107,13 @@ const [email, setEmail] = useState<string>('');
       <TouchableOpacity style={styles.forgetPasswordButton}>
         <Text style={styles.forgetPasswordText}>Forgot Password?</Text>
       </TouchableOpacity>
-      <CommonButton title="Login" fontSize={22} style={styles.buttion} onPress={handleLogin} />
+      <CommonButton 
+        title={loading ? "Logging in..." : "Login"}
+        fontSize={22} 
+        style={styles.button} 
+        onPress={handleLogin} 
+        disabled={loading}
+      />
       <TouchableOpacity style={{flexDirection:'row'}} onPress={() => navigation.navigate('SinUp')}>
         <Text >Don't have an account? </Text>
         <Text style={{color:'#52ab3c',fontWeight:'bold'}}>Sign Up</Text>
@@ -110,7 +130,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: responsive.padding(30),
   },
-  buttion: {
+  button: {
     marginTop: responsive.margin(20),
     marginBottom: responsive.margin(20),
   },

@@ -180,7 +180,7 @@ const HealthAccessScreen = () => {
         </View>
 
         {/* Manual Tracking Option */}
-        <View style={styles.manualSection}>
+        {/* <View style={styles.manualSection}>
           <View style={styles.manualHeader}>
             <MaterialIcon name="edit" size={responsive.fontSize(20)} color={colors.gray666} />
             <Text style={styles.manualTitle}>Prefer Manual Tracking?</Text>
@@ -196,7 +196,7 @@ const HealthAccessScreen = () => {
           <Text style={styles.manualNote}>
             Either option enables the Continue button.
           </Text>
-        </View>
+        </View> */}
 
         {/* Action Buttons */}
         <TouchableOpacity style={styles.primaryButton} onPress={() => navigation.navigate('HealthSyncErrorScreen')}>

@@ -116,10 +116,37 @@ export default function Dashboard() {
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Title */}
-        <Text style={styles.title}>Good Morning — Here's your health summary.</Text>
-        <Text style={styles.subtitle}>Data shown is a snapshot. Tap any card to view details.</Text>
+        {/* Greeting Section */}
+        <View style={styles.greetingContainer}>
+          <Text style={styles.greetingText}>Good Morning,</Text>
+          <Text style={styles.title}>Here's your health summary.</Text>
+          <Text style={styles.subtitle}>Data shown is a snapshot. Tap any card to view details.</Text>
+        </View>
 
+        {/* Today's Summary */}
+        <View style={styles.section}>
+          <Text style={styles.summaryTitle}>Today's Summary</Text>
+          <View style={styles.summaryGrid}>
+            <View style={styles.summaryItem}>
+              <Text style={styles.summaryLabel}>Sodium:</Text>
+              <Text style={styles.summaryValue}>{data?.diet?.sodium ? `${data.diet.sodium} mg` : '0 mg'}</Text>
+            </View>
+            <View style={styles.summaryItem}>
+              <Text style={styles.summaryLabel}>Fluids:</Text>
+              <Text style={styles.summaryValue}>{data?.diet?.fluid_ml ? `${data.diet.fluid_ml} mL` : '0 mL'}</Text>
+            </View>
+            <View style={styles.summaryItem}>
+              <Text style={styles.summaryLabel}>Steps:</Text>
+              <Text style={styles.summaryValue}>{data?.exercise?.steps || data?.vital?.steps || 0}</Text>
+            </View>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>HR:</Text>
+            <Text style={styles.summaryValue}>{data?.vital?.heart_rate ? `${data.vital.heart_rate} bpm` : '0 bpm'}</Text>
+          </View>
+        </View>
+
+       
         {/* Quick Actions */}
         <View style={styles.quickActions}>
           <TouchableOpacity style={styles.actionCard} onPress={()=>navigation.navigate('LabReportDetailsScreen')}>
@@ -174,7 +201,7 @@ export default function Dashboard() {
             </View>
             <Text style={styles.sectionTime}>Today</Text>
           </View>
-<TouchableOpacity onPress={()=>navigation.navigate('VitalsOverviewScreen')}>
+<TouchableOpacity onPress={()=>navigation.navigate('Vitals')}>
           <View style={styles.card}>
             <View style={styles.vitalRow}>
               <View style={styles.vitalItem}>
@@ -200,7 +227,7 @@ export default function Dashboard() {
               <View style={{flex: 1}}>
                 <CommonButton 
                   title="Add / Update" 
-                  onPress={()=>navigation.navigate('AddVitalsScreen')}
+                  onPress={()=>navigation.navigate('Vitals', {screen: 'AddVitalsScreen'})}
                   bgColor={colors.primary}
                   textColor={colors.white}
                   paddingVertical={responsive.padding(10)}
@@ -208,7 +235,7 @@ export default function Dashboard() {
                   radius={responsive.borderRadius(8)}
                 />
               </View>
-              <TouchableOpacity style={styles.historyButton} onPress={() => navigation.navigate('VitalsHistoryScreen')}>
+              <TouchableOpacity style={styles.historyButton} onPress={() => navigation.navigate('Vitals', {screen: 'VitalsHistoryScreen'})}>
                 <History size={16} color={colors.gray666} />
                 <Text style={styles.historyButtonText}>Vitals History</Text>
               </TouchableOpacity>
@@ -363,29 +390,6 @@ export default function Dashboard() {
           </View>
         </View>
 
-        {/* Today's Summary */}
-        <View style={styles.section}>
-          <Text style={styles.summaryTitle}>Today's Summary</Text>
-          <View style={styles.summaryGrid}>
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Sodium:</Text>
-              <Text style={styles.summaryValue}>{data?.diet?.sodium ? `${data.diet.sodium} mg` : '0 mg'}</Text>
-            </View>
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Fluids:</Text>
-              <Text style={styles.summaryValue}>{data?.diet?.fluid_ml ? `${data.diet.fluid_ml} mL` : '0 mL'}</Text>
-            </View>
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Steps:</Text>
-              <Text style={styles.summaryValue}>{data?.exercise?.steps || data?.vital?.steps || 0}</Text>
-            </View>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>HR:</Text>
-            <Text style={styles.summaryValue}>{data?.vital?.heart_rate ? `${data.vital.heart_rate} bpm` : '0 bpm'}</Text>
-          </View>
-        </View>
-
        
       </ScrollView>
     </SafeAreaView>
@@ -457,17 +461,33 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: responsive.padding(16),
   },
+  greetingContainer: {
+    backgroundColor: colors.white,
+    borderRadius: responsive.borderRadius(16),
+    padding: responsive.padding(20),
+    marginBottom: responsive.margin(20),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  greetingText: {
+    fontSize: font.h4,
+    fontWeight: 'bold',
+    color: colors.primary,
+    marginBottom: responsive.margin(4),
+  },
   title: {
     fontSize: font.h5,
     fontWeight: 'bold',
     color: colors.darkGray,
-    marginTop: responsive.margin(20),
     marginBottom: responsive.margin(8),
   },
   subtitle: {
     fontSize: font.base,
     color: colors.gray666,
-    marginBottom: responsive.margin(20),
+    lineHeight: responsive.height(20),
   },
   quickActions: {
     flexDirection: 'row',

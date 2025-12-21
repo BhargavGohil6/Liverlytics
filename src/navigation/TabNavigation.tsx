@@ -1,13 +1,16 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Home, BarChart3, Bell, User } from 'lucide-react-native';
+import { Home, BarChart3, Bell, User, Heart } from 'lucide-react-native';
 import Dashboard from '../screens/dashboard/dashboard';
 import ReportsMainScreen from '../screens/newscreens/ReportsMainScreen';
 import RemindersAlertsScreen from '../screens/newscreens/RemindersAlertsScreen';
 import ProfileMainScreen from '../screens/newscreens/ProfileMainScreen';
+import VitalsStackNavigation from './VitalsStackNavigation';
 import { colors, font } from '../theme/index';
 import responsive from '../theme/responsive';
+
+
 
 const Tab = createBottomTabNavigator();
 
@@ -68,6 +71,18 @@ export default function TabNavigation() {
           ),
         }}
       />
+     
+
+      <Tab.Screen
+        name="Vitals"
+        component={VitalsStackNavigation}
+        options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: 'none' },
+          headerShown: false,
+        }}
+      />
+      
     </Tab.Navigator>
   );
 }

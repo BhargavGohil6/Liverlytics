@@ -10,22 +10,16 @@ import StackNavigation from './src/navigation/StackNavigation';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import { PersistGate } from 'redux-persist/integration/react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import VitalsOverviewScreen from './src/screens/dashboard/VitalsOverviewScreen';
 import ProfileMainScreen from './src/screens/newscreens/ProfileMainScreen'
 
 function MainApp() {
-  // const isLoggedIn = EncryptedStorage.getItem('user_sid');
-  // useSelector((state: any) => state);
-  // console.log('isLoggedIn', isLoggedIn);
-  // AsyncStorage.clear();
-  const isLoggedIn = useSelector((state: any) => state.auth);
-  console.log('isLoggedIn', isLoggedIn.login);
+  const { login } = useSelector((state: any) => state.auth);
+  console.log('isLoggedIn', login);
 
   return (
     <NavigationContainer>
-      {isLoggedIn.login ? <StackNavigation /> : <AuthNavigation />}
+      {login ? <StackNavigation /> : <AuthNavigation />}
     </NavigationContainer>
-    // <AIChate/> 
   );
 }
 

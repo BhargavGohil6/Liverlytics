@@ -9,10 +9,7 @@ import TabNavigation from "./TabNavigation";
 import HealthSyncNotEnabled from "../screens/newscreens/HealthSyncNotEnabled";
 import UploadedLabReportsScreen from "../screens/newscreens/UploadedLabReportsScreen"
 import DietFluidsScreen from "../screens/newscreens/DietFluidsScreen";
-import VitalsOverviewScreen from "../screens/dashboard/VitalsOverviewScreen";
-import VitalsHistoryScreen from "../screens/newscreens/VitalsHistoryScreen";
-import AddVitalsScreen from "../screens/dashboard/addVitals";
-import VitalsSavedSuccessScreen from "../screens/dashboard/VitalsSavedSuccessScreen";
+
 import MELDHistoryScreen from "../screens/newscreens/MELDHistoryScreen";
 import HealthSyncErrorScreen from "../screens/newscreens/HealthSyncErrorScreen";
 import SyncCompleteScreen from "../screens/newscreens/SyncCompleteScreen";
@@ -55,10 +52,7 @@ export default function AuthNavigation() {
             <Stack.Screen name="HealthSyncNotEnabled" component={HealthSyncNotEnabled} options={{headerShown:false}}/>
            <Stack.Screen name="UploadedLabReportsScreen" component={UploadedLabReportsScreen} options={{headerShown:false}}/>
            <Stack.Screen name="DietFluidsScreen" component={DietFluidsScreen} options={{headerShown:false}}/>
-           <Stack.Screen name="VitalsOverviewScreen" component={VitalsOverviewScreen} options={{headerShown:false}}/>
-          <Stack.Screen name="VitalsHistoryScreen" component={VitalsHistoryScreen} options={{headerShown:false}}/>
-          <Stack.Screen name="AddVitalsScreen" component={AddVitalsScreen} options={{headerShown:false}}/>
-         <Stack.Screen name="VitalsSavedSuccessScreen" component={VitalsSavedSuccessScreen} options={{headerShown:false}}/>
+
         <Stack.Screen name="MELDHistoryScreen" component={MELDHistoryScreen} options={{headerShown:false}}/>
         <Stack.Screen name="HealthSyncErrorScreen" component={HealthSyncErrorScreen} options={{headerShown:false}}/>
         <Stack.Screen name="SyncCompleteScreen" component={SyncCompleteScreen} options={{headerShown:false}}/>

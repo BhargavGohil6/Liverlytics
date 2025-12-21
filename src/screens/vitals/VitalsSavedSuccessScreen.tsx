@@ -13,12 +13,15 @@ import {
 // npm install react-native-vector-icons
 import Icon from 'react-native-vector-icons/Feather';
 import {useNavigation} from '@react-navigation/native';
+import { useDispatch } from 'react-redux';
+import { clearVitalsState } from './slices/vitalsSlice';
 import {colors, font} from '../../theme/index';
 import responsive from '../../theme/responsive';
 import CommonButton from '../../components/CommonButton';
 
 export default function VitalsSavedSuccessScreen() {
   const navigation = useNavigation();
+  const dispatch = useDispatch();
   // Animation for success icon
   const scaleAnim = React.useRef(new Animated.Value(0)).current;
   const opacityAnim = React.useRef(new Animated.Value(0)).current;
@@ -101,38 +104,30 @@ export default function VitalsSavedSuccessScreen() {
         </View>
       </View>
 
-      {/* Back Button */}
+      {/* Action Buttons */}
       <View style={styles.buttonContainer}>
         <CommonButton 
-          title="Back to Vitals" 
-          onPress={()=>navigation.navigate('Dashboard')}
+          title="Add More Vitals" 
+          onPress={() => {
+            dispatch(clearVitalsState());
+            navigation.navigate('AddVitalsScreen');
+          }}
           bgColor={colors.primary}
           textColor={colors.white}
           paddingVertical={responsive.padding(16)}
           fontSize={font.lg}
           radius={responsive.borderRadius(12)}
+          marginBottom={responsive.margin(12)}
         />
+        <TouchableOpacity 
+          style={styles.secondaryButton}
+          onPress={()=>navigation.navigate('Dashboard')}
+        >
+          <Text style={styles.secondaryButtonText}>Back to Dashboard</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* Bottom Navigation */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem} onPress={()=>navigation.navigate('Dashboard')}>
-          <Icon name="home" size={24} color="#999" />
-          <Text style={styles.navText}>Home</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={()=>navigation.navigate('Reports')}>
-          <Icon name="bar-chart-2" size={24} color="#999" />
-          <Text style={styles.navText}>Reports</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Icon name="clock" size={24} color="#999" />
-          <Text style={styles.navText}>Reminders</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Icon name="user" size={24} color="#999" />
-          <Text style={styles.navText}>Profile</Text>
-        </TouchableOpacity>
-      </View>
+     
     </SafeAreaView>
   );
 }
@@ -281,6 +276,16 @@ const styles = StyleSheet.create({
     fontSize: font.lg,
     fontWeight: '600',
     color: colors.white,
+  },
+  secondaryButton: {
+    paddingVertical: responsive.padding(12),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  secondaryButtonText: {
+    fontSize: font.base,
+    fontWeight: '500',
+    color: colors.gray666,
   },
   bottomNav: {
     flexDirection: 'row',

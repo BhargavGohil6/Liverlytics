@@ -54,7 +54,7 @@ export default function VitalsOverviewScreen() {
             {/* <Text style={styles.backText}>Back</Text> */}
           </TouchableOpacity>
           
-          <TouchableOpacity style={styles.addButton}>
+          <TouchableOpacity style={styles.addButton} onPress={() => navigation.navigate('AddVitalsScreen')}>
             <Icon name="plus" size={18} color="#333" />
             <Text style={styles.addText}>Add Vitals</Text>
           </TouchableOpacity>

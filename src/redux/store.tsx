@@ -2,11 +2,11 @@ import { configureStore } from '@reduxjs/toolkit';
 import authReducer from '../screens/auth/slices/authSlice';
 import onboardingReducer from '../screens/OnboardingSteps/slices/onboardingSlice';
 import dashboardReducer from '../screens/dashboard/slices/DashboardSlices';
+import vitalsReducer from '../screens/vitals/slices/vitalsSlice';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { persistReducer, persistStore } from 'redux-persist';
 import { combineReducers } from '@reduxjs/toolkit';
-
 const persistConfig = {
   key: 'root',
   storage: AsyncStorage,
@@ -17,8 +17,8 @@ const rootReducer = combineReducers({
   auth: authReducer,
   onboarding: onboardingReducer,
   dashboard: dashboardReducer,
+  vitals: vitalsReducer,
 });
-
 const persistedReducer = persistReducer(persistConfig, rootReducer);
 
 export const store = configureStore({

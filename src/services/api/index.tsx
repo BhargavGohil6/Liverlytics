@@ -1,10 +1,10 @@
 // src/api/apiClient.ts
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosError } from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
-import { store } from '../store/store';
-import { logout, setCredentials } from '../store/slices/authSlice';
+import { store } from '../../redux/store';
+import { logout, setCredentials } from '../../screens/auth/slices/authSlice';
 
-const BASE_URL = 'https://cirrhosis.mukesoft.com/api/';
+import { BASE_URL } from './url';
 
 const api: AxiosInstance = axios.create({
   baseURL: BASE_URL,
@@ -15,20 +15,27 @@ const api: AxiosInstance = axios.create({
   },
 });
 
+// Hardcoded default token for initial authentication
+const DEFAULT_API_KEY = '72b96de8ae8c469';
+const DEFAULT_API_SECRET = '96b6b5699febb74';
+
 // Request Interceptor - Add Frappe Style Token
 api.interceptors.request.use(
   async (config: InternalAxiosRequestConfig): Promise<InternalAxiosRequestConfig> => {
     const state = store.getState();
     const { apiKey, apiSecret } = state.auth;
 
-    // Agar dono hain toh header set karo
+    // Use user-specific tokens if available, otherwise use default tokens
     if (apiKey && apiSecret && config.headers) {
       config.headers.Authorization = `token ${apiKey}:${apiSecret}`;
+    } else if (config.headers) {
+      // Use default tokens for initial authentication
+      config.headers.Authorization = `token ${DEFAULT_API_KEY}:${DEFAULT_API_SECRET}`;
     }
 
     if (__DEV__) {
-      console.log(`API → ${config.method?.toUpperCase()} ${config.url}`);
-      if (apiKey) console.log(`Token Attached: token ${apiKey}:***`);
+      console.log(`API → ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
+      console.log(`Token Attached: ${config.headers?.Authorization || 'None'}`);
     }
 
     return config;

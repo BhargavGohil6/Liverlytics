@@ -18,14 +18,19 @@ export interface User {
 export interface AuthState {
   user: User | null;
   sid: string | null;
+  apiKey: string | null;
+  apiSecret: string | null;
   loading: boolean;
   error: string | null;
   onboardingCompleted: boolean;
   login: boolean | null;
 }
 
+// Using the shared API client instead of direct axios call
+import api from '../../../services/api';
+
 const API_URL =
-  'https://cirrhosis.mukesoft.com/api/method/cirrhosis_custom.cirrhosis_auth.login';
+  '/cirrhosis_custom.cirrhosis_auth.login';
 
 // Login Thunk
 export const loginUser = createAsyncThunk<
@@ -34,28 +39,28 @@ export const loginUser = createAsyncThunk<
   { rejectValue: string }
 >('auth/login', async (credentials, { rejectWithValue }) => {
   try {
-    const response = await axios.post(API_URL, credentials, {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: 'token 72b96de8ae8c469:96b6b5699febb74',
-      },
-    });
-
+    console.log('Attempting login with URL:', API_URL);
+    console.log('Credentials:', { email: credentials.email, password: '[REDACTED]' });
+    
+    // Using the shared API client which handles authentication automatically
+    const response = await api.post(API_URL, credentials);
+    
     const data = response.data;
     const msg = data.message;
-    console.log(data);
-    // EncryptedStorage me SID save karo
+    console.log('Login Response:', data);
+    
+    // Store user session data
     if (msg?.sid) {
-      loin: true;
       await EncryptedStorage.setItem('user_sid', msg.sid);
     }
 
-    // Onboarding flag default
+    // Set onboarding flag to false by default (will be updated after onboarding)
     await EncryptedStorage.setItem('onboarding_completed', 'false');
 
     return data;
   } catch (error: any) {
-    console.log(error);
+    console.log('Login Error:', error);
+    console.log('Error response:', error.response);
     const msg =
       error.response?.data?.message?.message ||
       error.response?.data?.message ||
@@ -72,16 +77,13 @@ export const registerUser = createAsyncThunk<
   { rejectValue: string }
 >('auth/register', async (credentials, { rejectWithValue }) => {
   try {
-    const response = await axios.post(
-      'https://cirrhosis.mukesoft.com/api/method/cirrhosis_custom.cirrhosis_auth.register',
-      credentials,
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: 'token 72b96de8ae8c469:96b6b5699febb74',
-        },
-      },
-    );
+    console.log('Attempting registration with credentials:', { 
+      email: credentials.email, 
+      full_name: credentials.full_name, 
+      password: '[REDACTED]' 
+    });
+    
+    const response = await api.post('/cirrhosis_custom.cirrhosis_auth.register', credentials);
 
     const data = response.data;
     console.log('Register Response:', data);
@@ -90,7 +92,6 @@ export const registerUser = createAsyncThunk<
 
     // Registration successful → sid milta hai → store kar do (same as login)
     if (msg?.sid) {
-      loin: true; 
       await EncryptedStorage.setItem('user_sid', msg.sid);
       await EncryptedStorage.setItem('onboarding_completed', 'false');
     }
@@ -98,6 +99,7 @@ export const registerUser = createAsyncThunk<
     return data;
   } catch (error: any) {
     console.log('Register Error:', error.response?.data || error);
+    console.log('Error response:', error.response);
 
     const msg =
       error.response?.data?.message?.message ||
@@ -115,6 +117,8 @@ const authSlice = createSlice({
   initialState: {
     user: null,
     sid: null,
+    apiKey: null,
+    apiSecret: null,
     loading: false,
     error: null,
     onboardingCompleted: false,
@@ -139,6 +143,8 @@ const authSlice = createSlice({
       action: PayloadAction<{ sid: string; onboarding: boolean }>,
     ) => {
       state.sid = action.payload.sid;
+      state.apiKey = '72b96de8ae8c469';
+      state.apiSecret = action.payload.sid;
       state.onboardingCompleted = action.payload.onboarding;
     },
   },
@@ -154,13 +160,25 @@ const authSlice = createSlice({
         state.loading = false;
         const msg = action.payload.message;
 
+        // Check if the response indicates failure
+        if (msg?.status === 'fail') {
+          state.error = msg.message || 'Login failed';
+          return;
+        }
+
+        // Extract user information from response
+        const userData = msg?.user_data || {};
+        
         state.user = {
-          email: msg.user,
-          full_name: action.payload.full_name || 'User',
+          email: userData.email || msg.user || '',
+          full_name: userData.full_name || userData.first_name || 'User',
         };
 
         state.sid = msg.sid;
-         state.login = true;  
+        // Use the default API key and session ID as the secret
+        state.apiKey = '72b96de8ae8c469';
+        state.apiSecret = msg.sid;
+        state.login = true;  
       })
 
       .addCase(loginUser.rejected, (state, action) => {
@@ -176,11 +194,20 @@ const authSlice = createSlice({
         state.loading = false;
         const msg = action.payload.message;
 
+        // Check if the response indicates failure
+        if (msg?.status === 'fail') {
+          state.error = msg.message || 'Registration failed';
+          return;
+        }
+
         state.user = {
           email: msg.user || msg.email, // ya jo bhi backend bhejta ho
           full_name: action.payload.full_name || 'User',
         };
         state.sid = msg.sid;
+        // Use the default API key and session ID as the secret
+        state.apiKey = '72b96de8ae8c469';
+        state.apiSecret = msg.sid;
         state.login = true;
       })
       .addCase(registerUser.rejected, (state, action) => {
