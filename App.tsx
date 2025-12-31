@@ -1,4 +1,6 @@
 import React from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { StyleSheet, Dimensions } from 'react-native';
 import Login from './src/screens/auth/Login';
 import AuthNavigation from './src/navigation/AuthNavigation';
 import { NavigationContainer } from '@react-navigation/native';
@@ -10,7 +12,9 @@ import StackNavigation from './src/navigation/StackNavigation';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import { PersistGate } from 'redux-persist/integration/react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import ProfileMainScreen from './src/screens/newscreens/ProfileMainScreen'
+import ProfileMainScreen from './src/screens/profile/ProfileMainScreen'
+
+import './ReactotronConfig'; // Import Reactotron configuration
 
 function MainApp() {
   const { login } = useSelector((state: any) => state.auth);
@@ -22,12 +26,15 @@ function MainApp() {
     </NavigationContainer>
   );
 }
-
+const deviceHight = Dimensions.get('screen').height;
+const deviceWidth = Dimensions.get('screen').width;
 const App = () => {
   return (
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
+         <SafeAreaView style={styles.SafeArea}>
         <MainApp />
+        </SafeAreaView>
       </PersistGate>
       <Toast />
     </Provider>
@@ -36,3 +43,16 @@ const App = () => {
 };
 
 export default App;
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    SafeArea: {
+        height: deviceHight,
+        width: deviceWidth,
+        flex:1
+    }
+})

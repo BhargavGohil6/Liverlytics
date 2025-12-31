@@ -12,12 +12,21 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import { LineChart } from 'react-native-chart-kit';
 import responsive from '../../theme/responsive';
+import colors from '../../theme/color';
+import CommonDropdown from '../../components/CommonDropdown';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RouteProp } from '@react-navigation/native';
 
 const { width } = Dimensions.get('window');
 
-const MELDHistoryScreen = ({ navigation }) => {
+type MELDHistoryScreenRouteProp = RouteProp<Record<string, object | undefined>, string>;
+
+type MELDHistoryScreenNavigationProp = StackNavigationProp<Record<string, object | undefined>, string>;
+
+const MELDHistoryScreen = ({ navigation }: { navigation: MELDHistoryScreenNavigationProp }) => {
   const [selectedFilter, setSelectedFilter] = useState('All Time');
-  const [selectedType, setSelectedType] = useState('All');
+  const [selectedSourceType, setSelectedSourceType] = useState('All');
+  const [selectedMeldType, setSelectedMeldType] = useState('MELD3');
 
   const entries = [
     { date: 'Oct 12, 2025', meldNa: 19, meld30: 21, source: 'AI Report' },
@@ -31,7 +40,7 @@ const MELDHistoryScreen = ({ navigation }) => {
       <ScrollView>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Icon name="arrow-back" size={24} color="#1f2937" />
+            <Icon name="arrow-back" size={responsive.fontSize(24)} color={colors.darkGray} />
           </TouchableOpacity>
         </View>
 
@@ -41,47 +50,33 @@ const MELDHistoryScreen = ({ navigation }) => {
 
           {/* Filters */}
           <View style={styles.filterCard}>
-            <TouchableOpacity style={styles.dropdown}>
-              <Text style={styles.dropdownText}>{selectedFilter}</Text>
-              <Icon name="chevron-down" size={20} color="#6b7280" />
-            </TouchableOpacity>
-
-            <View style={styles.filterRow}>
-              {['Last 3 Months', 'Last 6 Months', 'Last 1 Month'].map((filter) => (
-                <TouchableOpacity
-                  key={filter}
-                  style={styles.filterButton}
-                  onPress={() => setSelectedFilter(filter)}
-                >
-                  <Text style={styles.filterText}>{filter}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <View style={styles.filterRow}>
-              {['Last 12 Months', 'Custom Range'].map((filter) => (
-                <TouchableOpacity
-                  key={filter}
-                  style={styles.filterButton}
-                  onPress={() => setSelectedFilter(filter)}
-                >
-                  <Text style={styles.filterText}>{filter}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            <CommonDropdown
+              label="Time Range"
+              placeholder="Select Time Range"
+              value={selectedFilter}
+              options={[
+                { label: "All Time", value: "All Time" },
+                { label: "Last 1 Month", value: "Last 1 Month" },
+                { label: "Last 3 Months", value: "Last 3 Months" },
+                { label: "Last 6 Months", value: "Last 6 Months" },
+                { label: "Last 12 Months", value: "Last 12 Months" },
+                { label: "Custom Range", value: "Custom Range" },
+              ]}
+              onValueChange={setSelectedFilter}
+            />
 
             <View style={styles.typeRow}>
-              {['All', 'Manual', 'AI Report'].map((type) => (
-                <TouchableOpacity
-                  key={type}
-                  style={[styles.typeButton, selectedType === type && styles.typeButtonActive]}
-                  onPress={() => setSelectedType(type)}
-                >
-                  <Text style={[styles.typeText, selectedType === type && styles.typeTextActive]}>
-                    {type}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+              <CommonDropdown
+                label="Type"
+                placeholder="Select Type"
+                value={selectedSourceType}
+                options={[
+                  { label: 'All', value: 'All' },
+                  { label: 'Manual', value: 'Manual' },
+                  { label: 'AI Report', value: 'AI Report' },
+                ]}
+                onValueChange={setSelectedSourceType}
+              />
             </View>
 
             <Text style={styles.sortText}>Sort: Newest → Oldest</Text>
@@ -96,19 +91,19 @@ const MELDHistoryScreen = ({ navigation }) => {
               data={{
                 labels: ['Jun', 'Jul', 'Aug', 'Sep', 'Oct'],
                 datasets: [
-                  { data: [16, 17, 18, 19, 21], color: () => '#1f2937' },
-                  { data: [15, 16, 17, 18, 19], color: () => '#52a64a' },
+                  { data: [16, 17, 18, 19, 21], color: () => colors.darkGray },
+                  { data: [15, 16, 17, 18, 19], color: () => colors.primary },
                 ],
               }}
-              width={width - 64}
-              height={200}
+              width={width - responsive.width(64)}
+              height={responsive.height(200)}
               chartConfig={{
-                backgroundColor: '#fff',
-                backgroundGradientFrom: '#fff',
-                backgroundGradientTo: '#fff',
+                backgroundColor: colors.white,
+                backgroundGradientFrom: colors.white,
+                backgroundGradientTo: colors.white,
                 decimalPlaces: 0,
-                color: (opacity = 1) => `rgba(31, 41, 55, ${opacity})`,
-                style: { borderRadius: 16 },
+                color: (opacity = 1) => `rgba(16, 24, 40, ${opacity})`,
+                style: { borderRadius: responsive.borderRadius(16) },
               }}
               bezier
               style={styles.chart}
@@ -116,15 +111,15 @@ const MELDHistoryScreen = ({ navigation }) => {
 
             <View style={styles.legend}>
               <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#1f2937' }]} />
+                <View style={[styles.legendDot, { backgroundColor: colors.darkGray }]} />
                 <Text style={styles.legendText}>MELD-Na</Text>
               </View>
               <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#52a64a' }]} />
+                <View style={[styles.legendDot, { backgroundColor: colors.primary }]} />
                 <Text style={styles.legendText}>MELD 3.0</Text>
               </View>
               <View style={styles.legendItem}>
-                <Icon name="eye-outline" size={16} color="#6b7280" />
+                <Icon name="eye-outline" size={responsive.fontSize(16)} color={colors.coolGray} />
                 <Text style={styles.legendText}>Static preview</Text>
               </View>
             </View>
@@ -133,25 +128,42 @@ const MELDHistoryScreen = ({ navigation }) => {
           {/* Entries */}
           <View style={styles.entriesSection}>
             <Text style={styles.entriesTitle}>All Entries</Text>
+            
+            {/* MELD Type Filter */}
+            <View style={styles.meldTypeFilterContainer}>
+              <CommonDropdown
+                label="MELD Type"
+                placeholder="Select MELD Type"
+                value={selectedMeldType}
+                options={[
+                  { label: 'MELD 3.0', value: 'MELD3' },
+                  { label: 'MELD-Na', value: 'MELDNa' },
+                ]}
+                onValueChange={(value) => setSelectedMeldType(value)}
+              />
+            </View>
+            
             {entries.map((entry, index) => (
               <View key={index} style={styles.entryCard}>
                 <View style={styles.entryHeader}>
                   <Text style={styles.entryDate}>{entry.date}</Text>
                   <TouchableOpacity style={styles.viewInputsButton}>
-                    <Icon name="list-outline" size={16} color="#52a64a" />
+                    <Icon name="list-outline" size={responsive.fontSize(16)} color={colors.primary} />
                     <Text style={styles.viewInputsText}>View Inputs</Text>
                   </TouchableOpacity>
                 </View>
                 <View style={styles.entryScores}>
-                  <View style={styles.scoreItem}>
-                    <Text style={styles.scoreLabel}>MELD-Na</Text>
-                    <Text style={styles.scoreValue}>{entry.meldNa}</Text>
-                  </View>
-                  <View style={styles.scoreDivider} />
-                  <View style={styles.scoreItem}>
-                    <Text style={styles.scoreLabel}>MELD 3.0</Text>
-                    <Text style={styles.scoreValue}>{entry.meld30}</Text>
-                  </View>
+                  {selectedMeldType === 'MELD3' ? (
+                    <View style={styles.scoreItem}>
+                      <Text style={styles.scoreLabel}>MELD 3.0</Text>
+                      <Text style={styles.scoreValue}>{entry.meld30}</Text>
+                    </View>
+                  ) : (
+                    <View style={styles.scoreItem}>
+                      <Text style={styles.scoreLabel}>MELD-Na</Text>
+                      <Text style={styles.scoreValue}>{entry.meldNa}</Text>
+                    </View>
+                  )}
                 </View>
                 <Text style={styles.entrySource}>{entry.source}</Text>
               </View>
@@ -185,10 +197,10 @@ const MELDHistoryScreen = ({ navigation }) => {
           </View>
 
           {/* Download Button */}
-          <TouchableOpacity style={styles.downloadButton}>
-            <Icon name="download-outline" size={20} color="#fff" />
+          {/* <TouchableOpacity style={styles.downloadButton}>
+            <Icon name="download-outline" size={responsive.fontSize(20)} color={colors.white} />
             <Text style={styles.downloadText}>Download Full MELD Report</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -198,262 +210,259 @@ const MELDHistoryScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.gray100,
   },
   header: {
-    padding: 16,
-    backgroundColor: '#fff',
+    padding: responsive.padding(16),
+    backgroundColor: colors.white,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: colors.gray200,
   },
   content: {
-    padding: 16,
+    padding: responsive.padding(16),
   },
   title: {
-    fontSize: 24,
+    fontSize: responsive.fontSize(24),
     fontWeight: '700',
-    color: '#1f2937',
-    marginBottom: 4,
+    color: colors.darkGray,
+    marginBottom: responsive.margin(4),
   },
   subtitle: {
-    fontSize: 14,
-    color: '#6b7280',
-    marginBottom: 24,
+    fontSize: responsive.fontSize(14),
+    color: colors.coolGray,
+    marginBottom: responsive.margin(24),
   },
   filterCard: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
+    backgroundColor: colors.white,
+    padding: responsive.padding(16),
+    borderRadius: responsive.borderRadius(12),
+    marginBottom: responsive.margin(16),
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.gray200,
   },
   dropdown: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: '#f9fafb',
-    borderRadius: 8,
-    marginBottom: 12,
+    paddingVertical: responsive.padding(12),
+    paddingHorizontal: responsive.padding(16),
+    backgroundColor: colors.gray100,
+    borderRadius: responsive.borderRadius(8),
+    marginBottom: responsive.margin(12),
   },
   dropdownText: {
-    fontSize: 15,
-    color: '#1f2937',
+    fontSize: responsive.fontSize(15),
+    color: colors.darkGray,
     fontWeight: '500',
   },
   filterRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 8,
+    gap: responsive.margin(8),
+    marginBottom: responsive.margin(8),
   },
   filterButton: {
-    // paddingVertical:responsive.padding(8),
-    // paddingHorizontal:responsive.padding(14),
-    // backgroundColor: '#f9fafb',
-    // borderRadius: 6,
-    // borderWidth: 1,
-    // borderColor: '#e5e7eb',
     paddingVertical: responsive.padding(8),
     paddingHorizontal: responsive.padding(10),
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.gray100,
     borderRadius: responsive.borderRadius(6),
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.gray200,
   },
   filterText: {
-    fontSize: 13,
-    color: '#374151',
+    fontSize: responsive.fontSize(13),
+    color: colors.gray,
   },
   typeRow: {
     flexDirection: 'row',
-    gap: 8,
-    marginTop: 12,
-    marginBottom: 12,
+    gap: responsive.margin(8),
+    marginTop: responsive.margin(12),
+    marginBottom: responsive.margin(12),
   },
   typeButton: {
     flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: '#f9fafb',
-    borderRadius: 6,
+    paddingVertical: responsive.padding(8),
+    paddingHorizontal: responsive.padding(12),
+    backgroundColor: colors.gray100,
+    borderRadius: responsive.borderRadius(6),
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.gray200,
   },
   typeButtonActive: {
-    backgroundColor: '#1f2937',
-    borderColor: '#1f2937',
+    backgroundColor: colors.darkGray,
+    borderColor: colors.darkGray,
   },
   typeText: {
-    fontSize: 13,
-    color: '#374151',
+    fontSize: responsive.fontSize(13),
+    color: colors.gray,
     fontWeight: '500',
   },
   typeTextActive: {
-    color: '#fff',
+    color: colors.white,
   },
   sortText: {
-    fontSize: 13,
-    color: '#6b7280',
+    fontSize: responsive.fontSize(13),
+    color: colors.coolGray,
     textAlign: 'center',
   },
   chartCard: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
+    backgroundColor: colors.white,
+    padding: responsive.padding(16),
+    borderRadius: responsive.borderRadius(12),
+    marginBottom: responsive.margin(16),
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.gray200,
   },
   chartTitle: {
-    fontSize: 18,
+    fontSize: responsive.fontSize(18),
     fontWeight: '600',
-    color: '#1f2937',
-    marginBottom: 4,
+    color: colors.darkGray,
+    marginBottom: responsive.margin(4),
   },
   chartSubtitle: {
-    fontSize: 13,
-    color: '#6b7280',
-    marginBottom: 16,
+    fontSize: responsive.fontSize(13),
+    color: colors.coolGray,
+    marginBottom: responsive.margin(16),
   },
   chart: {
-    marginVertical: 8,
-    borderRadius: 8,
+    marginVertical: responsive.margin(8),
+    borderRadius: responsive.borderRadius(8),
   },
   legend: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginTop: 12,
+    marginTop: responsive.margin(12),
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   legendDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 6,
+    width: responsive.width(8),
+    height: responsive.height(8),
+    borderRadius: responsive.borderRadius(4),
+    marginRight: responsive.margin(6),
   },
   legendText: {
-    fontSize: 12,
-    color: '#6b7280',
-    marginLeft: 4,
+    fontSize: responsive.fontSize(12),
+    color: colors.coolGray,
+    marginLeft: responsive.margin(4),
   },
   entriesSection: {
-    marginBottom: 16,
+    marginBottom: responsive.margin(16),
   },
   entriesTitle: {
-    fontSize: 18,
+    fontSize: responsive.fontSize(18),
     fontWeight: '600',
-    color: '#1f2937',
-    marginBottom: 12,
+    color: colors.darkGray,
+    marginBottom: responsive.margin(12),
   },
   entryCard: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
+    backgroundColor: colors.white,
+    padding: responsive.padding(16),
+    borderRadius: responsive.borderRadius(12),
+    marginBottom: responsive.margin(12),
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.gray200,
   },
   entryHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: responsive.margin(12),
   },
   entryDate: {
-    fontSize: 16,
+    fontSize: responsive.fontSize(16),
     fontWeight: '600',
-    color: '#1f2937',
+    color: colors.darkGray,
   },
   viewInputsButton: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   viewInputsText: {
-    fontSize: 13,
-    color: '#52a64a',
-    marginLeft: 4,
+    fontSize: responsive.fontSize(13),
+    color: colors.primary,
+    marginLeft: responsive.margin(4),
   },
   entryScores: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: responsive.margin(8),
   },
   scoreItem: {
     flex: 1,
   },
   scoreLabel: {
-    fontSize: 13,
-    color: '#6b7280',
-    marginBottom: 4,
+    fontSize: responsive.fontSize(13),
+    color: colors.coolGray,
+    marginBottom: responsive.margin(4),
   },
   scoreValue: {
-    fontSize: 20,
+    fontSize: responsive.fontSize(20),
     fontWeight: '700',
-    color: '#1f2937',
+    color: colors.darkGray,
   },
   scoreDivider: {
     width: 1,
-    height: 30,
-    backgroundColor: '#e5e7eb',
-    marginHorizontal: 16,
+    height: responsive.height(30),
+    backgroundColor: colors.gray200,
+    marginHorizontal: responsive.margin(16),
   },
   entrySource: {
-    fontSize: 13,
-    color: '#6b7280',
+    fontSize: responsive.fontSize(13),
+    color: colors.coolGray,
   },
   insightsCard: {
-    backgroundColor: '#0d9488',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
+    backgroundColor: colors.emerald,
+    padding: responsive.padding(16),
+    borderRadius: responsive.borderRadius(12),
+    marginBottom: responsive.margin(16),
   },
   insightsTitle: {
-    fontSize: 16,
+    fontSize: responsive.fontSize(16),
     fontWeight: '600',
-    color: '#fff',
-    marginBottom: 12,
+    color: colors.white,
+    marginBottom: responsive.margin(12),
   },
   insightItem: {
     flexDirection: 'row',
-    marginBottom: 8,
+    marginBottom: responsive.margin(8),
   },
   insightBullet: {
-    fontSize: 16,
-    color: '#fff',
-    marginRight: 8,
+    fontSize: responsive.fontSize(16),
+    color: colors.white,
+    marginRight: responsive.margin(8),
   },
   insightText: {
-    fontSize: 14,
-    color: '#fff',
+    fontSize: responsive.fontSize(14),
+    color: colors.white,
     flex: 1,
-    lineHeight: 20,
+    lineHeight: responsive.fontSize(20),
   },
   disclaimer: {
-    fontSize: 12,
-    color: '#d1fae5',
-    marginTop: 8,
+    fontSize: responsive.fontSize(12),
+    color: colors.mintMist,
+    marginTop: responsive.margin(8),
     fontStyle: 'italic',
   },
   downloadButton: {
     flexDirection: 'row',
-    backgroundColor: '#52a64a',
-    paddingVertical: 14,
-    borderRadius: 8,
+    backgroundColor: colors.primary,
+    paddingVertical: responsive.padding(14),
+    borderRadius: responsive.borderRadius(8),
     alignItems: 'center',
     justifyContent: 'center',
   },
   downloadText: {
-    fontSize: 16,
+    fontSize: responsive.fontSize(16),
     fontWeight: '600',
-    color: '#fff',
-    marginLeft: 8,
+    color: colors.white,
+    marginLeft: responsive.margin(8),
+  },
+  meldTypeFilterContainer: {
+    marginBottom: responsive.margin(12),
   },
 });
 

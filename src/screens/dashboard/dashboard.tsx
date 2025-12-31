@@ -41,8 +41,16 @@ import {colors,font} from '../../theme/index';
 import CommonButton from '../../components/CommonButton';
 
 export default function Dashboard() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const dispatch = useDispatch<AppDispatch>();
+  
+  // Get time of day for greeting
+  const getTimeOfDay = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Morning';
+    if (hour < 17) return 'Afternoon';
+    return 'Evening';
+  };
   
   // Redux state
   const { data, loading, error } = useSelector((state: RootState) => state.dashboard);
@@ -118,7 +126,7 @@ export default function Dashboard() {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Greeting Section */}
         <View style={styles.greetingContainer}>
-          <Text style={styles.greetingText}>Good Morning,</Text>
+          <Text style={styles.greetingText}>Good {getTimeOfDay()}, {user?.full_name || 'User'}!</Text>
           <Text style={styles.title}>Here's your health summary.</Text>
           <Text style={styles.subtitle}>Data shown is a snapshot. Tap any card to view details.</Text>
         </View>
@@ -149,7 +157,7 @@ export default function Dashboard() {
        
         {/* Quick Actions */}
         <View style={styles.quickActions}>
-          <TouchableOpacity style={styles.actionCard} onPress={()=>navigation.navigate('LabReportDetailsScreen')}>
+          <TouchableOpacity style={styles.actionCard} onPress={()=>navigation.navigate('UploadLabReportScreen')}>
             <View style={styles.actionIcon}>
               <TestTube size={20} color="#fff" />
             </View>
@@ -400,7 +408,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.gray100,
-    paddingTop: StatusBar || 0,
+    paddingTop: 0,
   },
   header: {
     flexDirection: 'row',

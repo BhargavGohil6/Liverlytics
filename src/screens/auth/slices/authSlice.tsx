@@ -20,6 +20,7 @@ export interface AuthState {
   sid: string | null;
   apiKey: string | null;
   apiSecret: string | null;
+  token: string | null;
   loading: boolean;
   error: string | null;
   onboardingCompleted: boolean;
@@ -39,9 +40,7 @@ export const loginUser = createAsyncThunk<
   { rejectValue: string }
 >('auth/login', async (credentials, { rejectWithValue }) => {
   try {
-    console.log('Attempting login with URL:', API_URL);
-    console.log('Credentials:', { email: credentials.email, password: '[REDACTED]' });
-    
+   
     // Using the shared API client which handles authentication automatically
     const response = await api.post(API_URL, credentials);
     
@@ -73,7 +72,7 @@ export const loginUser = createAsyncThunk<
 
 export const registerUser = createAsyncThunk<
   any,
-  { email: string; full_name: string; password: string },
+  { email: string; full_name: string; password: string; country_code?: string; gender_custom?: string },
   { rejectValue: string }
 >('auth/register', async (credentials, { rejectWithValue }) => {
   try {
@@ -119,6 +118,7 @@ const authSlice = createSlice({
     sid: null,
     apiKey: null,
     apiSecret: null,
+    token: null,
     loading: false,
     error: null,
     onboardingCompleted: false,
@@ -140,11 +140,12 @@ const authSlice = createSlice({
 
     hydrateFromStorage: (
       state,
-      action: PayloadAction<{ sid: string; onboarding: boolean }>,
+      action: PayloadAction<{ sid: string; onboarding: boolean; token?: string }>,
     ) => {
       state.sid = action.payload.sid;
       state.apiKey = '72b96de8ae8c469';
       state.apiSecret = action.payload.sid;
+      state.token = action.payload.token || `token 72b96de8ae8c469:${action.payload.sid}`;
       state.onboardingCompleted = action.payload.onboarding;
     },
   },
@@ -175,10 +176,12 @@ const authSlice = createSlice({
         };
 
         state.sid = msg.sid;
-        // Use the default API key and session ID as the secret
-        state.apiKey = '72b96de8ae8c469';
-        state.apiSecret = msg.sid;
-        state.login = true;  
+        // Extract token from response, fallback to hardcoded if not provided
+        state.token = msg.token || `token ${msg.api_key || '72b96de8ae8c469'}:${msg.api_secret || msg.sid}`;
+        // Extract API key and secret from response, fallback to defaults if not provided
+        state.apiKey = msg.api_key || '72b96de8ae8c469';
+        state.apiSecret = msg.api_secret || msg.sid;
+        state.login = true;
       })
 
       .addCase(loginUser.rejected, (state, action) => {
@@ -205,9 +208,11 @@ const authSlice = createSlice({
           full_name: action.payload.full_name || 'User',
         };
         state.sid = msg.sid;
-        // Use the default API key and session ID as the secret
-        state.apiKey = '72b96de8ae8c469';
-        state.apiSecret = msg.sid;
+        // Extract token from response, fallback to hardcoded if not provided
+        state.token = msg.token || `token ${msg.api_key || '72b96de8ae8c469'}:${msg.api_secret || msg.sid}`;
+        // Extract API key and secret from response, fallback to defaults if not provided
+        state.apiKey = msg.api_key || '72b96de8ae8c469';
+        state.apiSecret = msg.api_secret || msg.sid;
         state.login = true;
       })
       .addCase(registerUser.rejected, (state, action) => {

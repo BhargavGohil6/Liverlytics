@@ -1,5 +1,5 @@
 // src/screens/DietFluidsScreen.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,19 +8,140 @@ import {
   TouchableOpacity,
   TextInput,
   SafeAreaView,
+  ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState, AppDispatch } from '../../redux/store';
+import { fetchDietEntries, addDietEntry, deleteDietEntry, fetchDietEntryById, updateDietEntry } from './slices/dietSlice';
+import Toast from 'react-native-toast-message';
 
 const DietFluidsScreen = ({ navigation }) => {
   const [itemName, setItemName] = useState('');
   const [sodium, setSodium] = useState('');
   const [fluid, setFluid] = useState('');
+  const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
+  
+  const dispatch = useDispatch<AppDispatch>();
+  const { data: entries, loading, error } = useSelector((state: RootState) => state.diet);
+  console.log('data', entries)
+  useEffect(() => {
+    dispatch(fetchDietEntries());
+  }, [dispatch]);
 
-  const entries = [
-    { name: 'Chicken Soup', sodium: 650, fluid: 240, time: '12:40 PM' },
-    { name: 'Electrolyte Water', sodium: 120, fluid: 500, time: '10:05 AM' },
-    { name: 'Oatmeal', sodium: 350, fluid: 240, time: '8:15 AM' },
-  ];
+  // Get user from auth state
+  const { user } = useSelector((state: RootState) => state.auth);
+
+  const handleAddEntry = () => {
+    if (!itemName || !sodium || !fluid) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please fill all fields',
+        visibilityTime: 3000,
+      });
+      return;
+    }
+
+    const userEmail = user?.email || 'pareshwaghela18mukesoft@gmail.com'; // Fallback email
+    
+    dispatch(addDietEntry({
+      item_name: itemName,
+      sodium: sodium,
+      fluid_ml: fluid,
+      user: userEmail
+    })).then((result) => {
+      if (addDietEntry.fulfilled.match(result)) {
+        // Clear form fields
+        setItemName('');
+        setSodium('');
+        setFluid('');
+      }
+    });
+  };
+
+  const handleUpdateEntry = () => {
+    if (!itemName || !sodium || !fluid || !editingEntryId) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please fill all fields',
+        visibilityTime: 3000,
+      });
+      return;
+    }
+
+    const userEmail = user?.email || 'pareshwaghela18mukesoft@gmail.com'; // Fallback email
+    
+    dispatch(updateDietEntry({
+      diet_and_fluids_id: editingEntryId,
+      item_name: itemName,
+      sodium: sodium,
+      fluid_ml: fluid,
+      user: userEmail
+    })).then((result) => {
+      if (updateDietEntry.fulfilled.match(result)) {
+        // Clear form fields and exit edit mode
+        setItemName('');
+        setSodium('');
+        setFluid('');
+        setEditingEntryId(null);
+      }
+    });
+  };
+
+  const handleDeleteEntry = (entryId: string) => {
+    dispatch(deleteDietEntry(entryId)).then((result) => {
+      if (deleteDietEntry.fulfilled.match(result)) {
+        Toast.show({
+          type: 'success',
+          text1: 'Success',
+          text2: 'Entry deleted successfully!',
+          visibilityTime: 2000,
+        });
+        
+        // If we were editing this entry, clear the form
+        if (editingEntryId === entryId) {
+          setItemName('');
+          setSodium('');
+          setFluid('');
+          setEditingEntryId(null);
+        }
+      }
+    });
+  };
+
+  const handleEditEntry = (entry: any) => {
+    if (entry.name) {
+      // Set the form fields with the entry data
+      setItemName(entry.item_name || '');
+      setSodium(entry.sodium || '');
+      setFluid(entry.fluid_ml || '');
+      setEditingEntryId(entry.name);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    // Clear form fields and exit edit mode
+    setItemName('');
+    setSodium('');
+    setFluid('');
+    setEditingEntryId(null);
+  };
+
+  // Calculate totals
+  const calculateTotals = () => {
+    if (!entries) return { totalSodium: 0, totalFluid: 0 };
+    
+    return entries.reduce((totals, entry) => {
+      return {
+        totalSodium: totals.totalSodium + (parseInt(entry.sodium) || 0),
+        totalFluid: totals.totalFluid + (parseInt(entry.fluid_ml) || 0)
+      };
+    }, { totalSodium: 0, totalFluid: 0 });
+  };
+
+  const { totalSodium, totalFluid } = calculateTotals();
 
   return (
     <SafeAreaView style={styles.container}>
@@ -41,11 +162,11 @@ const DietFluidsScreen = ({ navigation }) => {
             <View style={styles.totalsRow}>
               <View style={styles.totalItem}>
                 <Text style={styles.totalLabel}>Total Sodium Today</Text>
-                <Text style={styles.totalValue}>1,120 mg</Text>
+                <Text style={styles.totalValue}>{totalSodium.toLocaleString()} mg</Text>
               </View>
               <View style={styles.totalItem}>
                 <Text style={styles.totalLabel}>Total Fluid Today</Text>
-                <Text style={styles.totalValue}>980 mL</Text>
+                <Text style={styles.totalValue}>{totalFluid.toLocaleString()} mL</Text>
               </View>
             </View>
             <Text style={styles.timestamp}>As of now</Text>
@@ -96,9 +217,42 @@ const DietFluidsScreen = ({ navigation }) => {
               <Icon name="chevron-forward" size={20} color="#9ca3af" />
             </View>
 
-            <TouchableOpacity style={styles.addButton}>
-              <Text style={styles.addButtonText}>Add Entry</Text>
-            </TouchableOpacity>
+            <View style={styles.buttonRow}>
+              {editingEntryId ? (
+                <>
+                  <TouchableOpacity 
+                    style={[styles.addButton, styles.updateButton]}
+                    onPress={handleUpdateEntry}
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Text style={styles.addButtonText}>Update Entry</Text>
+                    )}
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={[styles.addButton, styles.cancelButton]}
+                    onPress={handleCancelEdit}
+                    disabled={loading}
+                  >
+                    <Text style={styles.addButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <TouchableOpacity 
+                  style={styles.addButton}
+                  onPress={handleAddEntry}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={styles.addButtonText}>Add Entry</Text>
+                  )}
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
 
           {/* Today's Entries */}
@@ -108,21 +262,37 @@ const DietFluidsScreen = ({ navigation }) => {
               <Text style={styles.deleteHint}>Tap trash to delete</Text>
             </View>
 
-            {entries.map((entry, index) => (
-              <View key={index} style={styles.entryCard}>
-                <View style={styles.entryContent}>
-                  <Text style={styles.entryName}>{entry.name}</Text>
-                  <Text style={styles.entryDetails}>
-                    Sodium: {entry.sodium} mg • Fluid: {entry.fluid} mL
-                  </Text>
-                  <Text style={styles.entryTime}>• {entry.time}</Text>
+            {entries && entries.length > 0 ? (
+              entries.map((entry, index) => (
+                <View key={entry.name || index} style={styles.entryCard}>
+                  <TouchableOpacity 
+                    style={styles.entryContent}
+                    onPress={() => handleEditEntry(entry)}
+                    disabled={loading}
+                  >
+                    <Text style={styles.entryName}>{entry.item_name}</Text>
+                    <Text style={styles.entryDetails}>
+                      Sodium: {entry.sodium} mg • Fluid: {entry.fluid_ml} mL
+                    </Text>
+                    <Text style={styles.entryTime}>
+                      • {entry.creation ? new Date(entry.creation).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'N/A'}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.deleteButton}
+                    onPress={() => entry.name && handleDeleteEntry(entry.name)}
+                    disabled={loading}
+                  >
+                    <Icon name="trash-outline" size={20} color="#ef4444" />
+                    <Text style={styles.deleteText}>Delete</Text>
+                  </TouchableOpacity>
                 </View>
-                <TouchableOpacity style={styles.deleteButton}>
-                  <Icon name="trash-outline" size={20} color="#ef4444" />
-                  <Text style={styles.deleteText}>Delete</Text>
-                </TouchableOpacity>
-              </View>
-            ))}
+              ))
+            ) : (
+              <Text style={styles.noEntriesText}>
+                {loading ? 'Loading entries...' : 'No entries found. Add your first entry!'}
+              </Text>
+            )}
           </View>
 
           {/* Tip */}
@@ -258,11 +428,25 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 16,
+    flex: 1,
+  },
+  updateButton: {
+    backgroundColor: '#3b82f6',
+    marginRight: 8,
+  },
+  cancelButton: {
+    backgroundColor: '#ef4444',
+    marginLeft: 8,
   },
   addButtonText: {
     fontSize: 16,
     fontWeight: '600',
     color: '#fff',
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 16,
   },
   entriesSection: {
     marginBottom: 16,
@@ -338,6 +522,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#78350f',
     lineHeight: 18,
+  },
+  noEntriesText: {
+    textAlign: 'center',
+    fontSize: 14,
+    color: '#6b7280',
+    paddingVertical: 20,
   },
 });
 

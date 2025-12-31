@@ -8,12 +8,20 @@ import {
   TouchableOpacity,
   TextInput,
   SafeAreaView,
+  Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import {useNavigation} from '@react-navigation/native';
+import {useNavigation, useRoute} from '@react-navigation/native';
+import { useSelector, useDispatch } from 'react-redux';
+import { addMeldCalculator } from './slices/meldSlice';
+import { RootState, AppDispatch } from '../../redux/store';
+import { MeldCalculatorPayload } from './slices/meldSlice';
 
 const MELDDataEntryScreen = () => {
   const navigation = useNavigation();
+  const dispatch: AppDispatch = useDispatch();
+  const { loading: meldLoading, error: meldError } = useSelector((state: RootState) => state.meld);
+  
   const [bilirubin, setBilirubin] = useState('');
   const [inr, setInr] = useState('');
   const [creatinine, setCreatinine] = useState('');
@@ -21,6 +29,46 @@ const MELDDataEntryScreen = () => {
   const [albumin, setAlbumin] = useState('');
   const [sex, setSex] = useState('Male');
   const [dialysis, setDialysis] = useState('No');
+  const [notes, setNotes] = useState('');
+
+  const handleSaveAndRecalculate = () => {
+    // Validate required fields
+    if (!bilirubin || !inr || !creatinine) {
+      Alert.alert('Validation Error', 'Please enter required fields: Bilirubin, INR, and Creatinine');
+      return;
+    }
+
+    // Prepare the payload for the API call
+    const meldData = {
+      serum_creatinine: parseFloat(creatinine),
+      serum_sodium: parseFloat(sodium) || 135, // Default to 135 if not provided
+      total_bilirubin: parseFloat(bilirubin),
+      inr: parseFloat(inr),
+      albumin: parseFloat(albumin) || 4.0, // Default to 4.0 if not provided
+      sex_at_birth: sex,
+      on_dialysis: dialysis === 'Yes' ? 1 : 0,
+      notes: notes || 'Manual entry',
+      // Add other optional fields if needed
+      // ammonia: parseFloat(ammonia) || undefined,
+      // hemoglobin: parseFloat(hemoglobin) || undefined,
+      // platelet_count: parseFloat(platelet_count) || undefined,
+    };
+
+    // Dispatch the API call
+    dispatch(addMeldCalculator(meldData))
+      .unwrap()
+      .then((result: MeldCalculatorPayload) => {
+        console.log('MELD calculation successful:', result);
+        // Navigate to success screen or show results
+        // Adjust navigation as needed - using a generic navigation for now
+        // navigation.navigate('MeldTrendScreen'); // Adjust navigation as needed
+        Alert.alert('Success', 'MELD calculation completed successfully');
+      })
+      .catch((error: any) => {
+        console.error('MELD calculation failed:', error);
+        Alert.alert('Error', 'Failed to calculate MELD score: ' + error.message);
+      });
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -237,6 +285,8 @@ const MELDDataEntryScreen = () => {
               </View>
               <TextInput
                 style={styles.notesInput}
+                value={notes}
+                onChangeText={setNotes}
                 placeholder="Add context for this lab set"
                 multiline
                 numberOfLines={3}
@@ -267,8 +317,14 @@ const MELDDataEntryScreen = () => {
             <TouchableOpacity style={styles.clearButton}>
               <Text style={styles.clearText}>Clear</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.saveButton}>
-              <Text style={styles.saveText}>Save & Recalculate</Text>
+            <TouchableOpacity 
+              style={styles.saveButton} 
+              onPress={handleSaveAndRecalculate}
+              disabled={meldLoading}
+            >
+              <Text style={styles.saveText}>
+                {meldLoading ? 'Saving...' : 'Save & Recalculate'}
+              </Text>
             </TouchableOpacity>
           </View>
 

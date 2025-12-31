@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TextInput, View, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { TextInput, View, StyleSheet, Text, TouchableOpacity, KeyboardType } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const CommonTextInput = ({
@@ -12,7 +12,20 @@ const CommonTextInput = ({
   borderColor = '#ccc',
   radius = 10,
   padding = 12,
-  style
+  style,
+  suffixText
+}: {
+  label?: string;
+  placeholder?: string;
+  value?: string;
+  onChangeText?: (text: string) => void;
+  secureTextEntry?: boolean;
+  keyboardType?: 'default' | 'email-address' | 'numeric' | 'phone-pad' | 'url' | 'number-pad' | 'decimal-pad';
+  borderColor?: string;
+  radius?: number;
+  padding?: number;
+  style?: any;
+  suffixText?: string;
 }) => {
 
   const [hide, setHide] = useState(secureTextEntry);
@@ -38,6 +51,8 @@ const CommonTextInput = ({
           secureTextEntry={hide}
           keyboardType={keyboardType}
         />
+        
+        {suffixText && <Text style={styles.suffixText}>{suffixText}</Text>}
 
         {/* 👁️ Eye Icon */}
         {secureTextEntry && (
@@ -71,6 +86,12 @@ const styles = StyleSheet.create({
     // paddingVertical: 10,
     fontSize: 16,
     color: '#000',
+  },
+  suffixText: {
+    fontSize: 16,
+    color: '#000',
+    marginLeft: 8,
+    alignSelf: 'center',
   },
 });
 

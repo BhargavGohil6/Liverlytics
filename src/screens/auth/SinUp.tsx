@@ -3,13 +3,20 @@ import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import responsive from '../../theme/responsive';
 import CommonButton from '../../components/CommonButton';
 import CommonTextInput from '../../components/CommonTextInput';
+import CommonDropdown from '../../components/CommonDropdown';
+import CountryPicker from '../../components/CountryPicker';
 import { useDispatch,useSelector } from 'react-redux';
+import { RootState, AppDispatch } from '../../redux/store';
 import Toast from 'react-native-toast-message';
 import {registerUser} from './slices/authSlice'
 
 
 
-export default function SinUp({ navigation }) {
+type SignUpProps = {
+  navigation: any;
+};
+
+export default function SinUp({ navigation }: SignUpProps) {
   const dispatch = useDispatch<AppDispatch>();
   const { loading, error } = useSelector((state: RootState) => state.auth);
   const [form, setForm] = useState({
@@ -17,10 +24,12 @@ export default function SinUp({ navigation }) {
     email: '',
     password: '',
     confirmPassword: '',
+    gender_custom: '',
+    country_code: '',
   });
   const handleRegister = async () => {
     // Basic validation
-    if (!form.full_name || !form.email || !form.password) {
+    if (!form.full_name || !form.email || !form.password || !form.gender_custom || !form.country_code) {
       // Alert.alert('Error', 'Please fill all fields');
       Toast.show({
         type: 'error',
@@ -65,6 +74,8 @@ export default function SinUp({ navigation }) {
         email: form.email.trim(),
         full_name: form.full_name.trim(),
         password: form.password,
+        country_code: form.country_code,
+        gender_custom: form.gender_custom,
       })
     );
 
@@ -95,18 +106,21 @@ export default function SinUp({ navigation }) {
       <CommonTextInput
         placeholder="Full Name"
         label={'Full Name'}
+        value={form.full_name}
         onChangeText={(text) => setForm({ ...form, full_name: text })}
         style={styles.textInput}
       />
       <CommonTextInput
         placeholder="Email Address"
         label={'Email Address'}
+        value={form.email}
         onChangeText={(text) => setForm({ ...form, email: text })}
         style={styles.textInput}
       />
       <CommonTextInput
         placeholder="Password"
         label={'Password'}
+        value={form.password}
         onChangeText={(text) => setForm({ ...form, password: text })}
         style={styles.textInput}
         secureTextEntry
@@ -114,9 +128,25 @@ export default function SinUp({ navigation }) {
       <CommonTextInput
         placeholder="Confirm Password"
         label={'Confirm Password'}
+        value={form.confirmPassword}
         onChangeText={(text) => setForm({ ...form, confirmPassword: text })}
         style={styles.textInput}
         secureTextEntry
+      />
+      <CommonDropdown
+        label="Gender"
+        placeholder="Select Gender"
+        value={form.gender_custom}
+        options={[{ label: 'Male', value: 'Male' }, { label: 'Female', value: 'Female' }, { label: 'Other', value: 'Other' }]}
+        onValueChange={(value) => setForm({ ...form, gender_custom: value })}
+        style={styles.textInput}
+      />
+      <CountryPicker
+        label="Country"
+        placeholder="Select Country"
+        value={form.country_code}
+        onValueChange={(value) => setForm({ ...form, country_code: value })}
+        style={styles.textInput}
       />
       <CommonButton
         title="Create Account"

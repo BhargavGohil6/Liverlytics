@@ -2,7 +2,7 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosError } from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import { store } from '../../redux/store';
-import { logout, setCredentials } from '../../screens/auth/slices/authSlice';
+import { logout } from '../../screens/auth/slices/authSlice';
 
 import { BASE_URL } from './url';
 
@@ -23,10 +23,12 @@ const DEFAULT_API_SECRET = '96b6b5699febb74';
 api.interceptors.request.use(
   async (config: InternalAxiosRequestConfig): Promise<InternalAxiosRequestConfig> => {
     const state = store.getState();
-    const { apiKey, apiSecret } = state.auth;
+    const { apiKey, apiSecret, token } = state.auth;
 
-    // Use user-specific tokens if available, otherwise use default tokens
-    if (apiKey && apiSecret && config.headers) {
+    // Use user-specific token if available, otherwise use default tokens
+    if (token && config.headers) {
+      config.headers.Authorization = token;
+    } else if (apiKey && apiSecret && config.headers) {
       config.headers.Authorization = `token ${apiKey}:${apiSecret}`;
     } else if (config.headers) {
       // Use default tokens for initial authentication

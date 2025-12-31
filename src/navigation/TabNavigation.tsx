@@ -3,13 +3,15 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Home, BarChart3, Bell, User, Heart } from 'lucide-react-native';
 import Dashboard from '../screens/dashboard/dashboard';
-import ReportsMainScreen from '../screens/newscreens/ReportsMainScreen';
-import RemindersAlertsScreen from '../screens/newscreens/RemindersAlertsScreen';
-import ProfileMainScreen from '../screens/newscreens/ProfileMainScreen';
+import ReportsMainScreen from '../screens/reports/ReportsMainScreen';
+import RemindersAlertsScreen from '../screens/reminders/RemindersAlertsScreen';
+import ProfileMainScreen from '../screens/profile/ProfileMainScreen';
 import VitalsStackNavigation from './VitalsStackNavigation';
 import { colors, font } from '../theme/index';
 import responsive from '../theme/responsive';
-
+import UploadedLabReportsScreen from "../screens/reports/UploadedLabReportsScreen"
+import ViewLabReports from "../screens/reports/ViewLabreports";
+import MELDDataEntryScreen from "../screens/meld-calculator/MELDDataEntryScreen";
 
 
 const Tab = createBottomTabNavigator();
@@ -83,6 +85,33 @@ export default function TabNavigation() {
         }}
       />
       
+      <Tab.Screen
+        name="UploadedLabReports"
+        component={UploadedLabReportsScreen}
+        options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: 'none' },
+          headerShown: false,
+        }}
+      />
+      <Tab.Screen
+        name="ViewLabReports"
+        component={ViewLabReports}
+        options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: 'none' },
+          headerShown: false,
+        }}
+      />
+      <Tab.Screen
+        name="MELDDataEntryScreen"
+        component={MELDDataEntryScreen}
+        options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: 'none' },
+          headerShown: false,
+        }}
+      />
     </Tab.Navigator>
   );
 }

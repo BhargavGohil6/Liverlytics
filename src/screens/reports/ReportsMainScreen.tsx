@@ -124,24 +124,7 @@ const ReportsMainScreen = ({ navigation }) => {
         </View>
         
       </ScrollView>
-      <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem}>
-          <Home size={24} color="#999" />
-          <Text style={styles.navText}>Home</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={()=>navigation.navigate('ReportsMainScreen')}>
-          <BarChart3 size={24} color="#52ab3c" />
-          <Text style={[styles.navText, styles.navTextActive]}>Reports</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={()=>navigation.navigate('RemindersAlertsScreen')}>
-          <Bell size={24} color="#999" />
-          <Text style={styles.navText}>Reminders</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={()=>navigation.navigate('ProfileMainScreen')}>
-          <User size={24} color="#999" />
-          <Text style={styles.navText}>Profile</Text>
-        </TouchableOpacity>
-      </View>
+     
     </SafeAreaView>
   );
 };

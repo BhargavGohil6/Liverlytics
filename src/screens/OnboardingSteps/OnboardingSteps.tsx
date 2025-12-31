@@ -52,7 +52,7 @@ const slides = [
   },
   {
     id: '3',
-    title: 'Connect Your Data',
+    title: 'AI Assistance Consent',
     content: 'AIConsent',
     nextButtonText: 'Next',
   },
@@ -70,31 +70,7 @@ const slides = [
   },
 ];
 
-// 5. Mock Other Screens (to satisfy FlatList data)
-const ProfileScreen = () => (
-  <View style={styles.slideContent}>
-    <Text style={styles.contentTitle}>Profile Setup Content</Text>
-    <Text>This is step 2.</Text>
-  </View>
-);
-const ConnectScreen = () => (
-  <View style={styles.slideContent}>
-    <Text style={styles.contentTitle}>Connect Data Content</Text>
-    <Text>This is step 3.</Text>
-  </View>
-);
-const GoalScreen = () => (
-  <View style={styles.slideContent}>
-    <Text style={styles.contentTitle}>Goal Setting Content</Text>
-    <Text>This is step 4.</Text>
-  </View>
-);
-const FinalScreen = () => (
-  <View style={styles.slideContent}>
-    <Text style={styles.contentTitle}>Final Welcome Content</Text>
-    <Text>This is step 5. Click Get Started.</Text>
-  </View>
-);
+
 
 // 6. Content Component Mapping
 const contentComponents = {
@@ -108,7 +84,7 @@ const contentComponents = {
 // --- Main Component ---
 export default function OnboardingSteps() {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const flatListRef = useRef(null);
+  const flatListRef = useRef<FlatList>(null);
   const dispatch = useDispatch();
   const { submitting } = useSelector((state: any) => state.onboarding);
   const submitting1 = useSelector((state: any) =>
@@ -126,15 +102,17 @@ export default function OnboardingSteps() {
     }
   }, [startIndex]);
   // Redux Agreement status
-  const { privacyAccepted, termsAccepted, medicalAccepted } = useSelector(
+  const { privacyAccepted, termsAccepted, medicalAccepted, aiConsentOption } = useSelector(
     (state: any) => state.onboarding,
   );
 
   const allAgreementsAccepted =
     privacyAccepted && termsAccepted && medicalAccepted;
+  
+  const aiConsentSelected = aiConsentOption !== null && aiConsentOption !== undefined;
 
   // FlatList viewability logic
-  const handleViewableItemsChanged = useRef(({ viewableItems }) => {
+  const handleViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: Array<any> }) => {
     if (viewableItems.length > 0) {
       setCurrentIndex(viewableItems[0].index);
     }
@@ -172,6 +150,12 @@ export default function OnboardingSteps() {
       Toast.show({ type: 'error', text1: 'Please accept all agreements' });
       return;
     }
+    
+    // Check if we're on the AI consent screen (index 2) and user hasn't selected an option
+    if (currentIndex === 2 && !aiConsentSelected) {
+      Toast.show({ type: 'error', text1: 'Please select an AI consent option' });
+      return;
+    }
 
     if (currentIndex < slides.length - 1) {
       flatListRef.current?.scrollToIndex({ index: currentIndex + 1 });
@@ -205,7 +189,7 @@ export default function OnboardingSteps() {
   };
 
   // Step Indicator Component (moved inside to be self-contained)
-  const StepIndicator = ({ currentStep, totalSteps }) => {
+  const StepIndicator = ({ currentStep, totalSteps }: { currentStep: number; totalSteps: number }) => {
     const currentSlide = slides[currentIndex];
 
     return (
@@ -240,7 +224,7 @@ export default function OnboardingSteps() {
   };
 
   // FlatList Item Renderer
-  const renderItem = ({ item }) => {
+  const renderItem = ({ item }: { item: any }) => {
     const ContentComponent = contentComponents[item.content];
 
     return (
@@ -313,29 +297,46 @@ export default function OnboardingSteps() {
       {/* Next Button and Disclaimer */}
       <View
         style={{
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          width: responsive.width(300),
+          width: '100%',
+          alignItems: 'center',
           marginTop: 20,
-          gap: 20,
+          paddingHorizontal: 20,
         }}
       >
-        {currentIndex > 0 ? (
-          <TouchableOpacity
-            onPress={scrollToPrevious}
-            style={styles.navButton}
-          >
-            <Text style={{ fontSize: 16, color: '#333' }}>Previous</Text>
-          </TouchableOpacity>
+        {currentIndex === 4 ? ( // On the Allset screen (index 4), show only the next button centered
+          <CommonButton
+            onPress={scrollToNext}
+            style={styles.fullWidthButton}
+            title={slides[currentIndex].nextButtonText}
+            disabled={submitting}
+          />
         ) : (
-          <View style={{ width: responsive.width(150) }} /> // align fix for first screen
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              width: responsive.width(300),
+              gap: 20,
+            }}
+          >
+            {currentIndex > 0 ? (
+              <TouchableOpacity
+                onPress={scrollToPrevious}
+                style={styles.navButton}
+              >
+                <Text style={{ fontSize: 16, color: '#333' }}>Previous</Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={{ width: responsive.width(150) }} /> // align fix for first screen
+            )}
+            <CommonButton
+              onPress={scrollToNext}
+              style={styles.navButton}
+              title={slides[currentIndex].nextButtonText}
+              disabled={submitting}
+            />
+          </View>
         )}
-        <CommonButton
-          onPress={scrollToNext}
-          style={styles.navButton}
-          title={slides[currentIndex].nextButtonText}
-          disabled={submitting}
-        />
       </View>
       <Text style={styles.disclaimer}>
         This app does NOT replace professional medical care.
@@ -378,6 +379,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     height: responsive.height(40),
+  },
+  fullWidthButton: {
+    width: '85%', // Make it full width but with some margin
+    alignSelf: 'center',
+    marginHorizontal: '7.5%', // Center the button with equal margins
   },
   image: {
     width: responsive.width(200),

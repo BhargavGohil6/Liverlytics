@@ -95,28 +95,13 @@ const AIConsent = () => {
   return (
     <ScrollView>
       <View style={styles.headingContainer}>
-        <Text style={styles.heading}>AI Assistance Consent</Text>
+        {/* <Text style={styles.heading}>AI Assistance Consent</Text> */}
         <Text style={styles.description}>
           AI helps interpret your vitals and lab reports. Processing happens
           on-device for privacy. Cloud processing is only used if you opt in.
         </Text>
       </View>
-      <View style={styles.container}>
-        <View style={styles.subcontainer}>
-          <Icon name="brain" size={30} />
-          <Text style={styles.subtitle}>
-            Smarter insights from trends in steps, heart rate, sleep, weight,
-            and labs.
-          </Text>
-        </View>
-        <View style={styles.subcontainer}>
-          <Icon1 name="shield" size={30} />
-          <Text style={styles.subtitle}>
-            Smarter insights from trends in steps, heart rate, sleep, weight,
-            and labs.
-          </Text>
-        </View>
-      </View>
+     
       <RadioButton
         radioButtons={radioButtons.map(btn => ({
           id: btn.id,

@@ -3,6 +3,9 @@ import authReducer from '../screens/auth/slices/authSlice';
 import onboardingReducer from '../screens/OnboardingSteps/slices/onboardingSlice';
 import dashboardReducer from '../screens/dashboard/slices/DashboardSlices';
 import vitalsReducer from '../screens/vitals/slices/vitalsSlice';
+import dietReducer from '../screens/diet/slices/dietSlice';
+import reportReducer from '../screens/reports/slices/reportSlice';
+import meldReducer from '../screens/meld-calculator/slices/meldSlice';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { persistReducer, persistStore } from 'redux-persist';
@@ -18,6 +21,9 @@ const rootReducer = combineReducers({
   onboarding: onboardingReducer,
   dashboard: dashboardReducer,
   vitals: vitalsReducer,
+  diet: dietReducer,
+  reports: reportReducer,
+  meld: meldReducer,
 });
 const persistedReducer = persistReducer(persistConfig, rootReducer);
 
