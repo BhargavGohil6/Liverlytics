@@ -13,6 +13,7 @@ export interface LoginCredentials {
 export interface User {
   email: string;
   full_name: string;
+  gender_custom?: string;
 }
 
 export interface AuthState {
@@ -25,6 +26,7 @@ export interface AuthState {
   error: string | null;
   onboardingCompleted: boolean;
   login: boolean | null;
+  gender_custom?: string;
 }
 
 // Using the shared API client instead of direct axios call
@@ -123,6 +125,7 @@ const authSlice = createSlice({
     error: null,
     onboardingCompleted: false,
      login: false,
+    gender_custom: undefined,
   } as AuthState,
 
   reducers: {
@@ -173,8 +176,10 @@ const authSlice = createSlice({
         state.user = {
           email: userData.email || msg.user || '',
           full_name: userData.full_name || userData.first_name || 'User',
+          gender_custom: msg.gender_custom,
         };
 
+        state.gender_custom = msg.gender_custom;
         state.sid = msg.sid;
         // Extract token from response, fallback to hardcoded if not provided
         state.token = msg.token || `token ${msg.api_key || '72b96de8ae8c469'}:${msg.api_secret || msg.sid}`;
@@ -206,7 +211,9 @@ const authSlice = createSlice({
         state.user = {
           email: msg.user || msg.email, // ya jo bhi backend bhejta ho
           full_name: action.payload.full_name || 'User',
+          gender_custom: msg.gender_custom,
         };
+        state.gender_custom = msg.gender_custom;
         state.sid = msg.sid;
         // Extract token from response, fallback to hardcoded if not provided
         state.token = msg.token || `token ${msg.api_key || '72b96de8ae8c469'}:${msg.api_secret || msg.sid}`;

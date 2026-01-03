@@ -1,5 +1,5 @@
 // src/screens/ExerciseHistoryScreen.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,24 +8,59 @@ import {
   TouchableOpacity,
   Dimensions,
   SafeAreaView,
+  StyleProp,
+  ViewStyle,
+  TextStyle,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { LineChart } from 'react-native-chart-kit';
-
+import { useSelector, useDispatch } from 'react-redux';
+import type { AppDispatch } from '../../redux/store';
+import responsive from '../../theme/responsive';
+import colors from '../../theme/color';
+import CommonLoader from '../../components/CommonLoader';
+import { getExerciseHistory } from './slices/exerciseSlice';
 
 const { width } = Dimensions.get('window');
 
-const ExerciseHistoryScreen = ({ navigation }) => {
-  const [selectedTab, setSelectedTab] = useState('All');
-  const [selectedPeriod, setSelectedPeriod] = useState('This Week');
+type ExerciseHistoryScreenProps = {
+  navigation: any; // Using 'any' for navigation as per project patterns
+};
 
-  const logs = [
-    { date: '14 Jan 2025', steps: 7842, sleep: '8h 20m', rhr: 68, synced: true },
-    { date: '13 Jan 2025', steps: 6420, sleep: '6h 50m', rhr: 66, synced: false },
-    { date: '12 Jan 2025', steps: 8120, sleep: '7h 05m', rhr: 65, synced: true },
-    { date: '11 Jan 2025', steps: 5940, sleep: '5h 40m', rhr: 69, synced: true },
-    { date: '10 Jan 2025', steps: 9010, sleep: '7h 30m', rhr: 64, synced: true },
-  ];
+const ExerciseHistoryScreen = ({ navigation }: ExerciseHistoryScreenProps) => {
+  const dispatch: AppDispatch = useDispatch();
+  const { history, historyLoading, historyError } = useSelector((state: any) => state.exercise);
+  
+  const [selectedTab, setSelectedTab] = useState<string>('All');
+  const [selectedPeriod, setSelectedPeriod] = useState<string>('This Week');
+
+  interface LogEntry {
+    date: string;
+    steps: number;
+    sleep: string;
+    rhr: number;
+    synced: boolean;
+  }
+
+  const convertMinutesToHours = (minutes: number): string => {
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    return `${hours}h ${remainingMinutes}m`;
+  };
+
+  useEffect(() => {
+    // Fetch exercise history from API via Redux
+    dispatch(getExerciseHistory());
+  }, [dispatch]);
+
+  // Transform API data to match UI format
+  const logs: LogEntry[] = history && Array.isArray(history) ? history.map((item: any) => ({
+    date: item.creation ? new Date(item.creation).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Unknown',
+    steps: parseInt(item.steps) || 0,
+    sleep: convertMinutesToHours(parseInt(item.sleep_minutes) || 0),
+    rhr: parseInt(item.resting_hr) || 0,
+    synced: true, // Assuming all API data is synced
+  })) : [];
 
   return (
     <SafeAreaView style={styles.container}>
@@ -35,11 +70,11 @@ const ExerciseHistoryScreen = ({ navigation }) => {
 
         {/* Title */}
         <View style={styles.titleSection}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Icon name="arrow-back" size={24} color="#333" />
+          <TouchableOpacity onPress={() => navigation.goBack()} accessibilityLabel="Go back" accessibilityRole="button">
+            <Icon name="arrow-back" size={24} color={colors.darkGray} />
           </TouchableOpacity>
           <View style={styles.titleContent}>
-            <Text style={styles.title}>Exercise History</Text>
+            <Text style={styles.title} accessibilityRole="header">Exercise History</Text>
             <Text style={styles.subtitle}>
               View your steps, sleep, and resting heart rate trends over time.
             </Text>
@@ -77,27 +112,27 @@ const ExerciseHistoryScreen = ({ navigation }) => {
         {/* Trends Chart */}
         <View style={styles.chartCard}>
           <View style={styles.chartHeader}>
-            <Icon name="trending-up-outline" size={20} color="#333" />
+            <Icon name="trending-up-outline" size={20} color={colors.darkGray} />
             <Text style={styles.chartTitle}>Trends</Text>
           </View>
           <View style={styles.chartTabs}>
             {['Steps', 'Sleep', 'Resting HR'].map((tab) => (
-              <TouchableOpacity key={tab} style={styles.chartTab}>
+              <TouchableOpacity accessibilityRole="button" key={tab} style={styles.chartTab}>
                 <Text style={styles.chartTabText}>{tab}</Text>
               </TouchableOpacity>
             ))}
           </View>
           <View style={styles.chartLegend}>
             <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: '#333' }]} />
+              <View style={[styles.legendDot, { backgroundColor: colors.darkGray }]} />
               <Text style={styles.legendText}>Steps</Text>
             </View>
             <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: '#9ca3af' }]} />
+              <View style={[styles.legendDot, { backgroundColor: colors.coolGray }]} />
               <Text style={styles.legendText}>Sleep</Text>
             </View>
             <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: '#d1d5db' }]} />
+              <View style={[styles.legendDot, { backgroundColor: colors.gray200 }]} />
               <Text style={styles.legendText}>RHR</Text>
             </View>
           </View>
@@ -106,15 +141,15 @@ const ExerciseHistoryScreen = ({ navigation }) => {
               labels: ['', '', '', '', '', '', ''],
               datasets: [{ data: [5, 7, 6, 8, 7, 9, 8] }],
             }}
-            width={width - 64}
-            height={180}
+            width={width - responsive.width(64)}
+            height={responsive.height(180)}
             chartConfig={{
-              backgroundColor: '#fff',
-              backgroundGradientFrom: '#fff',
-              backgroundGradientTo: '#fff',
+              backgroundColor: colors.white,
+              backgroundGradientFrom: colors.white,
+              backgroundGradientTo: colors.white,
               decimalPlaces: 0,
-              color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-              style: { borderRadius: 16 },
+              color: (opacity = 1) => `${colors.black}00`.replace('00', Math.round(opacity * 255).toString(16).padStart(2, '0')),
+              style: { borderRadius: responsive.borderRadius(16) },
             }}
             bezier
             withDots={true}
@@ -140,7 +175,7 @@ const ExerciseHistoryScreen = ({ navigation }) => {
         {/* AI Insights */}
         <View style={styles.insightsCard}>
           <View style={styles.insightsHeader}>
-            <Icon name="sparkles" size={20} color="#fff" />
+            <Icon name="sparkles" size={20} color={colors.white} />
             <Text style={styles.insightsTitle}>AI Activity Insights</Text>
           </View>
           <View style={styles.insightItem}>
@@ -163,15 +198,25 @@ const ExerciseHistoryScreen = ({ navigation }) => {
           </View>
         </View>
 
+        {/* Error message */}
+        {historyError && (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{historyError}</Text>
+          </View>
+        )}
+
+        {/* Loading state */}
+        {historyLoading && <CommonLoader visible={true} message="Loading exercise history..." />}
+
         {/* Logs */}
         <View style={styles.logsSection}>
           <View style={styles.logsHeader}>
-            <Icon name="list-outline" size={20} color="#333" />
+            <Icon name="list-outline" size={20} color={colors.darkGray} />
             <Text style={styles.logsTitle}>Logs</Text>
             <Text style={styles.logsSubtitle}>Chronological • Most recent first</Text>
           </View>
 
-          {logs.map((log, index) => (
+          {!historyLoading && logs.length > 0 && logs.map((log, index) => (
             <View key={index} style={styles.logCard}>
               <View style={styles.logHeader}>
                 <Text style={styles.logDate}>{log.date}</Text>
@@ -182,21 +227,26 @@ const ExerciseHistoryScreen = ({ navigation }) => {
                 <Text style={styles.logStat}>Sleep: {log.sleep}</Text>
                 <Text style={styles.logStat}>RHR: {log.rhr} bpm</Text>
               </View>
-              <TouchableOpacity style={styles.expandButton}>
+              <TouchableOpacity accessibilityRole="button" style={styles.expandButton}>
                 <Text style={styles.expandText}>Tap to expand</Text>
               </TouchableOpacity>
             </View>
           ))}
+          {!historyLoading && history && history.length === 0 && (
+            <View style={styles.noDataContainer}>
+              <Text style={styles.noDataText}>No exercise history found</Text>
+            </View>
+          )}
         </View>
 
         {/* Download Buttons */}
         <View style={styles.downloadSection}>
-          <TouchableOpacity style={styles.downloadButton}>
-            <Icon name="document-outline" size={20} color="#333" />
+          <TouchableOpacity style={styles.downloadButton} accessibilityLabel="Download CSV" accessibilityRole="button">
+            <Icon name="document-outline" size={20} color={colors.darkGray} />
             <Text style={styles.downloadText}>Download CSV</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.downloadButtonPrimary}>
-            <Icon name="document-text-outline" size={20} color="#fff" />
+          <TouchableOpacity style={styles.downloadButtonPrimary} accessibilityLabel="Download PDF Report" accessibilityRole="button">
+            <Icon name="document-text-outline" size={20} color={colors.white} />
             <Text style={styles.downloadTextPrimary}>Download PDF Report</Text>
           </TouchableOpacity>
         </View>
@@ -208,13 +258,13 @@ const ExerciseHistoryScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.gray100,
   },
   header: {
-    backgroundColor: '#fff',
-    padding: 16,
+    backgroundColor: colors.white,
+    padding: responsive.padding(16),
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: colors.gray200,
   },
   logoContainer: {
     flexDirection: 'row',
@@ -223,290 +273,310 @@ const styles = StyleSheet.create({
   logo: {
     width: 40,
     height: 40,
-    backgroundColor: '#52a64a',
-    borderRadius: 8,
+    backgroundColor: colors.primary,
+    borderRadius: responsive.borderRadius(8),
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: responsive.margin(12),
   },
   logoText: {
-    fontSize: 20,
+    fontSize: responsive.fontSize(20),
     fontWeight: '600',
-    color: '#1f2937',
+    color: colors.darkGray,
   },
   titleSection: {
     flexDirection: 'row',
-    padding: 16,
-    backgroundColor: '#fff',
+    padding: responsive.padding(16),
+    backgroundColor: colors.white,
     alignItems: 'flex-start',
   },
   titleContent: {
-    marginLeft: 16,
+    marginLeft: responsive.margin(16),
     flex: 1,
   },
   title: {
-    fontSize: 24,
+    fontSize: responsive.fontSize(24),
     fontWeight: '700',
-    color: '#1f2937',
-    marginBottom: 4,
+    color: colors.darkGray,
+    marginBottom: responsive.margin(4),
   },
   subtitle: {
-    fontSize: 14,
-    color: '#6b7280',
-    lineHeight: 20,
+    fontSize: responsive.fontSize(14),
+    color: colors.coolGray,
+    lineHeight: responsive.height(20),
   },
   tabsContainer: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
-    paddingHorizontal: 16,
-    paddingTop: 16,
+    backgroundColor: colors.white,
+    paddingHorizontal: responsive.padding(16),
+    paddingTop: responsive.padding(16),
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: colors.gray200,
   },
   tab: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    marginRight: 8,
+    paddingVertical: responsive.padding(12),
+    paddingHorizontal: responsive.padding(16),
+    marginRight: responsive.margin(8),
     borderBottomWidth: 2,
     borderBottomColor: 'transparent',
   },
   tabActive: {
-    borderBottomColor: '#52a64a',
+    borderBottomColor: colors.primary,
   },
   tabText: {
-    fontSize: 15,
-    color: '#6b7280',
+    fontSize: responsive.fontSize(15),
+    color: colors.coolGray,
     fontWeight: '500',
   },
   tabTextActive: {
-    color: '#52a64a',
+    color: colors.primary,
     fontWeight: '600',
   },
   periodContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    padding: 16,
-    backgroundColor: '#fff',
-    marginTop: 8,
+    padding: responsive.padding(16),
+    backgroundColor: colors.white,
+    marginTop: responsive.margin(8),
   },
   periodButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    marginRight: 8,
-    marginBottom: 8,
-    borderRadius: 6,
-    backgroundColor: '#f3f4f6',
+    paddingVertical: responsive.padding(8),
+    paddingHorizontal: responsive.padding(16),
+    marginRight: responsive.margin(8),
+    marginBottom: responsive.margin(8),
+    borderRadius: responsive.borderRadius(6),
+    backgroundColor: colors.gray100,
   },
   periodActive: {
-    backgroundColor: '#e5e7eb',
+    backgroundColor: colors.gray200,
   },
   periodText: {
-    fontSize: 13,
-    color: '#374151',
+    fontSize: responsive.fontSize(13),
+    color: colors.gray,
     fontWeight: '500',
   },
   chartCard: {
-    backgroundColor: '#fff',
-    margin: 16,
-    padding: 16,
-    borderRadius: 12,
+    backgroundColor: colors.white,
+    margin: responsive.margin(16),
+    padding: responsive.padding(16),
+    borderRadius: responsive.borderRadius(12),
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.gray200,
   },
   chartHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: responsive.margin(12),
   },
   chartTitle: {
-    fontSize: 18,
+    fontSize: responsive.fontSize(18),
     fontWeight: '600',
-    color: '#1f2937',
-    marginLeft: 8,
+    color: colors.darkGray,
+    marginLeft: responsive.margin(8),
   },
   chartTabs: {
     flexDirection: 'row',
-    marginBottom: 12,
+    marginBottom: responsive.margin(12),
   },
   chartTab: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    marginRight: 8,
-    borderRadius: 6,
-    backgroundColor: '#f3f4f6',
+    paddingVertical: responsive.padding(6),
+    paddingHorizontal: responsive.padding(12),
+    marginRight: responsive.margin(8),
+    borderRadius: responsive.borderRadius(6),
+    backgroundColor: colors.gray100,
   },
   chartTabText: {
-    fontSize: 13,
-    color: '#374151',
+    fontSize: responsive.fontSize(13),
+    color: colors.gray,
   },
   chartLegend: {
     flexDirection: 'row',
-    marginBottom: 12,
+    marginBottom: responsive.margin(12),
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: responsive.margin(16),
   },
   legendDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 6,
+    width: responsive.width(8),
+    height: responsive.height(8),
+    borderRadius: responsive.borderRadius(4),
+    marginRight: responsive.margin(6),
   },
   legendText: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: responsive.fontSize(12),
+    color: colors.coolGray,
   },
   chart: {
-    marginVertical: 8,
-    borderRadius: 8,
+    marginVertical: responsive.margin(8),
+    borderRadius: responsive.borderRadius(8),
   },
   trendStats: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 16,
+    marginTop: responsive.margin(16),
   },
   statItem: {
     flex: 1,
   },
   statLabel: {
-    fontSize: 12,
-    color: '#6b7280',
-    marginBottom: 4,
+    fontSize: responsive.fontSize(12),
+    color: colors.coolGray,
+    marginBottom: responsive.margin(4),
   },
   statValue: {
-    fontSize: 18,
+    fontSize: responsive.fontSize(18),
     fontWeight: '600',
-    color: '#52a64a',
+    color: colors.primary,
   },
   insightsCard: {
-    backgroundColor: '#0F7A6B',
-    margin: 16,
-    marginTop: 0,
-    padding: 16,
-    borderRadius: 12,
+    backgroundColor: colors.tealGreen,
+    margin: responsive.margin(16),
+    marginTop: responsive.margin(0),
+    padding: responsive.padding(16),
+    borderRadius: responsive.borderRadius(12),
   },
   insightsHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: responsive.margin(12),
   },
   insightsTitle: {
-    fontSize: 16,
+    fontSize: responsive.fontSize(16),
     fontWeight: '600',
-    color: '#fff',
-    marginLeft: 8,
+    color: colors.white,
+    marginLeft: responsive.margin(8),
   },
   insightItem: {
     flexDirection: 'row',
-    marginBottom: 8,
+    marginBottom: responsive.margin(8),
   },
   insightBullet: {
-    fontSize: 16,
-    color: '#fff',
-    marginRight: 8,
+    fontSize: responsive.fontSize(16),
+    color: colors.white,
+    marginRight: responsive.margin(8),
   },
   insightText: {
-    fontSize: 14,
-    color: '#fff',
+    fontSize: responsive.fontSize(14),
+    color: colors.white,
     flex: 1,
-    lineHeight: 20,
+    lineHeight: responsive.height(20),
   },
   logsSection: {
-    padding: 16,
+    padding: responsive.padding(16),
   },
   logsHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: responsive.margin(16),
   },
   logsTitle: {
-    fontSize: 18,
+    fontSize: responsive.fontSize(18),
     fontWeight: '600',
-    color: '#1f2937',
-    marginLeft: 8,
+    color: colors.darkGray,
+    marginLeft: responsive.margin(8),
   },
   logsSubtitle: {
-    fontSize: 13,
-    color: '#6b7280',
-    marginLeft: 8,
+    fontSize: responsive.fontSize(13),
+    color: colors.coolGray,
+    marginLeft: responsive.margin(8),
   },
   logCard: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
+    backgroundColor: colors.white,
+    padding: responsive.padding(16),
+    borderRadius: responsive.borderRadius(12),
+    marginBottom: responsive.margin(12),
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.gray200,
   },
   logHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: responsive.margin(12),
   },
   logDate: {
-    fontSize: 16,
+    fontSize: responsive.fontSize(16),
     fontWeight: '600',
-    color: '#1f2937',
+    color: colors.darkGray,
   },
   logStatus: {
-    fontSize: 13,
-    color: '#6b7280',
+    fontSize: responsive.fontSize(13),
+    color: colors.coolGray,
   },
   logStats: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: responsive.margin(8),
   },
   logStat: {
-    fontSize: 14,
-    color: '#374151',
+    fontSize: responsive.fontSize(14),
+    color: colors.gray,
   },
   expandButton: {
     alignItems: 'center',
-    paddingTop: 8,
+    paddingTop: responsive.padding(8),
   },
   expandText: {
-    fontSize: 13,
-    color: '#52a64a',
+    fontSize: responsive.fontSize(13),
+    color: colors.primary,
   },
   downloadSection: {
     flexDirection: 'row',
-    padding: 16,
-    gap: 12,
+    padding: responsive.padding(16),
+    gap: responsive.margin(12),
   },
   downloadButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fff',
-    paddingVertical: 12,
-    borderRadius: 8,
+    backgroundColor: colors.white,
+    paddingVertical: responsive.padding(12),
+    borderRadius: responsive.borderRadius(8),
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.gray200,
   },
   downloadText: {
-    fontSize: 15,
+    fontSize: responsive.fontSize(15),
     fontWeight: '600',
-    color: '#374151',
-    marginLeft: 8,
+    color: colors.gray,
+    marginLeft: responsive.margin(8),
   },
   downloadButtonPrimary: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#52a64a',
-    paddingVertical: 12,
-    borderRadius: 8,
+    backgroundColor: colors.primary,
+    paddingVertical: responsive.padding(12),
+    borderRadius: responsive.borderRadius(8),
   },
   downloadTextPrimary: {
-    fontSize: 15,
+    fontSize: responsive.fontSize(15),
     fontWeight: '600',
-    color: '#fff',
-    marginLeft: 8,
+    color: colors.white,
+    marginLeft: responsive.margin(8),
+  },
+  errorContainer: {
+    padding: responsive.padding(16),
+    backgroundColor: colors.softRed,
+    margin: responsive.margin(16),
+    borderRadius: responsive.borderRadius(8),
+  },
+  errorText: {
+    fontSize: responsive.fontSize(14),
+    color: colors.alertRed,
+    textAlign: 'center',
+  },
+  noDataContainer: {
+    padding: responsive.padding(16),
+    alignItems: 'center',
+  },
+  noDataText: {
+    fontSize: responsive.fontSize(16),
+    color: colors.coolGray,
+    textAlign: 'center',
   },
 });
 

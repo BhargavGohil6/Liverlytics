@@ -40,10 +40,18 @@ export const fetchDietEntryById = createAsyncThunk<
   DietApiResponse,
   string,
   { rejectValue: string }
->('diet/fetchDietEntryById', async (dietId, { rejectWithValue }) => {
+>('diet/fetchDietEntryById', async (dietId, { getState, rejectWithValue }) => {
   try {
+    const state: any = getState();
+    const userEmail = state.auth?.user?.email;
+    
+    if (!userEmail) {
+      return rejectWithValue('User email not found in auth state');
+    }
+    
     const payload = {
       diet_and_fluids_id: dietId,
+      user: userEmail,
     };
     
     const response = await api.post(
@@ -67,10 +75,22 @@ export const fetchDietEntries = createAsyncThunk<
   DietApiResponse,
   void,
   { rejectValue: string }
->('diet/fetchDietEntries', async (_, { rejectWithValue }) => {
+>('diet/fetchDietEntries', async (_, { getState, rejectWithValue }) => {
   try {
-    const response = await api.get(
-      '/cirrhosis_custom.cirrhosis_diet_fluids.get_diet'
+    const state: any = getState();
+    const userEmail = state.auth?.user?.email;
+    
+    if (!userEmail) {
+      return rejectWithValue('User email not found in auth state');
+    }
+    
+    const payload = {
+      user: userEmail,
+    };
+    
+    const response = await api.post(
+      '/cirrhosis_custom.cirrhosis_diet_fluids.get_diet',
+      payload
     );
     return response.data.message || response.data;
   } catch (error: any) {
@@ -310,7 +330,7 @@ const dietSlice = createSlice({
         state.error = null;
         state.success = false;
       })
-      .addCase(deleteDietEntry.fulfilled, (state, action: PayloadAction<DietApiResponse>) => {
+      .addCase(deleteDietEntry.fulfilled, (state, action) => {
         state.loading = false;
         state.success = true;
         // Remove the deleted entry from the data array

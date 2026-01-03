@@ -6,6 +6,7 @@ import vitalsReducer from '../screens/vitals/slices/vitalsSlice';
 import dietReducer from '../screens/diet/slices/dietSlice';
 import reportReducer from '../screens/reports/slices/reportSlice';
 import meldReducer from '../screens/meld-calculator/slices/meldSlice';
+import exerciseReducer from '../screens/exercises/slices/exerciseSlice';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { persistReducer, persistStore } from 'redux-persist';
@@ -24,6 +25,7 @@ const rootReducer = combineReducers({
   diet: dietReducer,
   reports: reportReducer,
   meld: meldReducer,
+  exercise: exerciseReducer,
 });
 const persistedReducer = persistReducer(persistConfig, rootReducer);
 
