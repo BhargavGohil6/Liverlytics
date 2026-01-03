@@ -12,44 +12,27 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import responsive from '../../../theme/responsive'; 
 import { useNavigation } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
+import { RootState } from '../../../redux/store';
 
 const LabParametersScreen = () => {
   const navigation = useNavigation<any>();
   
   const { labData: reduxLabData } = useSelector((state: any) => state.reports);
+  const { user } = useSelector((state: RootState) => state.auth);
   
   // Define the proper type for lab data
+  type LabParameter = {
+    value: string;
+    unit: string;
+    flag: string;
+  };
+  
   type LabData = {
-    bilirubin: { value: string; unit: string; flag: string };
-    inr: { value: string; unit: string; flag: string };
-    creatinine: { value: string; unit: string; flag: string };
-    sodium: { value: string; unit: string; flag: string };
-    albumin: { value: string; unit: string; flag: string };
-    sex: string;
-    ast: { value: string; unit: string; flag: string };
-    alt: { value: string; unit: string; flag: string };
-    platelet: { value: string; unit: string; flag: string };
-    hemoglobin: { value: string; unit: string; flag: string };
-    wbc: { value: string; unit: string; flag: string };
-    potassium: { value: string; unit: string; flag: string };
-    ammonia: { value: string; unit: string; flag: string };
-    onDialysis: string;
+    [key: string]: LabParameter | string;
   };
   
   const [labData, setLabData] = useState<LabData>({
-    bilirubin: { value: '1.8', unit: '1.8mg/dL', flag: '' },
-    inr: { value: '1.3', unit: '1.3 ratio', flag: 'high' },
-    creatinine: { value: '1.6', unit: '1.6mg/dL', flag: 'high' },
-    sodium: { value: '133', unit: '133mEq/L', flag: 'low' },
-    albumin: { value: '3.2', unit: '3.2g/dL', flag: 'low' },
-    sex: 'Female',
-    ast: { value: '62', unit: 'U/L', flag: 'high' },
-    alt: { value: '54', unit: 'U/L', flag: 'high' },
-    platelet: { value: '138', unit: '13810^9/L', flag: '' },
-    hemoglobin: { value: '11.9', unit: '11.9g/dL', flag: '' },
-    wbc: { value: '6.4', unit: '6.410^9/L', flag: '' },
-    potassium: { value: '4.0', unit: '4.0mEq/L', flag: '' },
-    ammonia: { value: '—', unit: '—µmol/L', flag: '' },
+    sex: user?.gender_custom || 'Female',
     onDialysis: 'Yes',
   });
   
@@ -58,74 +41,30 @@ const LabParametersScreen = () => {
       const medicalData = reduxLabData.medical_analysis.medical_data;
       
       // Map API response to our lab data format
-      const mappedLabData = {
-        bilirubin: {
-          value: medicalData['Bilirubin']?.value || '1.8',
-          unit: medicalData['Bilirubin']?.unit || 'mg/dL',
-          flag: getFlagValue(medicalData['Bilirubin'], medicalData['Bilirubin']?.normal_range),
-        },
-        inr: {
-          value: medicalData['INR']?.value || '1.3',
-          unit: medicalData['INR']?.unit || 'ratio',
-          flag: getFlagValue(medicalData['INR'], medicalData['INR']?.normal_range),
-        },
-        creatinine: {
-          value: medicalData['Creatinine']?.value || '1.6',
-          unit: medicalData['Creatinine']?.unit || 'mg/dL',
-          flag: getFlagValue(medicalData['Creatinine'], medicalData['Creatinine']?.normal_range),
-        },
-        sodium: {
-          value: medicalData['Sodium']?.value || '133',
-          unit: medicalData['Sodium']?.unit || 'mEq/L',
-          flag: getFlagValue(medicalData['Sodium'], medicalData['Sodium']?.normal_range),
-        },
-        albumin: {
-          value: medicalData['Albumin']?.value || '3.2',
-          unit: medicalData['Albumin']?.unit || 'g/dL',
-          flag: getFlagValue(medicalData['Albumin'], medicalData['Albumin']?.normal_range),
-        },
-        sex: 'Female', // Default value, can be updated if provided in API
-        ast: {
-          value: medicalData['AST']?.value || '62',
-          unit: medicalData['AST']?.unit || 'U/L',
-          flag: getFlagValue(medicalData['AST'], medicalData['AST']?.normal_range),
-        },
-        alt: {
-          value: medicalData['ALT']?.value || '54',
-          unit: medicalData['ALT']?.unit || 'U/L',
-          flag: getFlagValue(medicalData['ALT'], medicalData['ALT']?.normal_range),
-        },
-        platelet: {
-          value: medicalData['Platelet Count']?.value || '138',
-          unit: medicalData['Platelet Count']?.unit || '10^9/L',
-          flag: getFlagValue(medicalData['Platelet Count'], medicalData['Platelet Count']?.normal_range),
-        },
-        hemoglobin: {
-          value: medicalData['Hemoglobin']?.value || '11.9',
-          unit: medicalData['Hemoglobin']?.unit || 'g/dL',
-          flag: getFlagValue(medicalData['Hemoglobin'], medicalData['Hemoglobin']?.normal_range),
-        },
-        wbc: {
-          value: medicalData['WBC Count']?.value || '6.4',
-          unit: medicalData['WBC Count']?.unit || '10^9/L',
-          flag: getFlagValue(medicalData['WBC Count'], medicalData['WBC Count']?.normal_range),
-        },
-        potassium: {
-          value: medicalData['Potassium']?.value || '4.0',
-          unit: medicalData['Potassium']?.unit || 'mEq/L',
-          flag: getFlagValue(medicalData['Potassium'], medicalData['Potassium']?.normal_range),
-        },
-        ammonia: {
-          value: medicalData['Ammonia']?.value || '—',
-          unit: medicalData['Ammonia']?.unit || 'µmol/L',
-          flag: getFlagValue(medicalData['Ammonia'], medicalData['Ammonia']?.normal_range),
-        },
-        onDialysis: 'Yes', // Default value, can be updated if provided in API
-      };
+      const mappedLabData: LabData = {};
+      
+      // Map all parameters from medical_data
+      Object.keys(medicalData).forEach(key => {
+        mappedLabData[key] = {
+          value: medicalData[key]?.value || '',
+          unit: medicalData[key]?.unit || '',
+          flag: getFlagValue(medicalData[key], medicalData[key]?.normal_range),
+        };
+      });
+      
+      // Set default values for non-parameter fields
+      mappedLabData.sex = user?.gender_custom || 'Female'; // Use user's gender from auth
+      mappedLabData.onDialysis = 'Yes'; // Default value, can be updated if provided in API
       
       setLabData(mappedLabData);
+    } else if (user?.gender_custom && !reduxLabData) {
+      // If there's no redux lab data but we have user gender, set it
+      setLabData(prev => ({
+        ...prev,
+        sex: user.gender_custom || prev.sex || 'Female',
+      }));
     }
-  }, [reduxLabData]);
+  }, [reduxLabData, user]);
   
   // Helper function to determine flag based on normal range
   const getFlagValue = (data: any, normalRange: string | undefined) => {
@@ -154,22 +93,28 @@ const LabParametersScreen = () => {
         <Text style={styles.extractedValue}>
           {extracted}
           {flag && (
-            <View style={[styles.flagBadge, flag === 'high' ? styles.highBadge : styles.lowBadge]}>
-              <Text style={styles.flagText}>{flag}</Text>
+            <View style={[styles.flagBadge, flag === 'high' || flag === 'low' ? styles.abnormalBadge : (flag === 'high' ? styles.highBadge : styles.lowBadge)]}>
+              <Text style={[styles.flagText, (flag === 'high' || flag === 'low') && styles.abnormalFlagText]}>{flag}</Text>
             </View>
           )}
         </Text>
         {hasTest && <Text style={styles.testInfo}>+4 since last{'\n'}test</Text>}
       </View>
-      <Text style={styles.unitValue}>{unit}</Text>
+      <View style={styles.unitValueContainer}>
+              <Text style={styles.unitValueText}>
+                <Text style={styles.unitValueBold}>{extracted}</Text>
+                <Text style={styles.unitValueUnit}>{unit}</Text>
+              </Text>
+            </View>
     </View>
   );
 
   // Render parameter row from lab data
-  const renderLabDataRow = (label: string, paramKey: keyof LabData) => {
+  const renderLabDataRow = (label: string, paramKey: string) => {
     const paramData = labData[paramKey];
-    if (typeof paramData === 'object' && 'value' in paramData && 'unit' in paramData && 'flag' in paramData) {
-      return renderParameterRow(label, paramData.value, paramData.unit, paramData.flag);
+    if (paramData && typeof paramData === 'object' && 'value' in paramData && 'unit' in paramData && 'flag' in paramData) {
+      const typedParamData = paramData as LabParameter;
+      return renderParameterRow(label, typedParamData.value, typedParamData.unit, typedParamData.flag);
     }
     return null; // Return null for non-object values like 'sex' and 'onDialysis'
   };
@@ -198,40 +143,29 @@ const LabParametersScreen = () => {
           <Text style={styles.tableHeaderText}>Edit</Text>
         </View>
 
-        {renderLabDataRow('Bilirubin', 'bilirubin')}
-        {renderLabDataRow('INR', 'inr')}
-        {renderLabDataRow('Creatinine', 'creatinine')}
-        {renderLabDataRow('Sodium', 'sodium')}
-        {renderLabDataRow('Albumin', 'albumin')}
+        {Object.keys(labData)
+          .filter(key => typeof labData[key] === 'object' && 'value' in labData[key])
+          .sort() // Sort parameter names alphabetically for consistent display
+          .map(paramKey => renderLabDataRow(paramKey, paramKey))}
 
-        {/* Sex Selection */}
+        {/* Sex Selection - Pre-filled and disabled based on user profile */}
         <View style={styles.parameterRow}>
           <Text style={styles.parameterLabel}>Sex</Text>
           <View style={styles.sexButtons}>
-            <TouchableOpacity
-              style={[styles.sexButton, labData.sex === 'Female' && styles.sexButtonActive]}
-              onPress={() => setLabData({ ...labData, sex: 'Female' })}>
-              <Text style={[styles.sexButtonText, labData.sex === 'Female' && styles.sexButtonTextActive]}>
-                Female
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.sexButton, labData.sex === 'Male' && styles.sexButtonActive]}
-              onPress={() => setLabData({ ...labData, sex: 'Male' })}>
-              <Text style={[styles.sexButtonText, labData.sex === 'Male' && styles.sexButtonTextActive]}>
-                Male
-              </Text>
-            </TouchableOpacity>
+            <View
+              style={[styles.sexButton, labData.sex === 'Female' && styles.sexButtonActive, styles.disabledButton]}
+              pointerEvents="none">
+              <Text style={[styles.sexButtonText, labData.sex === 'Female' && styles.sexButtonTextActive]}>Female</Text>
+            </View>
+            <View
+              style={[styles.sexButton, labData.sex === 'Male' && styles.sexButtonActive, styles.disabledButton]}
+              pointerEvents="none">
+              <Text style={[styles.sexButtonText, labData.sex === 'Male' && styles.sexButtonTextActive]}>Male</Text>
+            </View>
           </View>
         </View>
 
-        {renderLabDataRow('AST', 'ast')}
-        {renderLabDataRow('ALT', 'alt')}
-        {renderLabDataRow('Platelet Count', 'platelet')}
-        {renderLabDataRow('Hemoglobin', 'hemoglobin')}
-        {renderLabDataRow('WBC', 'wbc')}
-        {renderLabDataRow('Potassium', 'potassium')}
-        {renderLabDataRow('Ammonia', 'ammonia')}
+
 
         {/* On Dialysis */}
         <View style={styles.dialysisSection}>
@@ -256,14 +190,14 @@ const LabParametersScreen = () => {
         </View>
 
         {/* Notes */}
-        <View style={styles.notesSection}>
+        {/* <View style={styles.notesSection}>
           <Text style={styles.notesLabel}>Notes (optional)</Text>
           <TextInput
             style={styles.notesInput}
             placeholder="Add context for this lab set"
             multiline
           />
-        </View>
+        </View> */}
 
         {/* Continue Button */}
         <TouchableOpacity 
@@ -357,11 +291,27 @@ const styles = StyleSheet.create({
     color: '#999',
     marginTop: responsive.margin(2),
   },
-  unitValue: {
+  unitValueContainer: {
     flex: 1,
-    fontSize: responsive.fontSize(14),
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+  unitValueText: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: responsive.borderRadius(4),
+    padding: responsive.padding(4),
+  },
+  unitValueBold: {
+    fontSize: responsive.fontSize(16),
+    fontWeight: 'bold',
     color: '#000',
-    textAlign: 'right',
+  },
+  unitValueUnit: {
+    fontSize: responsive.fontSize(14),
+    fontWeight: 'normal',
+    color: '#000',
   },
   flagBadge: {
     paddingHorizontal: responsive.padding(6),
@@ -376,6 +326,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#D1ECF1',
   },
   flagText: {
+    fontSize: responsive.fontSize(10),
+    fontWeight: '600',
+  },
+  abnormalBadge: {
+    backgroundColor: '#dc3545', // Red background
+    paddingHorizontal: responsive.padding(6),
+    paddingVertical: responsive.padding(2),
+    borderRadius: responsive.borderRadius(4),
+    marginLeft: responsive.margin(4),
+  },
+  abnormalFlagText: {
+    color: '#fff', // White text for contrast
     fontSize: responsive.fontSize(10),
     fontWeight: '600',
   },
@@ -403,6 +365,9 @@ const styles = StyleSheet.create({
   },
   sexButtonTextActive: {
     color: '#fff',
+  },
+  disabledButton: {
+    opacity: 0.6,
   },
   dialysisSection: {
     flexDirection: 'row',

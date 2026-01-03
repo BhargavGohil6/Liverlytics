@@ -111,8 +111,12 @@ export const uploadLabReport = createAsyncThunk<
       name: filedata.filename,
     } as any);
 
-    // Make the API call
-    const response = await api.post('/cirrhosis_custom.cirrhosis_vital_img.quick_text_extraction', formData);
+    // Make the API call - setting headers to undefined allows axios to set the correct Content-Type for multipart/form-data
+    const response = await api.post('/cirrhosis_custom.cirrhosis_vital_img.quick_text_extraction', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
 
     console.log('Upload response:', response.data);
     return response.data;
