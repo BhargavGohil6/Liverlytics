@@ -51,8 +51,8 @@ const styles = StyleSheet.create({
         alignItems: 'center'
     },
     SafeArea: {
-        height: deviceHight,
-        width: deviceWidth,
+        // height: deviceHight,
+        // width: deviceWidth,
         flex:1
     }
 })

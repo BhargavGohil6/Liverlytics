@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -11,17 +11,77 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import {useNavigation} from '@react-navigation/native';
-import {colors, font} from '../../theme/index';
+import { useNavigation } from '@react-navigation/native';
+import { useSelector, useDispatch } from 'react-redux';
+import { fetchTodaysVitalsForUser } from './slices/vitalsSlice';
+import CommonLoader from '../../components/CommonLoader';
+import colors from '../../theme/color';
+import responsive from '../../theme/responsive';
+import font from '../../theme/fonts';
 
 const { width } = Dimensions.get('window');
 
 export default function VitalsOverviewScreen() {
   
   const navigation = useNavigation();
+  const dispatch = useDispatch();
+  const { todayData, loading, error } = useSelector((state: any) => state.vitals);
+  
+  useEffect(() => {
+    // Fetch today's vitals data when the component mounts
+    dispatch(fetchTodaysVitalsForUser() as any);
+  }, []);
+  
+
+
+  // Handle error state
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+        <View style={styles.navBar}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <Icon name="arrow-left" size={responsive.fontSize(20)} color="#333" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.addButton} onPress={() => navigation.navigate('AddVitalsScreen' as never)}>
+            <Icon name="plus" size={responsive.fontSize(18)} color="#333" />
+            <Text style={styles.addText}>Add Vitals</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.errorContainer}>
+          <Icon name="alert-circle" size={60} color={colors.orange} />
+          <Text style={styles.errorTitle}>Unable to Load Vitals</Text>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity 
+            style={styles.retryButton}
+            onPress={() => dispatch(fetchTodaysVitalsForUser() as any)}
+          >
+            <Text style={styles.retryText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Extract vital data from the API response
+  const vitalData = todayData?.data && Array.isArray(todayData.data) && todayData.data.length > 0 
+    ? todayData.data[0] 
+    : null;
+  
+  // Format the vital values for display
+  const rhrValue = vitalData?.heart_rate ? `${vitalData.heart_rate} bpm` : '0';
+  const stepsValue = vitalData?.steps ? `${vitalData.steps}` : '0';
+  const sleepValue = vitalData?.sleep ? `${vitalData.sleep}m` : '0';
+  const spO2Value = vitalData?.spo2 ? `${vitalData.spo2}%` : '0';
+  const weightValue = vitalData?.weight ? `${vitalData.weight} kg` : '0';
+  const bpValue = vitalData?.blood_pressure ? `${vitalData.blood_pressure}` : '0';
+  
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      
+      {/* Common Loader */}
+      <CommonLoader visible={loading} message="Loading vitals data..." />
       
       {/* Header */}
       {/* <View style={styles.header}>
@@ -50,12 +110,12 @@ export default function VitalsOverviewScreen() {
         {/* Navigation Bar */}
         <View style={styles.navBar}>
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-            <Icon name="arrow-left" size={20} color="#333" />
+            <Icon name="arrow-left" size={responsive.fontSize(20)} color="#333" />
             {/* <Text style={styles.backText}>Back</Text> */}
           </TouchableOpacity>
           
-          <TouchableOpacity style={styles.addButton} onPress={() => navigation.navigate('AddVitalsScreen')}>
-            <Icon name="plus" size={18} color="#333" />
+          <TouchableOpacity style={styles.addButton} onPress={() => navigation.navigate('AddVitalsScreen' as never)}>
+            <Icon name="plus" size={responsive.fontSize(18)} color="#333" />
             <Text style={styles.addText}>Add Vitals</Text>
           </TouchableOpacity>
         </View>
@@ -72,14 +132,14 @@ export default function VitalsOverviewScreen() {
           <View style={styles.vitalCard}>
             <View style={styles.vitalHeader}>
               <View style={styles.vitalHeaderLeft}>
-                <Icon name="heart" size={16} color="#333" />
+                <Icon name="heart" size={responsive.fontSize(16)} color="#333" />
                 <Text style={styles.vitalLabel}>RHR</Text>
               </View>
               <View style={styles.statusBadge}>
                 <Text style={styles.statusText}>normal</Text>
               </View>
             </View>
-            <Text style={styles.vitalValue}>72 bpm</Text>
+            <Text style={styles.vitalValue}>{rhrValue}</Text>
             <Text style={styles.vitalDescription}>Resting Heart Rate</Text>
           </View>
 
@@ -87,14 +147,14 @@ export default function VitalsOverviewScreen() {
           <View style={styles.vitalCard}>
             <View style={styles.vitalHeader}>
               <View style={styles.vitalHeaderLeft}>
-                <MaterialCommunityIcons name="shoe-print" size={16} color="#333" />
+                <MaterialCommunityIcons name="shoe-print" size={responsive.fontSize(16)} color="#333" />
                 <Text style={styles.vitalLabel}>Steps</Text>
               </View>
               <View style={[styles.statusBadge, styles.statusLow]}>
                 <Text style={[styles.statusText, styles.statusTextLow]}>low</Text>
               </View>
             </View>
-            <Text style={styles.vitalValue}>2,145</Text>
+            <Text style={styles.vitalValue}>{stepsValue}</Text>
             <Text style={styles.vitalDescription}>Steps Today</Text>
           </View>
 
@@ -102,12 +162,12 @@ export default function VitalsOverviewScreen() {
           <View style={styles.vitalCard}>
             <View style={styles.vitalHeader}>
               <View style={styles.vitalHeaderLeft}>
-                <Icon name="moon" size={16} color="#333" />
+                <Icon name="moon" size={responsive.fontSize(16)} color="#333" />
                 <Text style={styles.vitalLabel}>Sleep</Text>
               </View>
               <Text style={styles.timeText}>6h 20m</Text>
             </View>
-            <Text style={styles.vitalValue}>6h 20m</Text>
+            <Text style={styles.vitalValue}>{sleepValue}</Text>
             <Text style={styles.vitalDescription}>Last Night</Text>
           </View>
 
@@ -115,14 +175,14 @@ export default function VitalsOverviewScreen() {
           <View style={styles.vitalCard}>
             <View style={styles.vitalHeader}>
               <View style={styles.vitalHeaderLeft}>
-                <MaterialCommunityIcons name="water-percent" size={16} color="#333" />
+                <MaterialCommunityIcons name="water-percent" size={responsive.fontSize(16)} color="#333" />
                 <Text style={styles.vitalLabel}>SpO₂</Text>
               </View>
               <View style={[styles.statusBadge, styles.statusCheck]}>
                 <Text style={[styles.statusText, styles.statusTextCheck]}>check</Text>
               </View>
             </View>
-            <Text style={styles.vitalValue}>93%</Text>
+            <Text style={styles.vitalValue}>{spO2Value}</Text>
             <Text style={styles.vitalDescription}>Oxygen Saturation</Text>
           </View>
 
@@ -130,14 +190,14 @@ export default function VitalsOverviewScreen() {
           <View style={styles.vitalCard}>
             <View style={styles.vitalHeader}>
               <View style={styles.vitalHeaderLeft}>
-                <Icon name="shopping-bag" size={16} color="#333" />
+                <Icon name="shopping-bag" size={responsive.fontSize(16)} color="#333" />
                 <Text style={styles.vitalLabel}>Weight</Text>
               </View>
               <View style={styles.statusBadge}>
                 <Text style={styles.statusText}>stable</Text>
               </View>
             </View>
-            <Text style={styles.vitalValue}>72.8 kg</Text>
+            <Text style={styles.vitalValue}>{weightValue}</Text>
             <Text style={styles.vitalDescription}>Body Weight</Text>
           </View>
 
@@ -145,14 +205,14 @@ export default function VitalsOverviewScreen() {
           <View style={styles.vitalCard}>
             <View style={styles.vitalHeader}>
               <View style={styles.vitalHeaderLeft}>
-                <Icon name="activity" size={16} color="#333" />
+                <Icon name="activity" size={responsive.fontSize(16)} color="#333" />
                 <Text style={styles.vitalLabel}>BP</Text>
               </View>
               <View style={styles.statusBadge}>
                 <Text style={styles.statusText}>normal</Text>
               </View>
             </View>
-            <Text style={styles.vitalValue}>118/76</Text>
+            <Text style={styles.vitalValue}>{bpValue}</Text>
             <Text style={styles.vitalDescription}>Blood Pressure</Text>
           </View>
         </View>
@@ -162,18 +222,18 @@ export default function VitalsOverviewScreen() {
           <Text style={styles.sectionTitle}>Recent Trends</Text>
           
           <View style={styles.trendCard}>
-            <Icon name="trending-up" size={16} color="#FF9800" />
+            <Icon name="trending-up" size={responsive.fontSize(16)} color="#FF9800" />
             <Text style={styles.trendText}>RHR elevated 3 days</Text>
           </View>
 
           <View style={styles.trendsRow}>
             <View style={[styles.trendCard, styles.trendCardHalf]}>
-              <Icon name="trending-down" size={16} color="#4CAF50" />
+              <Icon name="trending-down" size={responsive.fontSize(16)} color="#4CAF50" />
               <Text style={styles.trendText}>Sleep lower than usual</Text>
             </View>
             
             <View style={[styles.trendCard, styles.trendCardHalf]}>
-              <Icon name="arrow-up" size={16} color="#FF9800" />
+              <Icon name="arrow-up" size={responsive.fontSize(16)} color="#FF9800" />
               <Text style={styles.trendText}>+1.2 kg in 24h</Text>
             </View>
           </View>
@@ -208,7 +268,7 @@ export default function VitalsOverviewScreen() {
 
         {/* Warning Alert */}
         <View style={styles.warningCard}>
-          <Icon name="alert-triangle" size={20} color="#F57C00" />
+          <Icon name="alert-triangle" size={responsive.fontSize(20)} color="#F57C00" />
           <View style={styles.warningContent}>
             <Text style={styles.warningTitle}>Low SpO₂ detected</Text>
             <Text style={styles.warningText}>
@@ -219,7 +279,7 @@ export default function VitalsOverviewScreen() {
 
         {/* No Warnings Card */}
         <View style={styles.noWarningsCard}>
-          <Icon name="shield" size={20} color="#666" />
+          <Icon name="shield" size={responsive.fontSize(20)} color="#666" />
           <View style={styles.noWarningsContent}>
             <Text style={styles.noWarningsTitle}>No current warnings</Text>
             <Text style={styles.noWarningsText}>
@@ -229,9 +289,9 @@ export default function VitalsOverviewScreen() {
         </View>
 
         {/* View All Link */}
-        <TouchableOpacity style={styles.viewAllButton} onPress={()=>navigation.navigate('VitalsHistoryScreen')}>
+        <TouchableOpacity style={styles.viewAllButton} onPress={()=>navigation.navigate('VitalsHistoryScreen' as never)}>
           <Text style={styles.viewAllText}>View All Vitals History</Text>
-          <Icon name="arrow-right" size={16} color="#666" />
+          <Icon name="arrow-right" size={responsive.fontSize(16)} color="#666" />
         </TouchableOpacity>
 
         {/* Bottom Section Divider */}
@@ -242,28 +302,10 @@ export default function VitalsOverviewScreen() {
           <Text style={styles.bottomTitle}>Warnings & Flags</Text>
         </View>
 
-        <View style={{ height: 100 }} />
+        <View style={{ height: responsive.height(100) }} />
       </ScrollView>
 
-      {/* Bottom Navigation */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem} onPress={()=>navigation.navigate('Dashboard')} >
-          <Icon name="home" size={24} color="#999" />
-          <Text style={styles.navText}>Home</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={()=>navigation.navigate('VitalsHistoryScreen')} >
-          <Icon name="bar-chart-2" size={24} color="#999" />
-          <Text style={styles.navText}>Reports</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Icon name="clock" size={24} color="#999" />
-          <Text style={styles.navText}>Reminders</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Icon name="user" size={24} color="#999" />
-          <Text style={styles.navText}>Profile</Text>
-        </TouchableOpacity>
-      </View>
+      
     </SafeAreaView>
   );
 }
@@ -324,20 +366,20 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 16,
+    paddingHorizontal: responsive.padding(16),
   },
   navBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 16,
+    paddingVertical: responsive.padding(16),
   },
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingVertical: 8,
-    paddingRight: 12,
+    gap: responsive.padding(6),
+    paddingVertical: responsive.padding(8),
+    paddingRight: responsive.padding(12),
   },
   backText: {
     fontSize: font.lg,
@@ -347,11 +389,11 @@ const styles = StyleSheet.create({
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: responsive.padding(6),
     backgroundColor: colors.gray100,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingHorizontal: responsive.padding(14),
+    paddingVertical: responsive.padding(8),
+    borderRadius: responsive.borderRadius(8),
   },
   addText: {
     fontSize: font.base,
@@ -359,13 +401,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   titleSection: {
-    marginBottom: 20,
+    marginBottom: responsive.margin(20),
   },
   title: {
     fontSize: font.h4,
     fontWeight: '700',
     color: colors.darkGray,
-    marginBottom: 4,
+    marginBottom: responsive.margin(4),
   },
   subtitle: {
     fontSize: font.base,
@@ -374,30 +416,32 @@ const styles = StyleSheet.create({
   vitalsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 24,
+    gap: responsive.padding(12),
+    marginBottom: responsive.margin(24),
   },
   vitalCard: {
-    width: (width - 44) / 2,
+    flex: 1,
     backgroundColor: colors.white,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: responsive.borderRadius(12),
+    padding: responsive.padding(16),
     shadowColor: colors.black,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
+    minWidth: '45%', // For responsive grid on different screen sizes
+    maxWidth: '48%', // Ensures proper spacing
   },
   vitalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: responsive.margin(12),
   },
   vitalHeaderLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: responsive.padding(6),
   },
   vitalLabel: {
     fontSize: font.sm,
@@ -405,10 +449,10 @@ const styles = StyleSheet.create({
     color: colors.darkGray,
   },
   statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: responsive.padding(8),
+    paddingVertical: responsive.padding(3),
     backgroundColor: colors.grayEFEF,
-    borderRadius: 4,
+    borderRadius: responsive.borderRadius(4),
   },
   statusText: {
     fontSize: font.xs,
@@ -435,29 +479,29 @@ const styles = StyleSheet.create({
     fontSize: font.h5,
     fontWeight: '700',
     color: colors.darkGray,
-    marginBottom: 4,
+    marginBottom: responsive.margin(4),
   },
   vitalDescription: {
     fontSize: font.sm,
     color: colors.gray666,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: responsive.margin(24),
   },
   sectionTitle: {
     fontSize: font.xl,
     fontWeight: '700',
     color: colors.darkGray,
-    marginBottom: 12,
+    marginBottom: responsive.margin(12),
   },
   trendCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: responsive.padding(10),
     backgroundColor: colors.white,
-    borderRadius: 10,
-    padding: 14,
-    marginBottom: 8,
+    borderRadius: responsive.borderRadius(10),
+    padding: responsive.padding(14),
+    marginBottom: responsive.margin(8),
     shadowColor: colors.black,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -466,7 +510,7 @@ const styles = StyleSheet.create({
   },
   trendsRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: responsive.padding(8),
   },
   trendCardHalf: {
     flex: 1,
@@ -480,13 +524,13 @@ const styles = StyleSheet.create({
   },
   chartsRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: responsive.padding(12),
   },
   chartCard: {
     flex: 1,
     backgroundColor: colors.white,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: responsive.borderRadius(12),
+    padding: responsive.padding(16),
     shadowColor: colors.black,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -497,7 +541,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: responsive.margin(16),
   },
   chartLabel: {
     fontSize: font.sm,
@@ -509,23 +553,23 @@ const styles = StyleSheet.create({
     color: colors.lightGray,
   },
   chartPlaceholder: {
-    height: 60,
+    height: responsive.height(60),
     justifyContent: 'flex-end',
   },
   chartLine: {
-    height: 3,
+    height: responsive.height(3),
     backgroundColor: colors.primary,
-    borderRadius: 1.5,
+    borderRadius: responsive.borderRadius(1.5),
     width: '100%',
   },
   warningCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 12,
+    gap: responsive.padding(12),
     backgroundColor: colors.lightPeach,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    borderRadius: responsive.borderRadius(12),
+    padding: responsive.padding(16),
+    marginBottom: responsive.margin(12),
   },
   warningContent: {
     flex: 1,
@@ -534,21 +578,21 @@ const styles = StyleSheet.create({
     fontSize: font.md,
     fontWeight: '600',
     color: colors.darkGray,
-    marginBottom: 4,
+    marginBottom: responsive.margin(4),
   },
   warningText: {
     fontSize: font.sm,
     color: colors.darkGray,
-    lineHeight: 18,
+    lineHeight: responsive.fontSize(18),
   },
   noWarningsCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 12,
+    gap: responsive.padding(12),
     backgroundColor: colors.white,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
+    borderRadius: responsive.borderRadius(12),
+    padding: responsive.padding(16),
+    marginBottom: responsive.margin(16),
     borderWidth: 1,
     borderColor: colors.gray200,
   },
@@ -559,7 +603,7 @@ const styles = StyleSheet.create({
     fontSize: font.md,
     fontWeight: '600',
     color: colors.darkGray,
-    marginBottom: 4,
+    marginBottom: responsive.margin(4),
   },
   noWarningsText: {
     fontSize: font.sm,
@@ -569,9 +613,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 12,
-    marginBottom: 24,
+    gap: responsive.padding(6),
+    paddingVertical: responsive.padding(12),
+    marginBottom: responsive.margin(24),
   },
   viewAllText: {
     fontSize: font.base,
@@ -579,17 +623,59 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   divider: {
-    height: 1,
+    height: responsive.height(1),
     backgroundColor: colors.gray200,
-    marginBottom: 24,
+    marginBottom: responsive.margin(24),
   },
   bottomSection: {
-    marginBottom: 20,
+    marginBottom: responsive.margin(20),
   },
   bottomTitle: {
     fontSize: font.xl,
     fontWeight: '700',
     color: colors.darkGray,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.gray100,
+  },
+  loadingText: {
+    marginTop: responsive.margin(10),
+    fontSize: responsive.fontSize(16),
+    color: colors.darkGray,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.gray100,
+    padding: responsive.padding(20),
+  },
+  errorTitle: {
+    fontSize: responsive.fontSize(18),
+    fontWeight: '600',
+    color: colors.darkGray,
+    marginTop: responsive.margin(10),
+    marginBottom: responsive.margin(5),
+  },
+  errorText: {
+    fontSize: responsive.fontSize(14),
+    color: colors.gray666,
+    textAlign: 'center',
+    marginBottom: responsive.margin(20),
+  },
+  retryButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: responsive.padding(20),
+    paddingVertical: responsive.padding(10),
+    borderRadius: responsive.borderRadius(8),
+  },
+  retryText: {
+    color: colors.white,
+    fontSize: responsive.fontSize(14),
+    fontWeight: '600',
   },
   bottomNav: {
     flexDirection: 'row',

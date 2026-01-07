@@ -111,6 +111,68 @@ export const fetchTodayVitalsById = createAsyncThunk<
   }
 });
 
+// Fetch Today's Vitals for Current User
+export const fetchTodaysVitalsForUser = createAsyncThunk<
+  VitalsApiResponse,
+  void,
+  { rejectValue: string }
+>('vitals/fetchTodaysVitalsForUser', async (_, { rejectWithValue, getState }) => {
+  try {
+    // Get the current user from the auth state
+    const state: any = getState();
+    const user = state?.auth?.user?.email;
+    
+    if (!user) {
+      return rejectWithValue('User not authenticated');
+    }
+    
+    // Make API call to fetch today's vitals for the current user
+    const response = await api.post(
+      '/cirrhosis_custom.cirrhosis_vital.get_today_vital',
+      { user: user }
+    );
+    
+    console.log('Fetch Todays Vitals For User Response:', response.data);
+    return response.data.message || response.data;
+  } catch (error: any) {
+    console.log('Fetch Todays Vitals For User Error:', error);
+    const msg =
+      error.response?.data?.message?.message ||
+      error.response?.data?.message ||
+      error.message ||
+      'Failed to fetch vitals for user';
+
+    return rejectWithValue(msg);
+  }
+});
+
+// Fetch All Vitals for Current User
+export const fetchAllVitalsForUser = createAsyncThunk<
+  VitalsApiResponse,
+  string,
+  { rejectValue: string }
+>('vitals/fetchAllVitalsForUser', async (userEmail, { rejectWithValue }) => {
+  try {
+    // Make API call to fetch all vitals for the specified user
+    const response = await api.post(
+      '/cirrhosis_custom.cirrhosis_vital.get_vital',
+      { user: userEmail }
+    );
+    
+    console.log('Fetch All Vitals For User Response:', response.data);
+    return response.data.message || response.data;
+  } catch (error: any) {
+    console.log('Fetch All Vitals For User Error:', error);
+    const msg =
+      error.response?.data?.message?.message ||
+      error.response?.data?.message ||
+      error.message ||
+      'Failed to fetch all vitals for user';
+
+    return rejectWithValue(msg);
+  }
+});
+
 // Add Vitals Thunk
 export const addVitals = createAsyncThunk<
   any,
@@ -328,6 +390,30 @@ const vitalsSlice = createSlice({
         state.loading = false;
         state.error = action.payload || 'Failed to update vitals';
         state.success = false;
+      })
+      .addCase(fetchTodaysVitalsForUser.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchTodaysVitalsForUser.fulfilled, (state, action: PayloadAction<VitalsApiResponse>) => {
+        state.loading = false;
+        state.todayData = action.payload;
+      })
+      .addCase(fetchTodaysVitalsForUser.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to fetch vitals for user';
+      })
+      .addCase(fetchAllVitalsForUser.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchAllVitalsForUser.fulfilled, (state, action: PayloadAction<VitalsApiResponse>) => {
+        state.loading = false;
+        state.todayData = action.payload;
+      })
+      .addCase(fetchAllVitalsForUser.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to fetch all vitals for user';
       });
   },
 });
