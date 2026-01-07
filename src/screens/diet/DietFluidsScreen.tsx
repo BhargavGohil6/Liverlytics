@@ -9,14 +9,23 @@ import {
   TextInput,
   SafeAreaView,
   ActivityIndicator,
+  useWindowDimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../../redux/store';
 import { fetchDietEntries, addDietEntry, deleteDietEntry, fetchDietEntryById, updateDietEntry } from './slices/dietSlice';
 import Toast from 'react-native-toast-message';
+import responsive from '../../theme/responsive';
+import colors from '../../theme/color';
 
-const DietFluidsScreen = ({ navigation }) => {
+
+
+type DietFluidsScreenProps = {
+  navigation: any;
+};
+
+const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
   const [itemName, setItemName] = useState('');
   const [sodium, setSodium] = useState('');
   const [fluid, setFluid] = useState('');
@@ -143,12 +152,16 @@ const DietFluidsScreen = ({ navigation }) => {
 
   const { totalSodium, totalFluid } = calculateTotals();
 
+  // Orientation handling for responsive layout
+  const { width, height } = useWindowDimensions();
+  const isLandscape = width > height;
+  
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView>
+      <ScrollView contentContainerStyle={{ paddingBottom: responsive.padding(20) }}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Icon name="arrow-back" size={24} color="#1f2937" />
+            <Icon name="arrow-back" size={responsive.fontSize(24)} color={colors.darkGray} />
           </TouchableOpacity>
         </View>
 
@@ -160,11 +173,11 @@ const DietFluidsScreen = ({ navigation }) => {
           <View style={styles.totalsCard}>
             <Text style={styles.totalsTitle}>Today's Totals</Text>
             <View style={styles.totalsRow}>
-              <View style={styles.totalItem}>
+              <View style={[styles.totalItem, { width: isLandscape ? '48%' : '100%', marginBottom: isLandscape ? 0 : responsive.margin(8) }] }>
                 <Text style={styles.totalLabel}>Total Sodium Today</Text>
                 <Text style={styles.totalValue}>{totalSodium.toLocaleString()} mg</Text>
               </View>
-              <View style={styles.totalItem}>
+              <View style={[styles.totalItem, { width: isLandscape ? '48%' : '100%' }] }>
                 <Text style={styles.totalLabel}>Total Fluid Today</Text>
                 <Text style={styles.totalValue}>{totalFluid.toLocaleString()} mL</Text>
               </View>
@@ -177,62 +190,62 @@ const DietFluidsScreen = ({ navigation }) => {
             <Text style={styles.cardTitle}>Add Entry</Text>
             
             <Text style={styles.inputLabel}>Item Name</Text>
-            <View style={styles.inputContainer}>
+            <View style={[styles.inputContainer, { flexDirection: isLandscape ? 'row' : 'row' }] }>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { flex: 1 }]}
                 value={itemName}
                 onChangeText={setItemName}
                 placeholder="e.g., Chicken soup"
               />
-              <Icon name="create-outline" size={20} color="#9ca3af" />
+              <Icon name="create-outline" size={responsive.fontSize(20)} color={colors.coolGray} />
             </View>
 
             <Text style={styles.inputLabel}>Sodium (mg)</Text>
-            <View style={styles.inputContainer}>
+            <View style={[styles.inputContainer, { flexDirection: isLandscape ? 'row' : 'row' }] }>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { flex: 1 }]}
                 value={sodium}
                 onChangeText={setSodium}
                 placeholder="e.g., 650"
                 keyboardType="numeric"
               />
-              <Icon name="calculator-outline" size={20} color="#9ca3af" />
+              <Icon name="calculator-outline" size={responsive.fontSize(20)} color={colors.coolGray} />
             </View>
 
             <Text style={styles.inputLabel}>Fluid (mL)</Text>
-            <View style={styles.inputContainer}>
+            <View style={[styles.inputContainer, { flexDirection: isLandscape ? 'row' : 'row' }] }>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { flex: 1 }]}
                 value={fluid}
                 onChangeText={setFluid}
                 placeholder="e.g., 240"
                 keyboardType="numeric"
               />
-              <Icon name="water-outline" size={20} color="#9ca3af" />
+              <Icon name="water-outline" size={responsive.fontSize(20)} color={colors.coolGray} />
             </View>
 
             <View style={styles.timestampRow}>
-              <Icon name="time-outline" size={20} color="#6b7280" />
+              <Icon name="time-outline" size={responsive.fontSize(20)} color={colors.coolGray} />
               <Text style={styles.timestampText}>Now</Text>
-              <Icon name="chevron-forward" size={20} color="#9ca3af" />
+              <Icon name="chevron-forward" size={responsive.fontSize(20)} color={colors.coolGray} />
             </View>
 
             <View style={styles.buttonRow}>
               {editingEntryId ? (
                 <>
                   <TouchableOpacity 
-                    style={[styles.addButton, styles.updateButton]}
+                    style={[styles.addButton, styles.updateButton, { flex: isLandscape ? 0.45 : 1, marginRight: isLandscape ? responsive.margin(8) : 0, marginBottom: responsive.margin(8) }]}
                     onPress={handleUpdateEntry}
                     disabled={loading}
                   >
                     {loading ? (
-                      <ActivityIndicator size="small" color="#fff" />
+                      <ActivityIndicator size="small" color={colors.white} />
                     ) : (
                       <Text style={styles.addButtonText}>Update Entry</Text>
                     )}
                   </TouchableOpacity>
                   <TouchableOpacity 
-                    style={[styles.addButton, styles.cancelButton]}
+                    style={[styles.addButton, styles.cancelButton, { flex: isLandscape ? 0.45 : 1, marginLeft: isLandscape ? responsive.margin(8) : 0 }]}
                     onPress={handleCancelEdit}
                     disabled={loading}
                   >
@@ -241,12 +254,12 @@ const DietFluidsScreen = ({ navigation }) => {
                 </>
               ) : (
                 <TouchableOpacity 
-                  style={styles.addButton}
+                  style={[styles.addButton, { marginBottom: responsive.margin(8) }]}
                   onPress={handleAddEntry}
                   disabled={loading}
                 >
                   {loading ? (
-                    <ActivityIndicator size="small" color="#fff" />
+                    <ActivityIndicator size="small" color={colors.white} />
                   ) : (
                     <Text style={styles.addButtonText}>Add Entry</Text>
                   )}
@@ -279,11 +292,11 @@ const DietFluidsScreen = ({ navigation }) => {
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity 
-                    style={styles.deleteButton}
+                    style={[styles.deleteButton, { marginLeft: isLandscape ? responsive.margin(8) : 0, marginTop: isLandscape ? 0 : responsive.margin(8) }]}
                     onPress={() => entry.name && handleDeleteEntry(entry.name)}
                     disabled={loading}
                   >
-                    <Icon name="trash-outline" size={20} color="#ef4444" />
+                    <Icon name="trash-outline" size={responsive.fontSize(20)} color={colors.alertRed} />
                     <Text style={styles.deleteText}>Delete</Text>
                   </TouchableOpacity>
                 </View>
@@ -310,224 +323,229 @@ const DietFluidsScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.gray100,
   },
   header: {
-    padding: 16,
-    backgroundColor: '#fff',
+    padding: responsive.padding(16),
+    backgroundColor: colors.white,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: colors.gray200,
   },
   content: {
-    padding: 16,
+    padding: responsive.padding(16),
   },
   title: {
-    fontSize: 24,
+    fontSize: responsive.fontSize(24),
     fontWeight: '700',
-    color: '#1f2937',
-    marginBottom: 4,
+    color: colors.darkGray,
+    marginBottom: responsive.margin(4),
   },
   subtitle: {
-    fontSize: 14,
-    color: '#6b7280',
-    marginBottom: 24,
+    fontSize: responsive.fontSize(14),
+    color: colors.coolGray,
+    marginBottom: responsive.margin(24),
   },
   totalsCard: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
+    backgroundColor: colors.white,
+    padding: responsive.padding(16),
+    borderRadius: responsive.borderRadius(12),
+    marginBottom: responsive.margin(16),
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.gray200,
   },
   totalsTitle: {
-    fontSize: 16,
+    fontSize: responsive.fontSize(16),
     fontWeight: '600',
-    color: '#1f2937',
-    marginBottom: 16,
+    color: colors.darkGray,
+    marginBottom: responsive.margin(16),
   },
   totalsRow: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 8,
+    gap: responsive.margin(12),
+    marginBottom: responsive.margin(8),
+    flexWrap: 'wrap',
   },
   totalItem: {
     flex: 1,
-    backgroundColor: '#f9fafb',
-    padding: 12,
-    borderRadius: 8,
+    backgroundColor: colors.gray100,
+    padding: responsive.padding(12),
+    borderRadius: responsive.borderRadius(8),
   },
   totalLabel: {
-    fontSize: 12,
-    color: '#6b7280',
-    marginBottom: 6,
+    fontSize: responsive.fontSize(12),
+    color: colors.coolGray,
+    marginBottom: responsive.margin(6),
   },
   totalValue: {
-    fontSize: 20,
+    fontSize: responsive.fontSize(20),
     fontWeight: '700',
-    color: '#1f2937',
+    color: colors.darkGray,
   },
   timestamp: {
-    fontSize: 12,
-    color: '#9ca3af',
+    fontSize: responsive.fontSize(12),
+    color: colors.gray,
   },
   card: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
+    backgroundColor: colors.white,
+    padding: responsive.padding(16),
+    borderRadius: responsive.borderRadius(12),
+    marginBottom: responsive.margin(16),
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.gray200,
   },
   cardTitle: {
-    fontSize: 18,
+    fontSize: responsive.fontSize(18),
     fontWeight: '600',
-    color: '#1f2937',
-    marginBottom: 16,
+    color: colors.darkGray,
+    marginBottom: responsive.margin(16),
   },
   inputLabel: {
-    fontSize: 14,
+    fontSize: responsive.fontSize(14),
     fontWeight: '500',
-    color: '#374151',
-    marginBottom: 8,
-    marginTop: 12,
+    color: colors.darkGray,
+    marginBottom: responsive.margin(8),
+    marginTop: responsive.margin(12),
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    paddingHorizontal: 12,
+    borderColor: colors.gray200,
+    borderRadius: responsive.borderRadius(8),
+    paddingHorizontal: responsive.padding(12),
+    marginBottom: responsive.margin(8),
   },
   input: {
     flex: 1,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: '#1f2937',
+    paddingVertical: responsive.padding(12),
+    fontSize: responsive.fontSize(15),
+    color: colors.darkGray,
   },
   timestampRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: responsive.padding(12),
     borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    marginTop: 16,
+    borderColor: colors.gray200,
+    borderRadius: responsive.borderRadius(8),
+    paddingHorizontal: responsive.padding(12),
+    marginTop: responsive.margin(16),
+    marginBottom: responsive.margin(8),
   },
   timestampText: {
     flex: 1,
-    fontSize: 15,
-    color: '#1f2937',
-    marginLeft: 8,
+    fontSize: responsive.fontSize(15),
+    color: colors.darkGray,
+    marginLeft: responsive.margin(8),
   },
   addButton: {
-    backgroundColor: '#52a64a',
-    paddingVertical: 14,
-    borderRadius: 8,
+    backgroundColor: colors.primary,
+    paddingVertical: responsive.padding(14),
+    borderRadius: responsive.borderRadius(8),
     alignItems: 'center',
-    marginTop: 16,
+    marginTop: responsive.margin(16),
     flex: 1,
   },
   updateButton: {
-    backgroundColor: '#3b82f6',
-    marginRight: 8,
+    backgroundColor: colors.blue,
+    marginRight: responsive.margin(8),
   },
   cancelButton: {
-    backgroundColor: '#ef4444',
-    marginLeft: 8,
+    backgroundColor: colors.red,
+    marginLeft: responsive.margin(8),
   },
   addButtonText: {
-    fontSize: 16,
+    fontSize: responsive.fontSize(16),
     fontWeight: '600',
-    color: '#fff',
+    color: colors.white,
   },
   buttonRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 16,
+    marginTop: responsive.margin(16),
+    flexWrap: 'wrap',
   },
   entriesSection: {
-    marginBottom: 16,
+    marginBottom: responsive.margin(16),
   },
   entriesHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: responsive.margin(12),
   },
   entriesTitle: {
-    fontSize: 18,
+    fontSize: responsive.fontSize(18),
     fontWeight: '600',
-    color: '#1f2937',
+    color: colors.darkGray,
   },
   deleteHint: {
-    fontSize: 12,
-    color: '#9ca3af',
+    fontSize: responsive.fontSize(12),
+    color: colors.coolGray,
   },
   entryCard: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
+    backgroundColor: colors.white,
+    padding: responsive.padding(16),
+    borderRadius: responsive.borderRadius(12),
+    marginBottom: responsive.margin(12),
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.gray200,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    flexWrap: 'wrap',
   },
   entryContent: {
     flex: 1,
   },
   entryName: {
-    fontSize: 16,
+    fontSize: responsive.fontSize(16),
     fontWeight: '600',
-    color: '#1f2937',
-    marginBottom: 4,
+    color: colors.darkGray,
+    marginBottom: responsive.margin(4),
   },
   entryDetails: {
-    fontSize: 13,
-    color: '#6b7280',
-    marginBottom: 2,
+    fontSize: responsive.fontSize(13),
+    color: colors.coolGray,
+    marginBottom: responsive.margin(2),
   },
   entryTime: {
-    fontSize: 12,
-    color: '#9ca3af',
+    fontSize: responsive.fontSize(12),
+    color: colors.coolGray,
   },
   deleteButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingVertical: responsive.padding(8),
+    paddingHorizontal: responsive.padding(12),
     borderWidth: 1,
-    borderColor: '#fee2e2',
-    borderRadius: 6,
-    backgroundColor: '#fef2f2',
+    borderColor: colors.softPink,
+    borderRadius: responsive.borderRadius(6),
+    backgroundColor: colors.softRed,
   },
   deleteText: {
-    fontSize: 13,
+    fontSize: responsive.fontSize(13),
     fontWeight: '500',
-    color: '#ef4444',
-    marginLeft: 4,
+    color: colors.alertRed,
+    marginLeft: responsive.margin(4),
   },
   tipCard: {
-    backgroundColor: '#fef3c7',
-    padding: 12,
-    borderRadius: 8,
+    backgroundColor: colors.lightPeach,
+    padding: responsive.padding(12),
+    borderRadius: responsive.borderRadius(8),
     borderWidth: 1,
-    borderColor: '#fde68a',
+    borderColor: colors.orangeF93,
   },
   tipText: {
-    fontSize: 13,
-    color: '#78350f',
-    lineHeight: 18,
+    fontSize: responsive.fontSize(13),
+    color: colors.brownOverlay60,
+    lineHeight: responsive.height(18),
   },
   noEntriesText: {
     textAlign: 'center',
-    fontSize: 14,
-    color: '#6b7280',
-    paddingVertical: 20,
+    fontSize: responsive.fontSize(14),
+    color: colors.coolGray,
+    paddingVertical: responsive.padding(20),
   },
 });
 
