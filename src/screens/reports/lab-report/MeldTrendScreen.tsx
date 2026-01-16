@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,12 +10,25 @@ import {
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import responsive from '../../../theme/responsive'; 
 import { useNavigation } from '@react-navigation/native';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchMeldHistory, selectMeldHistory, selectMeldHistoryLoading, selectMeldHistoryError } from '../../meld-calculator/slices/meldSlice';
+import type { AppDispatch } from '../../../redux/store';
+import CommonLoader from '../../../components/CommonLoader';
 
 const MeldTrendScreen = () => {
   const navigation = useNavigation<any>();
+  const dispatch = useDispatch<AppDispatch>();
+  const meldHistory = useSelector(selectMeldHistory);
+  const historyLoading = useSelector(selectMeldHistoryLoading);
+  const historyError = useSelector(selectMeldHistoryError);
+
+  useEffect(() => {
+    dispatch(fetchMeldHistory());
+  }, [dispatch]);
 
   return (
     <SafeAreaView style={styles.container}>
+      <CommonLoader visible={historyLoading} />
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
@@ -34,12 +47,14 @@ const MeldTrendScreen = () => {
         {/* Recent Trend */}
         <View style={styles.trendSection}>
           <Text style={styles.trendTitle}>Recent MELD-Na Trend</Text>
-          <Text style={styles.trendSubtitle}>MELD-Na 19</Text>
+          {meldHistory && meldHistory.data && meldHistory.data.length > 0 && (
+            <Text style={styles.trendSubtitle}>MELD-Na {meldHistory.data[0].meld_scores?.meld_na || 'N/A'}</Text>
+          )}
           
           {/* Simple trend line placeholder */}
-          <View style={styles.trendChart}>
+          {/* <View style={styles.trendChart}>
             <View style={styles.trendLine} />
-          </View>
+          </View> */}
 
           {/* Trend Table */}
           <View style={styles.trendTable}>
@@ -49,19 +64,37 @@ const MeldTrendScreen = () => {
               <Text style={styles.trendTableHeaderText}>MELD 3.0</Text>
               <Text style={styles.trendTableHeaderText}>Source</Text>
             </View>
-            {[
-              { date: 'Oct 12', meldNa: '23', meld3: '23', source: 'AI Report' },
-              { date: 'Oct 05', meldNa: '18', meld3: '20', source: 'Manual' },
-              { date: 'Sep 28', meldNa: '17', meld3: '19', source: 'AI Report' },
-              { date: 'Sep 21', meldNa: '16', meld3: '18', source: 'MELD' },
-            ].map((row, index) => (
-              <View key={index} style={styles.trendTableRow}>
-                <Text style={styles.trendTableCell}>{row.date}</Text>
-                <Text style={styles.trendTableCell}>{row.meldNa}</Text>
-                <Text style={styles.trendTableCell}>{row.meld3}</Text>
-                <Text style={styles.trendTableCell}>{row.source}</Text>
+            {historyLoading ? (
+              <View style={styles.trendTableRow}>
+                <Text style={styles.trendTableCell}>Loading...</Text>
+                <Text style={styles.trendTableCell}></Text>
+                <Text style={styles.trendTableCell}></Text>
+                <Text style={styles.trendTableCell}></Text>
               </View>
-            ))}
+            ) : historyError ? (
+              <View style={styles.trendTableRow}>
+                <Text style={styles.trendTableCell}>Error: {historyError}</Text>
+                <Text style={styles.trendTableCell}></Text>
+                <Text style={styles.trendTableCell}></Text>
+                <Text style={styles.trendTableCell}></Text>
+              </View>
+            ) : meldHistory && meldHistory.data && meldHistory.data.length > 0 ? (
+              meldHistory.data.slice(0, 4).map((entry, index) => (
+                <View key={entry.name || index} style={styles.trendTableRow}>
+                  <Text style={styles.trendTableCell}>{entry.creation ? new Date(entry.creation).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A'}</Text>
+                  <Text style={styles.trendTableCell}>{entry.meld_scores?.meld_na || 'N/A'}</Text>
+                  <Text style={styles.trendTableCell}>{entry.meld_scores?.meld_3 || 'N/A'}</Text>
+                  <Text style={styles.trendTableCell}>{entry.notes || 'Manual'}</Text>
+                </View>
+              ))
+            ) : (
+              <View style={styles.trendTableRow}>
+                <Text style={styles.trendTableCell}>No data available</Text>
+                <Text style={styles.trendTableCell}></Text>
+                <Text style={styles.trendTableCell}></Text>
+                <Text style={styles.trendTableCell}></Text>
+              </View>
+            )}
           </View>
 
           {/* View Full History Button */}
@@ -74,10 +107,10 @@ const MeldTrendScreen = () => {
         {/* Continue Button */}
         <TouchableOpacity 
           style={styles.continueButton}
-          onPress={() => navigation.navigate('LabReportResultsScreen')}
+          onPress={() => navigation.navigate('Dashboard')}
         >
-          <Text style={styles.continueButtonText}>Continue</Text>
-          <Icon name="arrow-forward" size={responsive.fontSize(20)} color="#fff" />
+          <Text style={styles.continueButtonText}>Go to Dashboard</Text>
+          {/* <Icon name="arrow-forward" size={responsive.fontSize(20)} color="#fff" /> */}
         </TouchableOpacity>
 
         <View style={{ height: responsive.height(30) }} />

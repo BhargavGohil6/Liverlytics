@@ -28,8 +28,7 @@ import {
   Bell,
   User,
   History,
-  ChevronRight,
-  SpaceIcon
+  ChevronRight
 } from 'lucide-react-native';
 import responsive from '../../theme/responsive';  
 import { Navigation } from 'lucide-react-native';
@@ -61,7 +60,6 @@ export default function Dashboard() {
     if (user?.email) {
       dispatch(fetchDashboardData({ email: user.email }));
     } else {
-      // Fallback email for testing
       dispatch(fetchDashboardData({ email: 'pareshwaghela18mukesoft@gmail.com' }));
     }
   }, [dispatch, user]);
@@ -97,308 +95,233 @@ export default function Dashboard() {
       </SafeAreaView>
     );
   }
+
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          {/* <View style={styles.logo}> */}
-            <Image
-                    source={require('../../assets/Transparent 1.png')}
-                    style={styles.image}
-                  />
-          {/* </View> */}
-          {/* <Text style={styles.logoText}>Liverlytics</Text> */}
+          <Image
+            source={require('../../assets/Transparent 1.png')}
+            style={styles.logo}
+            resizeMode="cover"
+          />
         </View>
         <View style={styles.headerRight}>
-          <View style={styles.premiumBadge}>
-            <SpaceIcon size={14} color="#666" />
-            <Text style={styles.premiumText}>Premium</Text>
-          </View>
-          <View style={styles.avatar}>
-            <User size={20} color="#666" />
-          </View>
+          <TouchableOpacity style={styles.bellIcon} onPress={() => navigation.navigate('Reminders')}>
+            <Bell size={20} color="#333" />
+            <Text style={styles.reminderText}>Reminders</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.avatar}>
+            {/* <Image
+              source={{ uri: user?.avatar || 'https://via.placeholder.com/40' }}
+              style={styles.avatarImage}
+            /> */}
+            <User size={25} color="#666" />
+
+          </TouchableOpacity>
         </View>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Greeting Section */}
-        <View style={styles.greetingContainer}>
-          <Text style={styles.greetingText}>Good {getTimeOfDay()}, {user?.full_name || 'User'}!</Text>
-          <Text style={styles.title}>Here's your health summary.</Text>
-          <Text style={styles.subtitle}>Data shown is a snapshot. Tap any card to view details.</Text>
-        </View>
-
-        {/* Today's Summary */}
-        <View style={styles.section}>
-          <Text style={styles.summaryTitle}>Today's Summary</Text>
-          <View style={styles.summaryGrid}>
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Sodium:</Text>
-              <Text style={styles.summaryValue}>{data?.diet?.sodium ? `${data.diet.sodium} mg` : '0 mg'}</Text>
+      <ScrollView 
+        style={styles.content} 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* Quick Actions - Top */}
+        <View style={styles.quickActionsContainer}>
+          <TouchableOpacity 
+            style={styles.actionCard} 
+            onPress={() => navigation.navigate('UploadLabReportScreen')}
+          >
+            <View style={[styles.actionIconWrapper, { backgroundColor: '#E8F5E9' }]}>
+              <TestTube size={28} color="#4CAF50" />
             </View>
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Fluids:</Text>
-              <Text style={styles.summaryValue}>{data?.diet?.fluid_ml ? `${data.diet.fluid_ml} mL` : '0 mL'}</Text>
-            </View>
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Steps:</Text>
-              <Text style={styles.summaryValue}>{data?.exercise?.steps || data?.vital?.steps || 0}</Text>
-            </View>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>HR:</Text>
-            <Text style={styles.summaryValue}>{data?.vital?.heart_rate ? `${data.vital.heart_rate} bpm` : '0 bpm'}</Text>
-          </View>
-        </View>
-
-       
-        {/* Quick Actions */}
-        <View style={styles.quickActions}>
-          <TouchableOpacity style={styles.actionCard} onPress={()=>navigation.navigate('UploadLabReportScreen')}>
-            <View style={styles.actionIcon}>
-              <TestTube size={20} color="#fff" />
-            </View>
-            <Text style={styles.actionLabel}>Add{'\n'}Lab Data</Text>
-            <Text style={styles.actionSubtext}>MELD inputs</Text>
+            <Text style={styles.actionTitle}>Add{'\n'}Lab Data</Text>
+            <Text style={styles.actionSubtitle}>MELD inputs</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionCard} onPress={()=>navigation.navigate('DietFluidsScreen')}>
-            <View style={styles.actionIcon}>
-              <Utensils size={20} color="#fff" />
+          <TouchableOpacity 
+            style={styles.actionCard} 
+            onPress={() => navigation.navigate('DietFluidsScreen')}
+          >
+            <View style={[styles.actionIconWrapper, { backgroundColor: '#FFF3E0' }]}>
+              <Utensils size={28} color="#FF9800" />
             </View>
-            <Text style={styles.actionLabel}>Add{'\n'}Diet Entry</Text>
-            <Text style={styles.actionSubtext}>Sodium &{'\n'}intake</Text>
+            <Text style={styles.actionTitle}>Add{'\n'}Diet Entry</Text>
+            <Text style={styles.actionSubtitle}>Sodium & intake</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity style={styles.actionCard}>
-            <View style={styles.actionIcon}>
-              <FileText size={20} color="#fff" />
-            </View>
-            <Text style={styles.actionLabel}>Add{'\n'}Notes</Text>
-            <Text style={styles.actionSubtext}>Symptoms &{'\n'}reminders</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Flags Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitle}>
-              <Flag size={20} color="#333" />
-              <Text style={styles.sectionTitleText}>Flags</Text>
-            </View>
-            <Text style={styles.sectionBadge}>Attention</Text>
-          </View>
-
-          <View style={styles.flagCard}>
-            <Text style={styles.flagText}>Missed evening medication yesterday.</Text>
-          </View>
-          <View style={styles.flagCard}>
-            <Text style={styles.flagText}>BP trending near upper range.</Text>
-          </View>
         </View>
 
         {/* Vitals Section */}
-        <View style={styles.section}>
+        <TouchableOpacity 
+          style={styles.sectionCard}
+          onPress={() => navigation.navigate('Vitals')}
+        >
           <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitle}>
+            <View style={styles.sectionTitleRow}>
               <Activity size={20} color="#333" />
-              <Text style={styles.sectionTitleText}>Vitals</Text>
+              <Text style={styles.sectionTitle}>Vitals</Text>
             </View>
             <Text style={styles.sectionTime}>Today</Text>
           </View>
-<TouchableOpacity onPress={()=>navigation.navigate('Vitals')}>
-          <View style={styles.card}>
-            <View style={styles.vitalRow}>
-              <View style={styles.vitalItem}>
-                <Text style={styles.vitalLabel}>BP:</Text>
-                <Text style={styles.vitalValue}>{data?.vital?.blood_pressure || '0/0'}</Text>
-              </View>
-              <View style={styles.vitalItem}>
-                <Text style={styles.vitalLabel}>SPO2:</Text>
-                <Text style={styles.vitalValue}>{data?.vital?.spo2 || 0}</Text>
-              </View>
+
+          <View style={styles.vitalsList}>
+            <View style={styles.vitalItem}>
+              <Text style={styles.vitalLabel}>BP: <Text style={styles.vitalValue}>{data?.vital?.blood_pressure || '120/80'}</Text></Text>
             </View>
-            <View style={styles.vitalRow}>
-              <View style={styles.vitalItem}>
-                <Text style={styles.vitalLabel}>Weight:</Text>
-                <Text style={styles.vitalValue}>{data?.vital?.weight ? `${data.vital.weight} kg` : '0 kg'}</Text>
-              </View>
-              <View style={styles.vitalItem}>
-                <Text style={styles.vitalLabel}>Heart Rate:</Text>
-                <Text style={styles.vitalValue}>{data?.vital?.heart_rate ? `${data.vital.heart_rate} bpm` : '0 bpm'}</Text>
-              </View>
+            <View style={styles.vitalItem}>
+              <Text style={styles.vitalLabel}>RHR: <Text style={styles.vitalValue}>{data?.vital?.glucose || '98'} mg/dL</Text></Text>
             </View>
-            <View style={styles.cardActions}>
-              <View style={{flex: 1}}>
-                <CommonButton 
-                  title="Add / Update" 
-                  onPress={()=>navigation.navigate('Vitals', {screen: 'AddVitalsScreen'})}
-                  bgColor={colors.primary}
-                  textColor={colors.white}
-                  paddingVertical={responsive.padding(10)}
-                  fontSize={font.base}
-                  radius={responsive.borderRadius(8)}
-                />
-              </View>
-              <TouchableOpacity style={styles.historyButton} onPress={() => navigation.navigate('Vitals', {screen: 'VitalsHistoryScreen'})}>
-                <History size={16} color={colors.gray666} />
-                <Text style={styles.historyButtonText}>Vitals History</Text>
-              </TouchableOpacity>
+            <View style={styles.vitalItemFull}>
+              <Text style={styles.vitalLabel}>Oxygen: <Text style={styles.vitalValue}>{data?.vital?.weight ? `${data.vital.weight} kg` : '72 kg'}</Text></Text>
             </View>
           </View>
-          </TouchableOpacity> 
-        </View>
+
+          <View style={styles.cardFooter}>
+            <TouchableOpacity 
+              style={styles.addButton}
+              onPress={() => navigation.navigate('Vitals', {screen: 'AddVitalsScreen'})}
+            >
+              <Plus size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.historyButton}
+              onPress={() => navigation.navigate('Vitals', { screen: 'VitalsHistoryScreen' })}
+            >
+              <History size={18} color="#666" />
+              <Text style={styles.historyText}>Vitals History</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
 
         {/* MELD Score Section */}
-        <View style={styles.section}>
+        <View style={styles.sectionCard}>
           <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitle}>
+            <View style={styles.sectionTitleRow}>
               <Scale size={20} color="#333" />
-              <Text style={styles.sectionTitleText}>MELD Score</Text>
+              <Text style={styles.sectionTitle}>MELD Score</Text>
             </View>
-            <Text style={styles.meldScore}>Latest: {data?.meld?.inr || 0}</Text>
+            <Text style={styles.meldScore}>Latest: {data?.meld?.inr || '12'}</Text>
           </View>
 
-          <View style={styles.card}>
-            <Text style={styles.updateText}>Last updated {data?.meld?.creation ? new Date(data.meld.creation).toLocaleDateString() : '2d ago'}</Text>
-            <View style={styles.meldTags}>
-              <View style={styles.tag}>
-                <Text style={styles.tagText}>Bilirubin: {data?.meld?.total_bilirubin || 0}</Text>
-              </View>
-              <View style={styles.tag}>
-                <Text style={styles.tagText}>INR: {data?.meld?.inr || 0}</Text>
-              </View>
-              <View style={styles.tag}>
-                <Text style={styles.tagText}>Creatinine: {data?.meld?.serum_creatinine || 0}</Text>
-              </View>
+          <Text style={styles.updateText}>Last updated {data?.meld?.creation ? new Date(data.meld.creation).toLocaleDateString() : '2d ago'}</Text>
+
+          <View style={styles.meldTags}>
+            <View style={styles.meldTag}>
+              <Text style={styles.meldTagText}>Bilirubin</Text>
             </View>
-            <View style={styles.cardActions}>
-              <View style={{flex: 1}}>
-                <CommonButton 
-                  title="Add / Update" 
-                  onPress={()=>navigation.navigate('MELDDataEntryScreen')}
-                  bgColor={colors.primary}
-                  textColor={colors.white}
-                  paddingVertical={responsive.padding(10)}
-                  fontSize={font.base}
-                  radius={responsive.borderRadius(8)}
-                />
-              </View>
-              <TouchableOpacity style={styles.historyButton} onPress={()=>navigation.navigate('MELDHistoryScreen')}>
-                <History size={16} color={colors.gray666} />
-                <Text style={styles.historyButtonText}>MELD History</Text>
-              </TouchableOpacity>
+            <View style={styles.meldTag}>
+              <Text style={styles.meldTagText}>INR</Text>
             </View>
+            <View style={styles.meldTag}>
+              <Text style={styles.meldTagText}>Creatinine</Text>
+            </View>
+          </View>
+
+          <View style={styles.cardFooter}>
+            <TouchableOpacity 
+              style={styles.addButton}
+              onPress={() => navigation.navigate('MELDDataEntryScreen')}
+            >
+              <Plus size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.historyButton}
+              onPress={() => navigation.navigate('MELDHistoryScreen')}
+            >
+              <History size={18} color="#666" />
+              <Text style={styles.historyText}>MELD History</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
         {/* Diet & Fluids Section */}
-        <View style={styles.section}>
+        <TouchableOpacity 
+          style={styles.sectionCard}
+          onPress={() => navigation.navigate('DietFluidsScreen')}
+        >
           <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitle}>
+            <View style={styles.sectionTitleRow}>
               <Droplet size={20} color="#333" />
-              <Text style={styles.sectionTitleText}>Diet & Fluids</Text>
-            </View>
-            <Text style={styles.sectionTime}>Today</Text>
-          </View>
-          <TouchableOpacity onPress={()=>navigation.navigate('DietFluidsScreen')}>
-          <View style={styles.card}>
-            <View style={styles.dietRow}>
-              <Text style={styles.dietLabel}>Sodium: <Text style={styles.dietValue}>{data?.diet?.sodium ? `${data.diet.sodium} mg` : '0 mg'}</Text></Text>
-              <Text style={styles.dietLabel}>Fluids: <Text style={styles.dietValue}>{data?.diet?.fluid_ml ? `${data.diet.fluid_ml} mL` : '0 mL'}</Text></Text>
-            </View>
-          </View>
-          </TouchableOpacity>
-        </View>
-
-        {/* Exercise Section */}
-        <TouchableOpacity onPress={()=>navigation.navigate('ExerciseActivityScreen')}>
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitle}>
-              <Heart size={20} color="#333" />
-              <Text style={styles.sectionTitleText}>Exercise</Text>
+              <Text style={styles.sectionTitle}>Diet & Fluids</Text>
             </View>
             <Text style={styles.sectionTime}>Today</Text>
           </View>
 
-          <View style={styles.card}>
-            <View style={styles.exerciseRow}>
-              <Text style={styles.exerciseLabel}>Steps: <Text style={styles.exerciseValue}>{data?.exercise?.steps || data?.vital?.steps || 0}</Text></Text>
-              <Text style={styles.exerciseLabel}>Rest HR: <Text style={styles.exerciseValue}>{data?.exercise?.resting_hr || 0} bpm</Text></Text>
+          <View style={styles.dietRow}>
+            <View style={styles.dietItem}>
+              <Text style={styles.dietLabel}>Sodium: <Text style={styles.dietValue}>{data?.diet?.sodium ? `${data.diet.sodium} g` : '1.7 g'}</Text></Text>
             </View>
-            <View style={styles.exerciseRow}>
-              <Text style={styles.exerciseLabel}>Sleep: <Text style={styles.exerciseValue}>{data?.exercise?.sleep_minutes || data?.vital?.sleep || 0} min</Text></Text>
-            </View>
-            <View style={styles.cardActions}>
-              <View style={{flex: 1}}>
-                <CommonButton 
-                  title="Add / Update" 
-                  onPress={()=>navigation.navigate('ExerciseActivityScreen')}
-                  bgColor={colors.primary}
-                  textColor={colors.white}
-                  paddingVertical={responsive.padding(10)}
-                  fontSize={font.base}
-                  radius={responsive.borderRadius(8)}
-                />
-              </View>
-              <TouchableOpacity style={styles.historyButton} onPress={()=>navigation.navigate('ExerciseHistoryScreen')}>
-                <History size={16} color={colors.gray666} />
-                <Text style={styles.historyButtonText}>Exercise History</Text>
-              </TouchableOpacity>
+            <View style={styles.dietItem}>
+              <Text style={styles.dietLabel}>Fluids: <Text style={styles.dietValue}>{data?.diet?.fluid_ml ? `${(parseFloat(data.diet.fluid_ml) / 1000).toFixed(1)} L` : '1.2 L'}</Text></Text>
             </View>
           </View>
-        </View>
         </TouchableOpacity>
 
-        {/* Medications Section */}
-        <TouchableOpacity onPress={()=>navigation.navigate('MedicationsListScreen')}>
-        <View style={styles.section}>
+        {/* Exercise Section */}
+        <TouchableOpacity 
+          style={styles.sectionCard}
+          onPress={() => navigation.navigate('ExerciseActivityScreen')}
+        >
           <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitle}>
-              <Pill size={20} color="#333" />
-              <Text style={styles.sectionTitleText}>Medications</Text>
+            <View style={styles.sectionTitleRow}>
+              <Activity size={20} color="#333" />
+              <Text style={styles.sectionTitle}>Exercise</Text>
             </View>
-            <Text style={styles.sectionTime}>This week</Text>
+            <Text style={styles.sectionTime}>Today</Text>
           </View>
 
-          <View style={styles.card}>
-            <Text style={styles.adherenceText}>Medication: {data?.medications?.name1 || '-'}</Text>
-            <Text style={styles.adherenceText}>Dose: {data?.medications?.dose || 0} times/day</Text>
-            <CommonButton 
-              title="Add Medicine" 
-              onPress={()=>navigation.navigate('AddMedicationScreen')}
-              bgColor={colors.primary}
-              textColor={colors.white}
-              paddingVertical={responsive.padding(10)}
-              fontSize={font.base}
-              radius={responsive.borderRadius(8)}
-            />
+          <View style={styles.exerciseList}>
+            <View style={styles.exerciseItem}>
+              <Text style={styles.exerciseLabel}>Steps: <Text style={styles.exerciseValue}>{data?.exercise?.steps || data?.vital?.steps || '6,420'}</Text></Text>
+            </View>
+            <View style={styles.exerciseItem}>
+              <Text style={styles.exerciseLabel}>Rest HR: <Text style={styles.exerciseValue}>{data?.exercise?.resting_hr || '62'} bpm</Text></Text>
+            </View>
+            <View style={styles.exerciseItemFull}>
+              <Text style={styles.exerciseLabel}>Sleep: <Text style={styles.exerciseValue}>{data?.exercise?.sleep_minutes || data?.vital?.sleep || '410'} min</Text></Text>
+            </View>
           </View>
-        </View>
+
+          <View style={styles.cardFooter}>
+            <TouchableOpacity 
+              style={styles.addButton}
+              onPress={() => navigation.navigate('ExerciseActivityScreen')}
+            >
+              <Plus size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.historyButton}
+              onPress={() => navigation.navigate('ExerciseHistoryScreen')}
+            >
+              <History size={18} color="#666" />
+              <Text style={styles.historyText}>Exercise History</Text>
+            </TouchableOpacity>
+          </View>
         </TouchableOpacity>
 
         {/* AI Insights Section */}
-        <View style={styles.section}>
+        <View style={styles.aiInsightsCard}>
           <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitle}>
+            <View style={styles.sectionTitleRow}>
               <Sparkles size={20} color="#333" />
-              <Text style={styles.sectionTitleText}>AI Insights</Text>
+              <Text style={styles.sectionTitle}>AI Insights</Text>
             </View>
             <Text style={styles.sectionTime}>Updated today</Text>
           </View>
 
-          <View style={styles.insightCard}>
+          <View style={styles.insightBox}>
             <Text style={styles.insightText}>
               Your BP is trending slightly high this week. Consider a light walk after dinner and reduce sodium intake.
             </Text>
           </View>
         </View>
 
-       
+        {/* Bottom Spacing */}
+        <View style={styles.bottomSpacing} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -407,8 +330,7 @@ export default function Dashboard() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.gray100,
-    paddingTop: 0,
+    backgroundColor: '#FFFFFF',
   },
   header: {
     flexDirection: 'row',
@@ -416,341 +338,290 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: responsive.padding(16),
     paddingVertical: responsive.padding(12),
-    backgroundColor: colors.white,
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: colors.gray200,
+    borderBottomColor: '#F0F0F0',
   },
   headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flex: 1,
   },
   logo: {
-    width: responsive.width(36),
-    height: responsive.height(36),
-    borderRadius: responsive.borderRadius(8),
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  logoText: {
-    fontSize: font.xxl,
-    fontWeight: 'bold',
-    marginLeft: responsive.margin(8),
-    color: colors.darkGray,
+    width: responsive.width(120),
+    height: responsive.height(42),
   },
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: responsive.width(16),
   },
-  premiumBadge: {
-    flexDirection: 'row',
+  bellIcon: {
     alignItems: 'center',
-    gap: responsive.width(4),
-    paddingHorizontal: responsive.padding(8),
-    paddingVertical: responsive.padding(4),
-    backgroundColor: colors.gray100,
-    borderRadius: responsive.borderRadius(12),
   },
-  premiumText: {
-    fontSize: font.sm,
-    color: colors.gray666,
-    fontWeight: '600',
+  reminderText: {
+    fontSize: responsive.fontSize(10),
+    color: '#666',
+    marginTop: responsive.margin(2),
   },
   avatar: {
-    width: responsive.width(32),
-    height: responsive.height(32),
-    borderRadius: responsive.borderRadius(16),
-    backgroundColor: colors.gray200,
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: responsive.width(40),
+    height: responsive.height(40),
+    borderRadius: responsive.borderRadius(20),
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
   },
   content: {
     flex: 1,
-    paddingHorizontal: responsive.padding(16),
+    backgroundColor: '#F8F8F8',
   },
-  greetingContainer: {
-    backgroundColor: colors.white,
-    borderRadius: responsive.borderRadius(16),
-    padding: responsive.padding(20),
-    marginBottom: responsive.margin(20),
+  scrollContent: {
+    paddingHorizontal: responsive.padding(16),
+    paddingTop: responsive.padding(16),
+  },
+  quickActionsContainer: {
+    flexDirection: 'row',
+    gap: responsive.width(12),
+    marginBottom: responsive.margin(16),
+  },
+  actionCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: responsive.borderRadius(12),
+    padding: responsive.padding(16),
+    alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
   },
-  greetingText: {
-    fontSize: font.h4,
-    fontWeight: 'bold',
-    color: colors.primary,
-    marginBottom: responsive.margin(4),
-  },
-  title: {
-    fontSize: font.h5,
-    fontWeight: 'bold',
-    color: colors.darkGray,
-    marginBottom: responsive.margin(8),
-  },
-  subtitle: {
-    fontSize: font.base,
-    color: colors.gray666,
-    lineHeight: responsive.height(20),
-  },
-  quickActions: {
-    flexDirection: 'row',
-    gap: responsive.width(12),
-    marginBottom: responsive.margin(24),
-  },
-  actionCard: {
-    flex: 1,
-    backgroundColor:colors.whiteFff,
+  actionIconWrapper: {
+    width: responsive.width(56),
+    height: responsive.height(56),
     borderRadius: responsive.borderRadius(12),
-    padding: responsive.padding(12),
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  actionIcon: {
-    width: responsive.width(40),
-    height: responsive.height(40),
-    borderRadius: responsive.borderRadius(8),
-    backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: responsive.margin(8),
+    marginBottom: responsive.margin(12),
   },
-  actionLabel: {
-    fontSize: font.base,
+  actionTitle: {
+    fontSize: responsive.fontSize(14),
     fontWeight: '600',
-    color: colors.darkGray,
+    color: '#333',
     textAlign: 'center',
     marginBottom: responsive.margin(4),
+    lineHeight: responsive.height(18),
   },
-  actionSubtext: {
-    fontSize: font.xs,
-    color: colors.gray666,
+  actionSubtitle: {
+    fontSize: responsive.fontSize(12),
+    color: '#999',
     textAlign: 'center',
   },
-  section: {
-    marginBottom: responsive.margin(20),
+  sectionCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: responsive.borderRadius(12),
+    padding: responsive.padding(16),
+    marginBottom: responsive.margin(16),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: responsive.margin(12),
+    marginBottom: responsive.margin(16),
+  },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: responsive.width(8),
   },
   sectionTitle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: responsive.width(8),
-  },
-  sectionTitleText: {
-    fontSize: font.lg,
+    fontSize: responsive.fontSize(16),
     fontWeight: '600',
-    color: colors.darkGray,
-  },
-  sectionBadge: {
-    fontSize: font.sm,
-    color: colors.orange,
-    fontWeight: '600',
+    color: '#333',
   },
   sectionTime: {
-    fontSize: font.sm,
-    color: colors.gray666,
+    fontSize: responsive.fontSize(12),
+    color: '#999',
   },
   meldScore: {
-    fontSize: font.sm,
-    color: colors.gray666,
+    fontSize: responsive.fontSize(12),
+    color: '#666',
     fontWeight: '600',
   },
-  flagCard: {
-    backgroundColor: colors.lightPeach,
-    borderRadius: responsive.borderRadius(8),
-    padding: responsive.padding(12),
-    marginBottom: responsive.margin(8),
-  },
-  flagText: {
-    fontSize: font.base,
-    color: colors.darkGray,
-  },
-  card: {
-    backgroundColor: colors.whiteFff,
-    borderRadius: responsive.borderRadius(12),
-    padding: responsive.padding(16),
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  vitalRow: {
-    flexDirection: 'row',
-    gap: responsive.width(24),
-    marginBottom: responsive.margin(12),
-  },
-  vitalItem: {
+  vitalsList: {
+    marginBottom: responsive.margin(16),
     flexDirection: 'row',
     alignItems: 'center',
     gap: responsive.width(8),
+    width: responsive.width(310),
+    flexWrap: 'wrap', 
+    
+  },
+  vitalItem: {
+    backgroundColor: '#F8F8F8',
+    paddingVertical: responsive.padding(10),
+    paddingHorizontal: responsive.padding(12),
+    borderRadius: responsive.borderRadius(8),
+    marginBottom: responsive.margin(8),
+    // width: responsive.width(90),
+  
+    justifyContent: 'center',
+   
+  },
+  vitalItemFull: {
+    backgroundColor: '#F8F8F8',
+    paddingVertical: responsive.padding(10),
+    paddingHorizontal: responsive.padding(12),
+    borderRadius: responsive.borderRadius(8),
   },
   vitalLabel: {
-    fontSize: font.base,
-    color: colors.gray666,
+    fontSize: responsive.fontSize(14),
+    color: '#666',
   },
   vitalValue: {
-    fontSize: font.base,
     fontWeight: '600',
-    color: colors.darkGray,
-    backgroundColor: colors.gray100,
-    paddingHorizontal: responsive.padding(8),
-    paddingVertical: responsive.padding(4),
-    borderRadius: responsive.borderRadius(4),
-  },
-  cardActions: {
-    flexDirection: 'row',
-    gap: responsive.width(12),
-    marginTop: responsive.margin(12),
-  },
-  addButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: responsive.width(6),
-    backgroundColor: colors.primary,
-    borderRadius: responsive.borderRadius(8),
-    paddingVertical: responsive.padding(10),
-  },
-  addButtonText: {
-    color: colors.whiteFff,
-    fontSize: font.base,
-    fontWeight: '600',
-  },
-  historyButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: responsive.width(6),
-    paddingHorizontal: responsive.padding(12),
-  },
-  historyButtonText: {
-    color: colors.gray666,
-    fontSize: font.base,
+    color: '#333',
   },
   updateText: {
-    fontSize: font.sm,
-    color: colors.gray666,
+    fontSize: responsive.fontSize(12),
+    color: '#999',
     marginBottom: responsive.margin(12),
   },
   meldTags: {
     flexDirection: 'row',
     gap: responsive.width(8),
-    marginBottom: responsive.margin(12),
+    marginBottom: responsive.margin(16),
+    flexWrap: 'wrap',
   },
-  tag: {
-    backgroundColor: colors.gray100,
-    paddingHorizontal: responsive.padding(12),
+  meldTag: {
+    backgroundColor: '#F8F8F8',
     paddingVertical: responsive.padding(6),
+    paddingHorizontal: responsive.padding(12),
     borderRadius: responsive.borderRadius(6),
   },
-  tagText: {
-    fontSize: font.sm,
-    color: colors.gray666,
+  meldTagText: {
+    fontSize: responsive.fontSize(12),
+    color: '#666',
   },
-  dietRow: {
+  cardFooter: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    alignItems: 'center',
+    gap: responsive.width(12),
   },
-  dietLabel: {
-    fontSize: font.base,
-    color: colors.gray666,
+  addButton: {
+    width: responsive.width(48),
+    height: responsive.height(48),
+    borderRadius: responsive.borderRadius(24),
+    backgroundColor: '#4CAF50',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  dietValue: {
-    fontWeight: '600',
-    color: colors.darkGray,
-  },
-  exerciseRow: {
-    flexDirection: 'row',
-    gap: responsive.width(24),
-    marginBottom: responsive.margin(8),
-  },
-  exerciseLabel: {
-    fontSize: font.base,
-    color: colors.gray666,
-  },
-  exerciseValue: {
-    fontWeight: '600',
-    color: colors.darkGray,
-  },
-  adherenceText: {
-    fontSize: font.base,
-    color: colors.gray666,
-    marginBottom: responsive.margin(12),
-  },
-  addMedicineButton: {
+  historyButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: responsive.width(6),
-    backgroundColor: colors.primary,
+    gap: responsive.width(8),
+    backgroundColor: '#F8F8F8',
+    paddingVertical: responsive.padding(12),
     borderRadius: responsive.borderRadius(8),
-    paddingVertical: responsive.padding(10),
   },
-  insightCard: {
-    backgroundColor: colors.tealGreen,
+  historyText: {
+    fontSize: responsive.fontSize(14),
+    color: '#666',
+    fontWeight: '500',
+  },
+  dietRow: {
+    flexDirection: 'row',
+    gap: responsive.width(12),
+  },
+  dietItem: {
+    flex: 1,
+    backgroundColor: '#F8F8F8',
+    paddingVertical: responsive.padding(10),
+    paddingHorizontal: responsive.padding(12),
+    borderRadius: responsive.borderRadius(8),
+  },
+  dietLabel: {
+    fontSize: responsive.fontSize(14),
+    color: '#666',
+  },
+  dietValue: {
+    fontWeight: '600',
+    color: '#333',
+  },
+  exerciseList: {
+    marginBottom: responsive.margin(16),
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: responsive.width(8),
+    width: responsive.width(310),
+    flexWrap: 'wrap', 
+  },
+  exerciseItem: {
+    backgroundColor: '#F8F8F8',
+    paddingVertical: responsive.padding(10),
+    paddingHorizontal: responsive.padding(12),
+    borderRadius: responsive.borderRadius(8),
+    marginBottom: responsive.margin(8),
+  },
+  exerciseItemFull: {
+    backgroundColor: '#F8F8F8',
+    paddingVertical: responsive.padding(10),
+    paddingHorizontal: responsive.padding(12),
+    borderRadius: responsive.borderRadius(8),
+  },
+  exerciseLabel: {
+    fontSize: responsive.fontSize(14),
+    color: '#666',
+  },
+  exerciseValue: {
+    fontWeight: '600',
+    color: '#333',
+  },
+  aiInsightsCard: {
+    backgroundColor: '#FFFFFF',
     borderRadius: responsive.borderRadius(12),
+    padding: responsive.padding(16),
+    marginBottom: responsive.margin(16),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  insightBox: {
+    backgroundColor: '#00796B',
+    borderRadius: responsive.borderRadius(8),
     padding: responsive.padding(16),
   },
   insightText: {
-    fontSize: font.base,
-    color: colors.white,
+    fontSize: responsive.fontSize(14),
+    color: '#FFFFFF',
     lineHeight: responsive.height(20),
   },
-  summaryTitle: {
-    fontSize: font.lg,
-    fontWeight: '600',
-    color: colors.darkGray,
-    marginBottom: responsive.margin(12),
-  },
-  summaryGrid: {
-    flexDirection: 'row',
-    gap: responsive.width(16),
-    marginBottom: responsive.margin(12),
-  },
-  summaryItem: {
-    flex: 1,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    gap: responsive.width(8),
-  },
-  summaryLabel: {
-    fontSize: font.base,
-    color: colors.gray666,
-  },
-  summaryValue: {
-    fontSize: font.base,
-    fontWeight: '600',
-    color: colors.darkGray,
-  },
-  image: {
-    width: responsive.width(100),
-    height: responsive.height(50),
-    // borderRadius: responsive.borderRadius(10),
+  bottomSpacing: {
+    height: responsive.height(20),
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    gap: responsive.height(16),
   },
   loadingText: {
-    fontSize: font.lg,
-    color: colors.gray666,
+    fontSize: responsive.fontSize(16),
+    color: '#666',
     marginTop: responsive.margin(12),
   },
   errorContainer: {
@@ -758,11 +629,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: responsive.padding(20),
-    gap: responsive.height(16),
   },
   errorText: {
-    fontSize: font.base,
-    color: colors.red,
+    fontSize: responsive.fontSize(14),
+    color: '#F44336',
     textAlign: 'center',
     marginBottom: responsive.margin(20),
   },

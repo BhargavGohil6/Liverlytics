@@ -138,11 +138,25 @@ const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
     setEditingEntryId(null);
   };
 
-  // Calculate totals
+  // Calculate totals for today only
   const calculateTotals = () => {
     if (!entries) return { totalSodium: 0, totalFluid: 0 };
     
-    return entries.reduce((totals, entry) => {
+    // Get today's date for comparison
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+    
+    // Filter entries for today's date only
+    const todayEntries = entries.filter(entry => {
+      if (!entry.creation) return false;
+      // Parse the creation date and compare with today
+      const entryDate = new Date(entry.creation);
+      const entryDateStr = entryDate.toISOString().split('T')[0];
+      return entryDateStr === todayStr;
+    });
+    
+    // Calculate totals for today's entries only
+    return todayEntries.reduce((totals, entry) => {
       return {
         totalSodium: totals.totalSodium + (parseInt(entry.sodium) || 0),
         totalFluid: totals.totalFluid + (parseInt(entry.fluid_ml) || 0)
@@ -156,6 +170,53 @@ const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
   const { width, height } = useWindowDimensions();
   const isLandscape = width > height;
   
+  // Check if daily totals exceed user targets
+  const checkIfTargetsExceeded = () => {
+    // Default targets (these should ideally come from user profile)
+    const defaultSodiumTarget = 2000; // mg
+    const defaultFluidTarget = 1800; // mL
+    
+    // Check if user exists in auth state
+    const userEmail = user?.email;
+    
+    // For now using default values, in a real implementation these would come from user profile
+    // You would fetch these from the user's profile in the auth state
+    const sodiumTarget = defaultSodiumTarget;
+    const fluidTarget = defaultFluidTarget;
+    
+    // Check if current totals exceed targets
+    const isSodiumExceeded = totalSodium > sodiumTarget;
+    const isFluidExceeded = totalFluid > fluidTarget;
+    
+    return {
+      isSodiumExceeded,
+      isFluidExceeded,
+      sodiumTarget,
+      fluidTarget
+    };
+  };
+  
+  const { isSodiumExceeded, isFluidExceeded, sodiumTarget, fluidTarget } = checkIfTargetsExceeded();
+  
+  // Determine alert text based on exceeded targets
+  const getAlertText = () => {
+    const exceededItems = [];
+    
+    if (isSodiumExceeded) {
+      exceededItems.push(`Sodium (${totalSodium.toLocaleString()}mg > ${sodiumTarget}mg)`);
+    }
+    
+    if (isFluidExceeded) {
+      exceededItems.push(`Fluid (${totalFluid.toLocaleString()}mL > ${fluidTarget}mL)`);
+    }
+    
+    if (exceededItems.length > 0) {
+      return `⚠️ Target exceeded: ${exceededItems.join(', ')}`;
+    }
+    
+    return 'As of now';
+  };
+  
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ paddingBottom: responsive.padding(20) }}>
@@ -167,7 +228,7 @@ const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
 
         <View style={styles.content}>
           <Text style={styles.title}>Diet & Fluids</Text>
-          <Text style={styles.subtitle}>Track today's sodium and fluid intake</Text>
+          {/* <Text style={styles.subtitle}>Track today's sodium and fluid intake</Text> */}
 
           {/* Today's Totals */}
           <View style={styles.totalsCard}>
@@ -182,7 +243,9 @@ const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
                 <Text style={styles.totalValue}>{totalFluid.toLocaleString()} mL</Text>
               </View>
             </View>
-            <Text style={styles.timestamp}>As of now</Text>
+            <Text style={[styles.timestamp, (isSodiumExceeded || isFluidExceeded) ? styles.alertText : null]}>
+              {getAlertText()}
+            </Text>
           </View>
 
           {/* Add Entry */}
@@ -249,7 +312,7 @@ const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
                     onPress={handleCancelEdit}
                     disabled={loading}
                   >
-                    <Text style={styles.addButtonText}>Cancel</Text>
+                    <Text style={styles.cancelButtonText}>Cancel</Text>
                   </TouchableOpacity>
                 </>
               ) : (
@@ -272,48 +335,63 @@ const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
           <View style={styles.entriesSection}>
             <View style={styles.entriesHeader}>
               <Text style={styles.entriesTitle}>Today's Entries</Text>
-              <Text style={styles.deleteHint}>Tap trash to delete</Text>
+              {/* <Text style={styles.deleteHint}>Tap trash to delete</Text> */}
             </View>
 
-            {entries && entries.length > 0 ? (
-              entries.map((entry, index) => (
-                <View key={entry.name || index} style={styles.entryCard}>
-                  <TouchableOpacity 
-                    style={styles.entryContent}
-                    onPress={() => handleEditEntry(entry)}
-                    disabled={loading}
-                  >
-                    <Text style={styles.entryName}>{entry.item_name}</Text>
-                    <Text style={styles.entryDetails}>
-                      Sodium: {entry.sodium} mg • Fluid: {entry.fluid_ml} mL
-                    </Text>
-                    <Text style={styles.entryTime}>
-                      • {entry.creation ? new Date(entry.creation).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'N/A'}
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={[styles.deleteButton, { marginLeft: isLandscape ? responsive.margin(8) : 0, marginTop: isLandscape ? 0 : responsive.margin(8) }]}
-                    onPress={() => entry.name && handleDeleteEntry(entry.name)}
-                    disabled={loading}
-                  >
-                    <Icon name="trash-outline" size={responsive.fontSize(20)} color={colors.alertRed} />
-                    <Text style={styles.deleteText}>Delete</Text>
-                  </TouchableOpacity>
-                </View>
-              ))
-            ) : (
-              <Text style={styles.noEntriesText}>
-                {loading ? 'Loading entries...' : 'No entries found. Add your first entry!'}
-              </Text>
-            )}
+            {(() => {
+              // Get today's date for comparison
+              const today = new Date();
+              const todayStr = today.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+                          
+              // Filter entries for today's date only
+              const todayEntries = entries?.filter(entry => {
+                if (!entry.creation) return false;
+                // Parse the creation date and compare with today
+                const entryDate = new Date(entry.creation);
+                const entryDateStr = entryDate.toISOString().split('T')[0];
+                return entryDateStr === todayStr;
+              }) || [];
+                          
+              return todayEntries.length > 0 ? (
+                todayEntries.map((entry, index) => (
+                  <View key={entry.name || index} style={styles.entryCard}>
+                    <TouchableOpacity 
+                      style={styles.entryContent}
+                      onPress={() => handleEditEntry(entry)}
+                      disabled={loading}
+                    >
+                      <Text style={styles.entryName}>{entry.item_name}</Text>
+                      <Text style={styles.entryDetails}>
+                        Sodium: {entry.sodium} mg • Fluid: {entry.fluid_ml} mL
+                      </Text>
+                      <Text style={styles.entryTime}>
+                        • {entry.creation ? new Date(entry.creation).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'N/A'}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={[styles.deleteButton, { marginLeft: isLandscape ? responsive.margin(8) : 0, marginTop: isLandscape ? 0 : responsive.margin(8) }]} 
+                      onPress={() => entry.name && handleDeleteEntry(entry.name)}
+                      disabled={loading}
+                    >
+                      <Icon name="trash-outline" size={responsive.fontSize(20)} color={colors.alertRed} />
+                      <Text style={styles.deleteText}>Delete</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))
+              ) : (
+                <Text style={styles.noEntriesText}>
+                  {loading ? 'Loading entries...' : 'No entries found for today. Add your first entry!'}
+                </Text>
+              );
+            })()}
           </View>
 
           {/* Tip */}
-          <View style={styles.tipCard}>
+          {/* <View style={styles.tipCard}>
             <Text style={styles.tipText}>
               Tip: Higher sodium increases fluid retention. Track daily intake to manage cirrhosis symptoms.
             </Text>
-          </View>
+          </View> */}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -385,6 +463,10 @@ const styles = StyleSheet.create({
     fontSize: responsive.fontSize(12),
     color: colors.gray,
   },
+  alertText: {
+    color: colors.alertRed,
+    fontWeight: '600',
+  },
   card: {
     backgroundColor: colors.white,
     padding: responsive.padding(16),
@@ -447,11 +529,24 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   updateButton: {
-    backgroundColor: colors.blue,
+    backgroundColor: colors.primary,
     marginRight: responsive.margin(8),
   },
   cancelButton: {
-    backgroundColor: colors.red,
+    backgroundColor: colors.white,
+    
+    //  backgroundColor: '#333',
+    marginLeft: responsive.margin(8),
+    borderRadius: responsive.borderRadius(8),
+    borderWidth: 1,
+    borderColor: colors.gray200,
+    height: responsive.height(48),
+    justifyContent: 'center',
+  },
+   cancelButtonText: {
+    // backgroundColor: colors.coolGray,
+    color: '#333',
+    
     marginLeft: responsive.margin(8),
   },
   addButtonText: {
@@ -464,6 +559,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop: responsive.margin(16),
     flexWrap: 'wrap',
+    gap: responsive.margin(8),
   },
   entriesSection: {
     marginBottom: responsive.margin(16),

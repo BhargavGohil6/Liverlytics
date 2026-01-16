@@ -1,5 +1,5 @@
 // src/screens/MELDHistoryScreen.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,9 @@ import colors from '../../theme/color';
 import CommonDropdown from '../../components/CommonDropdown';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchMeldHistory, selectMeldHistory, selectMeldHistoryLoading, selectMeldHistoryError } from './slices/meldSlice';
+import type { AppDispatch } from '../../redux/store';
 
 const { width } = Dimensions.get('window');
 
@@ -24,11 +27,44 @@ type MELDHistoryScreenRouteProp = RouteProp<Record<string, object | undefined>, 
 type MELDHistoryScreenNavigationProp = StackNavigationProp<Record<string, object | undefined>, string>;
 
 const MELDHistoryScreen = ({ navigation }: { navigation: MELDHistoryScreenNavigationProp }) => {
+  const dispatch: AppDispatch = useDispatch();
+  const meldHistory = useSelector(selectMeldHistory);
+  const historyLoading = useSelector(selectMeldHistoryLoading);
+  const historyError = useSelector(selectMeldHistoryError);
+  
   const [selectedFilter, setSelectedFilter] = useState('All Time');
   const [selectedSourceType, setSelectedSourceType] = useState('All');
   const [selectedMeldType, setSelectedMeldType] = useState('MELD3');
 
-  const entries = [
+  useEffect(() => {
+    // Fetch MELD history when component mounts
+    dispatch(fetchMeldHistory());
+  }, [dispatch]);
+
+  // Show error message if there's an error
+  useEffect(() => {
+    if (historyError) {
+      // In a real app, you might want to show this in a toast or alert
+      console.error('Error fetching MELD history:', historyError);
+    }
+  }, [historyError]);
+
+  // Use API data if available, otherwise use mock data
+  const entries = meldHistory?.data?.map(entry => ({
+    date: entry.date,
+    meldNa: parseFloat(entry.meld_scores.meld_na.toString()) || 0,
+    meld30: parseFloat(entry.meld_scores.meld_3.toString()) || 0,
+    source: entry.notes || 'Manual', // Assuming notes field contains source info
+    name: entry.name,
+    serum_creatinine: entry.serum_creatinine,
+    serum_sodium: entry.serum_sodium,
+    total_bilirubin: entry.total_bilirubin,
+    inr: entry.inr,
+    albumin: entry.albumin,
+    sex_at_birth: entry.sex_at_birth,
+    creation: entry.creation,
+    modified: entry.modified,
+  })) || [
     { date: 'Oct 12, 2025', meldNa: 19, meld30: 21, source: 'AI Report' },
     { date: 'Oct 05, 2025', meldNa: 18, meld30: 20, source: 'Manual' },
     { date: 'Sep 28, 2025', meldNa: 17, meld30: 19, source: 'AI Report' },
@@ -87,27 +123,56 @@ const MELDHistoryScreen = ({ navigation }: { navigation: MELDHistoryScreenNaviga
             <Text style={styles.chartTitle}>MELD Trend Over Time</Text>
             <Text style={styles.chartSubtitle}>Tap any point to see detailed values</Text>
             
-            <LineChart
-              data={{
-                labels: ['Jun', 'Jul', 'Aug', 'Sep', 'Oct'],
-                datasets: [
-                  { data: [16, 17, 18, 19, 21], color: () => colors.darkGray },
-                  { data: [15, 16, 17, 18, 19], color: () => colors.primary },
-                ],
-              }}
-              width={width - responsive.width(64)}
-              height={responsive.height(200)}
-              chartConfig={{
-                backgroundColor: colors.white,
-                backgroundGradientFrom: colors.white,
-                backgroundGradientTo: colors.white,
-                decimalPlaces: 0,
-                color: (opacity = 1) => `rgba(16, 24, 40, ${opacity})`,
-                style: { borderRadius: responsive.borderRadius(16) },
-              }}
-              bezier
-              style={styles.chart}
-            />
+            {historyLoading ? (
+              <Text style={styles.loadingText}>Loading chart data...</Text>
+            ) : meldHistory?.data && meldHistory.data.length > 0 ? (
+              <LineChart
+                data={{
+                  labels: entries.slice(0, 5).map(entry => {
+                    // Extract month from date string
+                    const date = new Date(entry.date);
+                    return date.toLocaleDateString('en-US', { month: 'short' });
+                  }).reverse(),
+                  datasets: [
+                    { 
+                      data: entries.slice(0, 5)
+                        .map(entry => {
+                          // Validate and sanitize the data
+                          const value = parseFloat(entry.meldNa.toString());
+                          return isNaN(value) || !isFinite(value) ? 0 : value;
+                        })
+                        .reverse(), 
+                      color: () => colors.darkGray 
+                    },
+                    { 
+                      data: entries.slice(0, 5)
+                        .map(entry => {
+                          // Validate and sanitize the data
+                          const value = parseFloat(entry.meld30.toString());
+                          return isNaN(value) || !isFinite(value) ? 0 : value;
+                        })
+                        .reverse(), 
+                      color: () => colors.primary 
+                    },
+                  ],
+                }}
+                width={width - responsive.width(64)}
+                height={responsive.height(200)}
+                chartConfig={{
+                  backgroundColor: colors.white,
+                  backgroundGradientFrom: colors.white,
+                  backgroundGradientTo: colors.white,
+                  decimalPlaces: 0,
+                  color: (opacity = 1) => `rgba(16, 24, 40, ${opacity})`,
+                  style: { borderRadius: responsive.borderRadius(16) },
+                }}
+                bezier
+                style={styles.chart}
+                onDataPointClick={(data) => console.log('Data point clicked', data)}
+              />
+            ) : (
+              <Text style={styles.noDataText}>No chart data available</Text>
+            )}
 
             <View style={styles.legend}>
               <View style={styles.legendItem}>
@@ -123,6 +188,45 @@ const MELDHistoryScreen = ({ navigation }: { navigation: MELDHistoryScreenNaviga
                 <Text style={styles.legendText}>Static preview</Text>
               </View>
             </View>
+          </View>
+
+           {/* Insights */}
+          <View style={styles.insightsCard}>
+            <Text style={styles.insightsTitle}>Insights from Your History</Text>
+            {meldHistory && meldHistory.ai_insights?.ai_insights && meldHistory.ai_insights.ai_insights.length > 0 ? (
+              meldHistory.ai_insights.ai_insights.map((insight, index) => (
+                <View key={index} style={styles.insightItem}>
+                  <Text style={styles.insightBullet}>•</Text>
+                  <Text style={styles.insightText}>
+                    {insight}
+                  </Text>
+                </View>
+              ))
+            ) : (
+              <>
+                <View style={styles.insightItem}>
+                  <Text style={styles.insightBullet}>•</Text>
+                  <Text style={styles.insightText}>
+                    Your MELD-Na has been rising gradually over the last 6 weeks.
+                  </Text>
+                </View>
+                <View style={styles.insightItem}>
+                  <Text style={styles.insightBullet}>•</Text>
+                  <Text style={styles.insightText}>
+                    Creatinine fluctuations contributed to recent MELD increases.
+                  </Text>
+                </View>
+                <View style={styles.insightItem}>
+                  <Text style={styles.insightBullet}>•</Text>
+                  <Text style={styles.insightText}>
+                    Latest MELD-Na is slightly above your 3-month average.
+                  </Text>
+                </View>
+              </>
+            )}
+            <Text style={styles.disclaimer}>
+              These insights are informational and not a diagnosis.
+            </Text>
           </View>
 
           {/* Entries */}
@@ -170,31 +274,7 @@ const MELDHistoryScreen = ({ navigation }: { navigation: MELDHistoryScreenNaviga
             ))}
           </View>
 
-          {/* Insights */}
-          <View style={styles.insightsCard}>
-            <Text style={styles.insightsTitle}>Insights from Your History</Text>
-            <View style={styles.insightItem}>
-              <Text style={styles.insightBullet}>•</Text>
-              <Text style={styles.insightText}>
-                Your MELD-Na has been rising gradually over the last 6 weeks.
-              </Text>
-            </View>
-            <View style={styles.insightItem}>
-              <Text style={styles.insightBullet}>•</Text>
-              <Text style={styles.insightText}>
-                Creatinine fluctuations contributed to recent MELD increases.
-              </Text>
-            </View>
-            <View style={styles.insightItem}>
-              <Text style={styles.insightBullet}>•</Text>
-              <Text style={styles.insightText}>
-                Latest MELD-Na is slightly above your 3-month average.
-              </Text>
-            </View>
-            <Text style={styles.disclaimer}>
-              These insights are informational and not a diagnosis.
-            </Text>
-          </View>
+         
 
           {/* Download Button */}
           {/* <TouchableOpacity style={styles.downloadButton}>
@@ -415,7 +495,7 @@ const styles = StyleSheet.create({
     color: colors.coolGray,
   },
   insightsCard: {
-    backgroundColor: colors.emerald,
+    backgroundColor: colors.tealGreen,
     padding: responsive.padding(16),
     borderRadius: responsive.borderRadius(12),
     marginBottom: responsive.margin(16),
@@ -463,6 +543,18 @@ const styles = StyleSheet.create({
   },
   meldTypeFilterContainer: {
     marginBottom: responsive.margin(12),
+  },
+  loadingText: {
+    textAlign: 'center',
+    padding: responsive.padding(20),
+    fontSize: responsive.fontSize(16),
+    color: colors.coolGray,
+  },
+  noDataText: {
+    textAlign: 'center',
+    padding: responsive.padding(20),
+    fontSize: responsive.fontSize(16),
+    color: colors.coolGray,
   },
 });
 
