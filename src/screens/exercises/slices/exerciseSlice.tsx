@@ -121,12 +121,13 @@ export const addExercise = createAsyncThunk<
 // Get Exercise History API call
 export const getExerciseHistory = createAsyncThunk<
   ExerciseHistoryApiResponse,
-  void,
+  { user: string },
   { rejectValue: string }
->('exercise/getExerciseHistory', async (_, { rejectWithValue }) => {
+>('exercise/getExerciseHistory', async (requestData, { rejectWithValue }) => {
   try {
-    const response = await api.get(
-      '/cirrhosis_custom.cirrhosis_exercise.get_exercise'
+    const response = await api.post(
+      '/cirrhosis_custom.cirrhosis_exercise.get_exercise',
+      requestData
     );
     
     console.log(response.data, 'Exercise History Fetched Successfully');

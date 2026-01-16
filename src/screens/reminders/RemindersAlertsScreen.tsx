@@ -38,6 +38,8 @@ import {
   ChevronRight,
   SpaceIcon
 } from 'lucide-react-native';
+import responsive from '../../theme/responsive'; 
+import {colors,font} from '../../theme/index';
 
 interface AlertItem {
   id: string;
@@ -337,6 +339,55 @@ const RemindersAlert = () => {
             AI detections on vitals, ranges, diet, sleep, and medication events
           </Text>
 
+          {/* Flags Section - styled like Your Reminders */}
+          {/* <View style={styles.remindersSectionHeaderRow}>
+            <Flag size={20} color="#333" />
+            <Text style={styles.remindersSectionTitle}>Flags</Text>
+          </View>
+          <Text style={styles.remindersSectionSubtitle}>
+            Important alerts requiring your attention.
+          </Text> */}
+
+          <View style={styles.reminderCard}>
+            <View style={styles.reminderContent}>
+              <View style={styles.reminderTextContainer}>
+                <View style={styles.alertHeader}>
+                  <View style={[styles.alertIconContainer, {backgroundColor: '#FEF3C7'}]}>
+                    <Flag size={18} color="#F59E0B" />
+                  </View>
+                  <View>
+                    <Text style={styles.reminderTitle}>Missed evening medication yesterday</Text>
+                    <Text style={styles.reminderDescription}>Action required: Take missed dose or consult your doctor</Text>
+                  </View>
+                  <View style={styles.overdueBadge}>
+                  <Text style={styles.overdueBadgeText}>Attention</Text>
+                </View>
+                </View>
+                
+              </View>
+            </View>
+          </View>
+          
+          <View style={styles.reminderCard}>
+            <View style={styles.reminderContent}>
+              <View style={styles.reminderTextContainer}>
+                <View style={styles.alertHeader}>
+                  <View style={[styles.alertIconContainer, {backgroundColor: '#FEF3C7'}]}>
+                    <Flag size={18} color="#F59E0B" />
+                  </View>
+                  <View>
+                    <Text style={styles.reminderTitle}>BP trending near upper range</Text>
+                    <Text style={styles.reminderDescription}>Monitor blood pressure closely and follow prescribed regimen</Text>
+                  </View>
+                  <View style={styles.overdueBadge}>
+                  <Text style={styles.overdueBadgeText}>Warning</Text>
+                </View>
+                </View>
+                
+              </View>
+            </View>
+          </View>
+
           {/* Alert Cards */}
           {alertsData.map(alert => (
             <View key={alert.id} style={styles.alertCard}>
@@ -437,25 +488,7 @@ const RemindersAlert = () => {
         </View>
       </ScrollView>
 
-      {/* Bottom Navigation */}
-       <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem}>
-          <Home size={24} color="#999" />
-          <Text style={styles.navText}>Home</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={()=>navigation.navigate('ReportsMainScreen')}>
-          <BarChart3 size={24} color="#999" />
-          <Text style={styles.navText}>Reports</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={()=>navigation.navigate('RemindersAlertsScreen')}>
-          <Bell size={24} color="#52ab3c" />
-          <Text style={[styles.navText, styles.navTextActive]}>Reminders</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={()=>navigation.navigate('ProfileMainScreen')}>
-          <User size={24} color="#999" />
-          <Text style={styles.navText}>Profile</Text>
-        </TouchableOpacity>
-      </View>
+      
     </SafeAreaView>
   );
 };
@@ -552,6 +585,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     marginBottom: 6,
+    flexWrap: 'wrap',
   },
   alertIconContainer: {
     width: 28,
@@ -621,6 +655,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#1F2937',
+    marginTop: hp('2%'),
+    marginBottom: 4,
+  },
+  remindersSectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: hp('2%'),
     marginBottom: 4,
   },
@@ -728,6 +768,16 @@ const styles = StyleSheet.create({
   navTextActive: {
     color: '#52ab3c',
     fontWeight: '600',
+  },
+   flagCard: {
+    backgroundColor: colors.lightPeach,
+    borderRadius: responsive.borderRadius(8),
+    padding: responsive.padding(12),
+    marginBottom: responsive.margin(8),
+  },
+  flagText: {
+    fontSize: font.base,
+    color: colors.darkGray,
   },
  
 });

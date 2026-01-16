@@ -9,6 +9,7 @@ import {
   TextInput,
   SafeAreaView,
   Alert,
+  Dimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {useNavigation, useRoute} from '@react-navigation/native';
@@ -16,10 +17,12 @@ import { useSelector, useDispatch } from 'react-redux';
 import { addMeldCalculator } from './slices/meldSlice';
 import { RootState, AppDispatch } from '../../redux/store';
 import { MeldCalculatorPayload } from './slices/meldSlice';
+import responsive from '../../theme/responsive';
 
 const MELDDataEntryScreen = () => {
   const navigation = useNavigation();
   const dispatch: AppDispatch = useDispatch();
+  const { user } = useSelector((state: RootState) => state.auth);
   const { loading: meldLoading, error: meldError } = useSelector((state: RootState) => state.meld);
   
   const [bilirubin, setBilirubin] = useState('');
@@ -27,9 +30,19 @@ const MELDDataEntryScreen = () => {
   const [creatinine, setCreatinine] = useState('');
   const [sodium, setSodium] = useState('');
   const [albumin, setAlbumin] = useState('');
-  const [sex, setSex] = useState('Male');
+  const [ast, setAst] = useState('');
+  const [alt, setAlt] = useState('');
+  const [plateletCount, setPlateletCount] = useState('');
+  const [hemoglobin, setHemoglobin] = useState('');
+  const [wbc, setWbc] = useState('');
+  const [potassium, setPotassium] = useState('');
+  const [ammonia, setAmmonia] = useState('');
+  const [sex, setSex] = useState(user?.gender_custom || 'Male');
   const [dialysis, setDialysis] = useState('No');
   const [notes, setNotes] = useState('');
+  
+  const { width } = Dimensions.get('window');
+  const isSmallScreen = width < 768;
 
   const handleSaveAndRecalculate = () => {
     // Validate required fields
@@ -41,17 +54,20 @@ const MELDDataEntryScreen = () => {
     // Prepare the payload for the API call
     const meldData = {
       serum_creatinine: parseFloat(creatinine),
-      serum_sodium: parseFloat(sodium) || 135, // Default to 135 if not provided
+      serum_sodium: parseFloat(sodium) || 135,
       total_bilirubin: parseFloat(bilirubin),
       inr: parseFloat(inr),
-      albumin: parseFloat(albumin) || 4.0, // Default to 4.0 if not provided
+      albumin: parseFloat(albumin) || 4.0,
       sex_at_birth: sex,
       on_dialysis: dialysis === 'Yes' ? 1 : 0,
       notes: notes || 'Manual entry',
-      // Add other optional fields if needed
-      // ammonia: parseFloat(ammonia) || undefined,
-      // hemoglobin: parseFloat(hemoglobin) || undefined,
-      // platelet_count: parseFloat(platelet_count) || undefined,
+      ast: parseFloat(ast) || undefined,
+      alt: parseFloat(alt) || undefined,
+      platelet_count: parseFloat(plateletCount) || undefined,
+      hemoglobin: parseFloat(hemoglobin) || undefined,
+      wbc: parseFloat(wbc) || undefined,
+      potassium: parseFloat(potassium) || undefined,
+      ammonia: parseFloat(ammonia) || undefined,
     };
 
     // Dispatch the API call
@@ -59,9 +75,6 @@ const MELDDataEntryScreen = () => {
       .unwrap()
       .then((result: MeldCalculatorPayload) => {
         console.log('MELD calculation successful:', result);
-        // Navigate to success screen or show results
-        // Adjust navigation as needed - using a generic navigation for now
-        // navigation.navigate('MeldTrendScreen'); // Adjust navigation as needed
         Alert.alert('Success', 'MELD calculation completed successfully');
       })
       .catch((error: any) => {
@@ -75,7 +88,7 @@ const MELDDataEntryScreen = () => {
       <ScrollView>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Icon name="arrow-back" size={24} color="#1f2937" />
+            <Icon name="arrow-back" size={responsive.fontSize(24)} color="#1f2937" />
           </TouchableOpacity>
         </View>
 
@@ -84,14 +97,14 @@ const MELDDataEntryScreen = () => {
           <Text style={styles.subtitle}>Calculate and update your MELD-Na & MELD 3.0 scores</Text>
 
           {/* Entry Method */}
-          <View style={styles.methodCard}>
+          <View style={isSmallScreen ? styles.methodColumn : styles.methodCard}>
             <TouchableOpacity style={styles.methodButton}>
-              <Icon name="create-outline" size={20} color="#1f2937" />
+              <Icon name="create-outline" size={responsive.fontSize(20)} color="#1f2937" />
               <Text style={styles.methodText}>Manual Entry</Text>
               <Text style={styles.methodSubtext}>Enter Lab Values Manually</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.methodButton}>
-              <Icon name="cloud-upload-outline" size={20} color="#1f2937" />
+              <Icon name="cloud-upload-outline" size={responsive.fontSize(20)} color="#1f2937" />
               <Text style={styles.methodText}>Upload Report</Text>
               <Text style={styles.methodSubtext}>Upload Lab Report (AI Extraction)</Text>
             </TouchableOpacity>
@@ -99,12 +112,13 @@ const MELDDataEntryScreen = () => {
 
           {/* Lab Values */}
           <View style={styles.formCard}>
-            <View style={styles.formRow}>
+            {/* Total Bilirubin and INR Row */}
+            <View style={isSmallScreen ? styles.formColumn : styles.formRow}>
               <View style={styles.formItem}>
                 <View style={styles.labelRow}>
                   <Text style={styles.label}>Total Bilirubin</Text>
                   <TouchableOpacity>
-                    <Icon name="information-circle-outline" size={18} color="#6b7280" />
+                    <Icon name="information-circle-outline" size={responsive.fontSize(18)} color="#6b7280" />
                   </TouchableOpacity>
                 </View>
                 <View style={styles.inputRow}>
@@ -117,17 +131,45 @@ const MELDDataEntryScreen = () => {
                   />
                   <Text style={styles.unit}>mg/dL</Text>
                   <TouchableOpacity>
-                    <Icon name="help-circle-outline" size={18} color="#9ca3af" />
+                    <Icon name="help-circle-outline" size={responsive.fontSize(18)} color="#9ca3af" />
                   </TouchableOpacity>
                 </View>
                 <Text style={styles.range}>Range: 0-1-50</Text>
               </View>
 
+              {!isSmallScreen && (
+                <View style={styles.formItem}>
+                  <View style={styles.labelRow}>
+                    <Text style={styles.label}>INR</Text>
+                    <TouchableOpacity>
+                      <Icon name="information-circle-outline" size={responsive.fontSize(18)} color="#6b7280" />
+                    </TouchableOpacity>
+                  </View>
+                  <View style={styles.inputRow}>
+                    <TextInput
+                      style={styles.input}
+                      value={inr}
+                      onChangeText={setInr}
+                      placeholder="—"
+                      keyboardType="decimal-pad"
+                    />
+                    <Text style={styles.unit}>ratio</Text>
+                    <TouchableOpacity>
+                      <Icon name="help-circle-outline" size={responsive.fontSize(18)} color="#9ca3af" />
+                    </TouchableOpacity>
+                  </View>
+                  <Text style={styles.range}>Range: 0-0-8</Text>
+                </View>
+              )}
+            </View>
+            
+            {/* INR Field for Small Screens */}
+            {isSmallScreen && (
               <View style={styles.formItem}>
                 <View style={styles.labelRow}>
                   <Text style={styles.label}>INR</Text>
                   <TouchableOpacity>
-                    <Icon name="information-circle-outline" size={18} color="#6b7280" />
+                    <Icon name="information-circle-outline" size={responsive.fontSize(18)} color="#6b7280" />
                   </TouchableOpacity>
                 </View>
                 <View style={styles.inputRow}>
@@ -140,19 +182,20 @@ const MELDDataEntryScreen = () => {
                   />
                   <Text style={styles.unit}>ratio</Text>
                   <TouchableOpacity>
-                    <Icon name="help-circle-outline" size={18} color="#9ca3af" />
+                    <Icon name="help-circle-outline" size={responsive.fontSize(18)} color="#9ca3af" />
                   </TouchableOpacity>
                 </View>
                 <Text style={styles.range}>Range: 0-0-8</Text>
               </View>
-            </View>
+            )}
 
-            <View style={styles.formRow}>
+            {/* Creatinine and Sodium Row */}
+            <View style={isSmallScreen ? styles.formColumn : styles.formRow}>
               <View style={styles.formItem}>
                 <View style={styles.labelRow}>
                   <Text style={styles.label}>Creatinine</Text>
                   <TouchableOpacity>
-                    <Icon name="information-circle-outline" size={18} color="#6b7280" />
+                    <Icon name="information-circle-outline" size={responsive.fontSize(18)} color="#6b7280" />
                   </TouchableOpacity>
                 </View>
                 <View style={styles.inputRow}>
@@ -165,17 +208,45 @@ const MELDDataEntryScreen = () => {
                   />
                   <Text style={styles.unit}>mg/dL</Text>
                   <TouchableOpacity>
-                    <Icon name="help-circle-outline" size={18} color="#9ca3af" />
+                    <Icon name="help-circle-outline" size={responsive.fontSize(18)} color="#9ca3af" />
                   </TouchableOpacity>
                 </View>
                 <Text style={styles.range}>Range: 0-1-15</Text>
               </View>
 
+              {!isSmallScreen && (
+                <View style={styles.formItem}>
+                  <View style={styles.labelRow}>
+                    <Text style={styles.label}>Sodium</Text>
+                    <TouchableOpacity>
+                      <Icon name="information-circle-outline" size={responsive.fontSize(18)} color="#6b7280" />
+                    </TouchableOpacity>
+                  </View>
+                  <View style={styles.inputRow}>
+                    <TextInput
+                      style={styles.input}
+                      value={sodium}
+                      onChangeText={setSodium}
+                      placeholder="—"
+                      keyboardType="decimal-pad"
+                    />
+                    <Text style={styles.unit}>mEq/L</Text>
+                    <TouchableOpacity>
+                      <Icon name="help-circle-outline" size={responsive.fontSize(18)} color="#9ca3af" />
+                    </TouchableOpacity>
+                  </View>
+                  <Text style={styles.range}>Range: 120-170</Text>
+                </View>
+              )}
+            </View>
+            
+            {/* Sodium Field for Small Screens */}
+            {isSmallScreen && (
               <View style={styles.formItem}>
                 <View style={styles.labelRow}>
                   <Text style={styles.label}>Sodium</Text>
                   <TouchableOpacity>
-                    <Icon name="information-circle-outline" size={18} color="#6b7280" />
+                    <Icon name="information-circle-outline" size={responsive.fontSize(18)} color="#6b7280" />
                   </TouchableOpacity>
                 </View>
                 <View style={styles.inputRow}>
@@ -188,19 +259,20 @@ const MELDDataEntryScreen = () => {
                   />
                   <Text style={styles.unit}>mEq/L</Text>
                   <TouchableOpacity>
-                    <Icon name="help-circle-outline" size={18} color="#9ca3af" />
+                    <Icon name="help-circle-outline" size={responsive.fontSize(18)} color="#9ca3af" />
                   </TouchableOpacity>
                 </View>
                 <Text style={styles.range}>Range: 120-170</Text>
               </View>
-            </View>
+            )}
 
-            <View style={styles.formRow}>
+            {/* Albumin and Sex Row */}
+            <View style={isSmallScreen ? styles.formColumn : styles.formRow}>
               <View style={styles.formItem}>
                 <View style={styles.labelRow}>
                   <Text style={styles.label}>Albumin</Text>
                   <TouchableOpacity>
-                    <Icon name="information-circle-outline" size={18} color="#6b7280" />
+                    <Icon name="information-circle-outline" size={responsive.fontSize(18)} color="#6b7280" />
                   </TouchableOpacity>
                 </View>
                 <View style={styles.inputRow}>
@@ -216,32 +288,289 @@ const MELDDataEntryScreen = () => {
                 <Text style={styles.range}>Range: 1.0-6.0</Text>
               </View>
 
+              {!isSmallScreen && (
+                <View style={styles.formItem}>
+                  <View style={styles.labelRow}>
+                    <Text style={styles.label}>Sex</Text>
+                    <TouchableOpacity>
+                      <Icon name="information-circle-outline" size={responsive.fontSize(18)} color="#6b7280" />
+                    </TouchableOpacity>
+                  </View>
+                  <View style={styles.sexButtons}>
+                    <View
+                      style={[styles.sexButton, sex === 'Female' && styles.sexButtonActive, styles.disabledButton]}
+                      pointerEvents="none"
+                    >
+                      <Text style={[styles.sexText, sex === 'Female' && styles.sexTextActive]}>
+                        Female
+                      </Text>
+                    </View>
+                    <View
+                      style={[styles.sexButton, sex === 'Male' && styles.sexButtonActive, styles.disabledButton]}
+                      pointerEvents="none"
+                    >
+                      <Text style={[styles.sexText, sex === 'Male' && styles.sexTextActive]}>
+                        Male
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              )}
+            </View>
+            
+            {/* Sex Selection for Small Screens */}
+            {isSmallScreen && (
               <View style={styles.formItem}>
                 <View style={styles.labelRow}>
                   <Text style={styles.label}>Sex</Text>
                   <TouchableOpacity>
-                    <Icon name="information-circle-outline" size={18} color="#6b7280" />
+                    <Icon name="information-circle-outline" size={responsive.fontSize(18)} color="#6b7280" />
                   </TouchableOpacity>
                 </View>
                 <View style={styles.sexButtons}>
-                  <TouchableOpacity
-                    style={[styles.sexButton, sex === 'Female' && styles.sexButtonActive]}
-                    onPress={() => setSex('Female')}
+                  <View
+                    style={[styles.sexButton, sex === 'Female' && styles.sexButtonActive, styles.disabledButton]}
+                    pointerEvents="none"
                   >
                     <Text style={[styles.sexText, sex === 'Female' && styles.sexTextActive]}>
                       Female
                     </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.sexButton, sex === 'Male' && styles.sexButtonActive]}
-                    onPress={() => setSex('Male')}
+                  </View>
+                  <View
+                    style={[styles.sexButton, sex === 'Male' && styles.sexButtonActive, styles.disabledButton]}
+                    pointerEvents="none"
                   >
                     <Text style={[styles.sexText, sex === 'Male' && styles.sexTextActive]}>
                       Male
                     </Text>
-                  </TouchableOpacity>
+                  </View>
                 </View>
               </View>
+            )}
+
+            {/* AST and ALT Row */}
+            <View style={isSmallScreen ? styles.formColumn : styles.formRow}>
+              <View style={styles.formItem}>
+                <View style={styles.labelRow}>
+                  <Text style={styles.label}>AST</Text>
+                  <TouchableOpacity>
+                    <Icon name="information-circle-outline" size={responsive.fontSize(18)} color="#6b7280" />
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.inputRow}>
+                  <TextInput
+                    style={styles.input}
+                    value={ast}
+                    onChangeText={setAst}
+                    placeholder="—"
+                    keyboardType="decimal-pad"
+                  />
+                  <Text style={styles.unit}>U/L</Text>
+                </View>
+                <Text style={styles.range}>Range: 10-40</Text>
+              </View>
+
+              {!isSmallScreen && (
+                <View style={styles.formItem}>
+                  <View style={styles.labelRow}>
+                    <Text style={styles.label}>ALT</Text>
+                    <TouchableOpacity>
+                      <Icon name="information-circle-outline" size={responsive.fontSize(18)} color="#6b7280" />
+                    </TouchableOpacity>
+                  </View>
+                  <View style={styles.inputRow}>
+                    <TextInput
+                      style={styles.input}
+                      value={alt}
+                      onChangeText={setAlt}
+                      placeholder="—"
+                      keyboardType="decimal-pad"
+                    />
+                    <Text style={styles.unit}>U/L</Text>
+                  </View>
+                  <Text style={styles.range}>Range: 7-40</Text>
+                </View>
+              )}
+            </View>
+
+            {/* ALT Field for Small Screens */}
+            {isSmallScreen && (
+              <View style={styles.formItem}>
+                <View style={styles.labelRow}>
+                  <Text style={styles.label}>ALT</Text>
+                  <TouchableOpacity>
+                    <Icon name="information-circle-outline" size={responsive.fontSize(18)} color="#6b7280" />
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.inputRow}>
+                  <TextInput
+                    style={styles.input}
+                    value={alt}
+                    onChangeText={setAlt}
+                    placeholder="—"
+                    keyboardType="decimal-pad"
+                  />
+                  <Text style={styles.unit}>U/L</Text>
+                </View>
+                <Text style={styles.range}>Range: 7-40</Text>
+              </View>
+            )}
+
+            {/* Platelet Count and Hemoglobin Row */}
+            <View style={isSmallScreen ? styles.formColumn : styles.formRow}>
+              <View style={styles.formItem}>
+                <View style={styles.labelRow}>
+                  <Text style={styles.label}>Platelet Count</Text>
+                  <TouchableOpacity>
+                    <Icon name="information-circle-outline" size={responsive.fontSize(18)} color="#6b7280" />
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.inputRow}>
+                  <TextInput
+                    style={styles.input}
+                    value={plateletCount}
+                    onChangeText={setPlateletCount}
+                    placeholder="—"
+                    keyboardType="decimal-pad"
+                  />
+                  <Text style={styles.unit}>platelets/µL</Text>
+                </View>
+                <Text style={styles.range}>Range: 150000-450000</Text>
+              </View>
+
+              {!isSmallScreen && (
+                <View style={styles.formItem}>
+                  <View style={styles.labelRow}>
+                    <Text style={styles.label}>Hemoglobin</Text>
+                    <TouchableOpacity>
+                      <Icon name="information-circle-outline" size={responsive.fontSize(18)} color="#6b7280" />
+                    </TouchableOpacity>
+                  </View>
+                  <View style={styles.inputRow}>
+                    <TextInput
+                      style={styles.input}
+                      value={hemoglobin}
+                      onChangeText={setHemoglobin}
+                      placeholder="—"
+                      keyboardType="decimal-pad"
+                    />
+                    <Text style={styles.unit}>g/dL</Text>
+                  </View>
+                  <Text style={styles.range}>Range: 12-17</Text>
+                </View>
+              )}
+            </View>
+
+            {/* Hemoglobin Field for Small Screens */}
+            {isSmallScreen && (
+              <View style={styles.formItem}>
+                <View style={styles.labelRow}>
+                  <Text style={styles.label}>Hemoglobin</Text>
+                  <TouchableOpacity>
+                    <Icon name="information-circle-outline" size={responsive.fontSize(18)} color="#6b7280" />
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.inputRow}>
+                  <TextInput
+                    style={styles.input}
+                    value={hemoglobin}
+                    onChangeText={setHemoglobin}
+                    placeholder="—"
+                    keyboardType="decimal-pad"
+                  />
+                  <Text style={styles.unit}>g/dL</Text>
+                </View>
+                <Text style={styles.range}>Range: 12-17</Text>
+              </View>
+            )}
+
+            {/* WBC and Potassium Row */}
+            <View style={isSmallScreen ? styles.formColumn : styles.formRow}>
+              <View style={styles.formItem}>
+                <View style={styles.labelRow}>
+                  <Text style={styles.label}>WBC</Text>
+                  <TouchableOpacity>
+                    <Icon name="information-circle-outline" size={responsive.fontSize(18)} color="#6b7280" />
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.inputRow}>
+                  <TextInput
+                    style={styles.input}
+                    value={wbc}
+                    onChangeText={setWbc}
+                    placeholder="—"
+                    keyboardType="decimal-pad"
+                  />
+                  <Text style={styles.unit}>cells/µL</Text>
+                </View>
+                <Text style={styles.range}>Range: 4000-11000</Text>
+              </View>
+
+              {!isSmallScreen && (
+                <View style={styles.formItem}>
+                  <View style={styles.labelRow}>
+                    <Text style={styles.label}>Potassium</Text>
+                    <TouchableOpacity>
+                      <Icon name="information-circle-outline" size={responsive.fontSize(18)} color="#6b7280" />
+                    </TouchableOpacity>
+                  </View>
+                  <View style={styles.inputRow}>
+                    <TextInput
+                      style={styles.input}
+                      value={potassium}
+                      onChangeText={setPotassium}
+                      placeholder="—"
+                      keyboardType="decimal-pad"
+                    />
+                    <Text style={styles.unit}>mEq/L</Text>
+                  </View>
+                  <Text style={styles.range}>Range: 3.5-5.1</Text>
+                </View>
+              )}
+            </View>
+
+            {/* Potassium Field for Small Screens */}
+            {isSmallScreen && (
+              <View style={styles.formItem}>
+                <View style={styles.labelRow}>
+                  <Text style={styles.label}>Potassium</Text>
+                  <TouchableOpacity>
+                    <Icon name="information-circle-outline" size={responsive.fontSize(18)} color="#6b7280" />
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.inputRow}>
+                  <TextInput
+                    style={styles.input}
+                    value={potassium}
+                    onChangeText={setPotassium}
+                    placeholder="—"
+                    keyboardType="decimal-pad"
+                  />
+                  <Text style={styles.unit}>mEq/L</Text>
+                </View>
+                <Text style={styles.range}>Range: 3.5-5.1</Text>
+              </View>
+            )}
+
+            {/* Ammonia */}
+            <View style={styles.formItem}>
+              <View style={styles.labelRow}>
+                <Text style={styles.label}>Ammonia</Text>
+                <TouchableOpacity>
+                  <Icon name="information-circle-outline" size={responsive.fontSize(18)} color="#6b7280" />
+                </TouchableOpacity>
+              </View>
+              <View style={styles.inputRow}>
+                <TextInput
+                  style={styles.input}
+                  value={ammonia}
+                  onChangeText={setAmmonia}
+                  placeholder="—"
+                  keyboardType="decimal-pad"
+                />
+                <Text style={styles.unit}>umol/L</Text>
+              </View>
+              <Text style={styles.range}>Range: 11-35</Text>
             </View>
 
             {/* Dialysis Toggle */}
@@ -249,7 +578,7 @@ const MELDDataEntryScreen = () => {
               <View style={styles.labelRow}>
                 <Text style={styles.label}>On Dialysis?</Text>
                 <TouchableOpacity>
-                  <Icon name="information-circle-outline" size={18} color="#6b7280" />
+                  <Icon name="information-circle-outline" size={responsive.fontSize(18)} color="#6b7280" />
                 </TouchableOpacity>
               </View>
               <View style={styles.toggleButtons}>
@@ -280,7 +609,7 @@ const MELDDataEntryScreen = () => {
               <View style={styles.labelRow}>
                 <Text style={styles.label}>Notes (optional)</Text>
                 <TouchableOpacity>
-                  <Icon name="information-circle-outline" size={18} color="#6b7280" />
+                  <Icon name="information-circle-outline" size={responsive.fontSize(18)} color="#6b7280" />
                 </TouchableOpacity>
               </View>
               <TextInput
@@ -297,13 +626,13 @@ const MELDDataEntryScreen = () => {
           {/* Results Preview */}
           <View style={styles.resultsCard}>
             <Text style={styles.resultsTitle}>MELD Results</Text>
-            <View style={styles.resultRow}>
+            <View style={isSmallScreen ? styles.resultColumn : styles.resultRow}>
               <View style={styles.resultItem}>
                 <Text style={styles.resultLabel}>MELD-Na</Text>
                 <Text style={styles.resultValue}>—</Text>
                 <Text style={styles.resultHint}>Updated when all fields valid</Text>
               </View>
-              <View style={styles.resultDivider} />
+              {!isSmallScreen && <View style={styles.resultDivider} />}
               <View style={styles.resultItem}>
                 <Text style={styles.resultLabel}>MELD 3.0</Text>
                 <Text style={styles.resultValue}>—</Text>
@@ -313,7 +642,7 @@ const MELDDataEntryScreen = () => {
           </View>
 
           {/* Action Buttons */}
-          <View style={styles.actions}>
+          <View style={isSmallScreen ? styles.actionsColumn : styles.actions}>
             <TouchableOpacity style={styles.clearButton}>
               <Text style={styles.clearText}>Clear</Text>
             </TouchableOpacity>
@@ -358,70 +687,79 @@ const MELDDataEntryScreen = () => {
     </SafeAreaView>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f9fafb',
   },
   header: {
-    padding: 16,
+    padding: responsive.padding(16),
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
   },
   content: {
-    padding: 16,
+    padding: responsive.padding(16),
   },
   title: {
-    fontSize: 24,
+    fontSize: responsive.fontSize(24),
     fontWeight: '700',
     color: '#1f2937',
-    marginBottom: 4,
+    marginBottom: responsive.margin(4),
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: responsive.fontSize(14),
     color: '#6b7280',
-    marginBottom: 24,
+    marginBottom: responsive.margin(24),
   },
   methodCard: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 16,
+    gap: responsive.width(12),
+    marginBottom: responsive.margin(16),
+  },
+  methodColumn: {
+    flexDirection: 'column',
+    gap: responsive.width(12),
+    marginBottom: responsive.margin(16),
   },
   methodButton: {
     flex: 1,
     backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
+    padding: responsive.padding(16),
+    borderRadius: responsive.borderRadius(12),
     borderWidth: 1,
     borderColor: '#e5e7eb',
     alignItems: 'center',
   },
   methodText: {
-    fontSize: 15,
+    fontSize: responsive.fontSize(15),
     fontWeight: '600',
     color: '#1f2937',
-    marginTop: 8,
+    marginTop: responsive.margin(8),
   },
   methodSubtext: {
-    fontSize: 12,
+    fontSize: responsive.fontSize(12),
     color: '#6b7280',
     textAlign: 'center',
-    marginTop: 4,
+    marginTop: responsive.margin(4),
   },
   formCard: {
     backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
+    padding: responsive.padding(16),
+    borderRadius: responsive.borderRadius(12),
+    marginBottom: responsive.margin(16),
     borderWidth: 1,
     borderColor: '#e5e7eb',
   },
   formRow: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 16,
+    gap: responsive.width(12),
+    marginBottom: responsive.margin(16),
+  },
+  formColumn: {
+    flexDirection: 'column',
+    gap: responsive.width(12),
+    marginBottom: responsive.margin(16),
   },
   formItem: {
     flex: 1,
@@ -429,10 +767,10 @@ const styles = StyleSheet.create({
   labelRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: responsive.margin(8),
   },
   label: {
-    fontSize: 14,
+    fontSize: responsive.fontSize(14),
     fontWeight: '500',
     color: '#374151',
     flex: 1,
@@ -442,62 +780,65 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#d1d5db',
-    borderRadius: 8,
-    paddingHorizontal: 12,
+    borderRadius: responsive.borderRadius(8),
+    paddingHorizontal: responsive.padding(12),
     backgroundColor: '#f9fafb',
   },
   input: {
     flex: 1,
-    paddingVertical: 10,
-    fontSize: 15,
+    paddingVertical: responsive.padding(10),
+    fontSize: responsive.fontSize(15),
     color: '#1f2937',
   },
   unit: {
-    fontSize: 13,
+    fontSize: responsive.fontSize(13),
     color: '#6b7280',
-    marginLeft: 8,
+    marginLeft: responsive.width(8),
   },
   range: {
-    fontSize: 11,
+    fontSize: responsive.fontSize(11),
     color: '#9ca3af',
-    marginTop: 4,
+    marginTop: responsive.margin(4),
   },
   sexButtons: {
     flexDirection: 'row',
-    gap: 8,
+    gap: responsive.width(8),
   },
   sexButton: {
     flex: 1,
-    paddingVertical: 10,
-    borderRadius: 8,
+    paddingVertical: responsive.padding(10),
+    borderRadius: responsive.borderRadius(8),
     borderWidth: 1,
     borderColor: '#d1d5db',
     alignItems: 'center',
     backgroundColor: '#f9fafb',
+  },
+  disabledButton: {
+    opacity: 0.6,
   },
   sexButtonActive: {
     backgroundColor: '#1f2937',
     borderColor: '#1f2937',
   },
   sexText: {
-    fontSize: 14,
+    fontSize: responsive.fontSize(14),
     color: '#374151',
   },
   sexTextActive: {
     color: '#fff',
   },
   dialysisRow: {
-    marginBottom: 16,
+    marginBottom: responsive.margin(16),
   },
   toggleButtons: {
     flexDirection: 'row',
-    gap: 8,
-    marginTop: 8,
+    gap: responsive.width(8),
+    marginTop: responsive.margin(8),
   },
   toggleButton: {
     flex: 1,
-    paddingVertical: 10,
-    borderRadius: 8,
+    paddingVertical: responsive.padding(10),
+    borderRadius: responsive.borderRadius(8),
     borderWidth: 1,
     borderColor: '#d1d5db',
     alignItems: 'center',
@@ -508,136 +849,145 @@ const styles = StyleSheet.create({
     borderColor: '#1f2937',
   },
   toggleText: {
-    fontSize: 14,
+    fontSize: responsive.fontSize(14),
     color: '#374151',
   },
   toggleTextActive: {
     color: '#fff',
   },
   helperText: {
-    fontSize: 12,
+    fontSize: responsive.fontSize(12),
     color: '#6b7280',
-    marginTop: 6,
+    marginTop: responsive.margin(6),
   },
   notesSection: {
-    marginTop: 8,
+    marginTop: responsive.margin(8),
   },
   notesInput: {
     borderWidth: 1,
     borderColor: '#d1d5db',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 14,
+    borderRadius: responsive.borderRadius(8),
+    padding: responsive.padding(12),
+    fontSize: responsive.fontSize(14),
     color: '#1f2937',
     backgroundColor: '#f9fafb',
-    marginTop: 8,
-    minHeight: 80,
+    marginTop: responsive.margin(8),
+    minHeight: responsive.height(80),
     textAlignVertical: 'top',
   },
   resultsCard: {
     backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
+    padding: responsive.padding(16),
+    borderRadius: responsive.borderRadius(12),
+    marginBottom: responsive.margin(16),
     borderWidth: 1,
     borderColor: '#e5e7eb',
   },
   resultsTitle: {
-    fontSize: 16,
+    fontSize: responsive.fontSize(16),
     fontWeight: '600',
     color: '#1f2937',
-    marginBottom: 16,
+    marginBottom: responsive.margin(16),
   },
   resultRow: {
     flexDirection: 'row',
+    alignItems: 'center',
+  },
+  resultColumn: {
+    flexDirection: 'column',
     alignItems: 'center',
   },
   resultItem: {
     flex: 1,
   },
   resultLabel: {
-    fontSize: 14,
+    fontSize: responsive.fontSize(14),
     color: '#6b7280',
-    marginBottom: 8,
+    marginBottom: responsive.margin(8),
   },
   resultValue: {
-    fontSize: 28,
+    fontSize: responsive.fontSize(28),
     fontWeight: '700',
     color: '#1f2937',
-    marginBottom: 8,
+    marginBottom: responsive.margin(8),
   },
   resultHint: {
-    fontSize: 11,
+    fontSize: responsive.fontSize(11),
     color: '#9ca3af',
-    lineHeight: 16,
+    lineHeight: responsive.height(16),
   },
   resultDivider: {
-    width: 1,
-    height: 60,
+    width: responsive.width(1),
+    height: responsive.height(60),
     backgroundColor: '#e5e7eb',
-    marginHorizontal: 16,
+    marginHorizontal: responsive.width(16),
   },
   actions: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 16,
+    gap: responsive.width(12),
+    marginBottom: responsive.margin(16),
+  },
+  actionsColumn: {
+    flexDirection: 'column',
+    gap: responsive.width(12),
+    marginBottom: responsive.margin(16),
   },
   clearButton: {
     flex: 1,
-    paddingVertical: 14,
-    borderRadius: 8,
+    paddingVertical: responsive.padding(14),
+    borderRadius: responsive.borderRadius(8),
     alignItems: 'center',
     backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: '#d1d5db',
   },
   clearText: {
-    fontSize: 16,
+    fontSize: responsive.fontSize(16),
     fontWeight: '600',
     color: '#374151',
   },
   saveButton: {
     flex: 1,
-    paddingVertical: 14,
-    borderRadius: 8,
+    paddingVertical: responsive.padding(14),
+    borderRadius: responsive.borderRadius(8),
     alignItems: 'center',
     backgroundColor: '#52a64a',
   },
   saveText: {
-    fontSize: 16,
+    fontSize: responsive.fontSize(16),
     fontWeight: '600',
     color: '#fff',
   },
   insightsCard: {
     backgroundColor: '#0F7A6B',
-    padding: 16,
-    borderRadius: 12,
+    padding: responsive.padding(16),
+    borderRadius: responsive.borderRadius(12),
   },
   insightsTitle: {
-    fontSize: 16,
+    fontSize: responsive.fontSize(16),
     fontWeight: '600',
     color: '#fff',
-    marginBottom: 12,
+    marginBottom: responsive.margin(12),
   },
   insightItem: {
     flexDirection: 'row',
-    marginBottom: 8,
+    marginBottom: responsive.margin(8),
   },
   insightBullet: {
-    fontSize: 16,
+    fontSize: responsive.fontSize(16),
     color: '#fff',
-    marginRight: 8,
+    marginRight: responsive.width(8),
   },
   insightText: {
-    fontSize: 14,
+    fontSize: responsive.fontSize(14),
     color: '#fff',
     flex: 1,
-    lineHeight: 20,
+    lineHeight: responsive.height(20),
   },
   disclaimer: {
-    fontSize: 12,
+    fontSize: responsive.fontSize(12),
     color: '#d1fae5',
-    marginTop: 8,
+    marginTop: responsive.margin(8),
     fontStyle: 'italic',
   },
 });

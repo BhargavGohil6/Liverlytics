@@ -11,6 +11,7 @@ export interface VitalData {
   sleep?: number;
   steps?: number;
   spo2?: number;
+  glucose?: number;
   date?: string;
   user?: string;
   is_today?: boolean;

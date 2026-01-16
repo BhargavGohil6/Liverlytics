@@ -150,7 +150,7 @@ const ExerciseActivityScreen = ({ navigation }: { navigation: any }) => {
                     resting_hr: rhr,
                     sleep_minutes: sleep,
                     steps: steps,
-                    user: user?.email || 'pareshwaghela2000@gmail.com', // Fallback to default email
+                    user: user?.email || '', // Fallback to default email
                   };
                   
                   // Dispatch the addExercise action

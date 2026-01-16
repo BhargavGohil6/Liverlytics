@@ -38,6 +38,48 @@ export interface LabReportResponse {
   };
 }
 
+// Types for AI Lab Report
+export interface AILabReportData {
+  bilirubin: string;
+  creatinine: string;
+  sodium: string;
+  albumin: string;
+  ast: string;
+  alt: string;
+  platelet_count: string;
+  hemoglobin: string;
+  wbc: string;
+  potassium: string;
+  ammonia: string;
+  inr: string;
+  user: string;
+}
+
+export interface AILabReportResponse {
+  message: {
+    status: string;
+    message: string;
+    ai_lab_report_id: string;
+    data: {
+      bilirubin: string;
+      creatinine: string;
+      sodium: string;
+      albumin: string;
+      ast: string;
+      alt: string;
+      platelet_count: string;
+      hemoglobin: string;
+      wbc: string;
+      potassium: string;
+      ammonia: string;
+      inr: string;
+      user: string;
+      creation: string;
+      modified: string;
+    }
+  }
+}
+
 // Types for MELD Calculator
 export interface MeldCalculatorData {
   serum_creatinine: number;
@@ -162,6 +204,34 @@ export const addMeldCalculator = createAsyncThunk<
   }
 });
 
+// API call for AI Lab Report
+export const addAILabReport = createAsyncThunk<
+  AILabReportResponse,
+  AILabReportData,
+  { rejectValue: string }
+>('reports/addAILabReport', async (data, { rejectWithValue }) => {
+  try {
+    console.log('Adding AI Lab Report data:', data);
+
+    // Make the API call
+    const response = await api.post('/cirrhosis_custom.cirrhosis_ai_lab_report.add_ai_lab_report', data);
+
+    console.log('AI Lab Report response:', response.data);
+    return response.data;
+  } catch (error: any) {
+    console.log('AI Lab Report Error:', error);
+    console.log('Error response:', error.response);
+
+    const msg =
+      error.response?.data?.message?.message ||
+      error.response?.data?.message ||
+      error.message ||
+      'AI Lab Report creation failed';
+
+    return rejectWithValue(msg);
+  }
+});
+
 const reportSlice = createSlice({
   name: 'reports',
   initialState: {
@@ -218,6 +288,57 @@ const reportSlice = createSlice({
       .addCase(addMeldCalculator.rejected, (state, action) => {
         state.meldLoading = false;
         state.meldError = action.payload || 'MELD calculation failed';
+      })
+      // AI Lab Report reducers
+      .addCase(addAILabReport.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(addAILabReport.fulfilled, (state, action: PayloadAction<AILabReportResponse>) => {
+        state.loading = false;
+        state.labData = { 
+          ...state.labData, 
+          status: action.payload.message.status,
+          medical_analysis: {
+            status: action.payload.message.status,
+            medical_data: {
+              bilirubin: { value: action.payload.message.data.bilirubin, unit: '', normal_range: null },
+              creatinine: { value: action.payload.message.data.creatinine, unit: '', normal_range: null },
+              sodium: { value: action.payload.message.data.sodium, unit: '', normal_range: null },
+              albumin: { value: action.payload.message.data.albumin, unit: '', normal_range: null },
+              ast: { value: action.payload.message.data.ast, unit: '', normal_range: null },
+              alt: { value: action.payload.message.data.alt, unit: '', normal_range: null },
+              platelet_count: { value: action.payload.message.data.platelet_count, unit: '', normal_range: null },
+              hemoglobin: { value: action.payload.message.data.hemoglobin, unit: '', normal_range: null },
+              wbc: { value: action.payload.message.data.wbc, unit: '', normal_range: null },
+              potassium: { value: action.payload.message.data.potassium, unit: '', normal_range: null },
+              ammonia: { value: action.payload.message.data.ammonia, unit: '', normal_range: null },
+              inr: { value: action.payload.message.data.inr, unit: '', normal_range: null },
+            },
+            note: '',
+          },
+          extracted_text: '',
+          cleaned_text: '',
+          filename: '',
+          character_count: 0,
+          word_count: 0,
+          note: '',
+          debug: {
+            filename: '',
+            file_size: 0,
+            file_extension: '',
+            processing_method: '',
+            raw_extracted_length: 0,
+            cleaned_text_length: 0,
+            raw_text_preview: '',
+            cleaned_text_preview: '',
+            is_empty: false,
+          }
+        };
+      })
+      .addCase(addAILabReport.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'AI Lab Report creation failed';
       });
   },
 });

@@ -11,6 +11,7 @@ import {
   StyleProp,
   ViewStyle,
   TextStyle,
+  ScrollViewComponent,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { LineChart } from 'react-native-chart-kit';
@@ -19,6 +20,7 @@ import type { AppDispatch } from '../../redux/store';
 import responsive from '../../theme/responsive';
 import colors from '../../theme/color';
 import CommonLoader from '../../components/CommonLoader';
+import CommonButton from '../../components/CommonButton';
 import { getExerciseHistory } from './slices/exerciseSlice';
 
 const { width } = Dimensions.get('window');
@@ -30,9 +32,72 @@ type ExerciseHistoryScreenProps = {
 const ExerciseHistoryScreen = ({ navigation }: ExerciseHistoryScreenProps) => {
   const dispatch: AppDispatch = useDispatch();
   const { history, historyLoading, historyError } = useSelector((state: any) => state.exercise);
+  const { user } = useSelector((state: any) => state.auth);
   
   const [selectedTab, setSelectedTab] = useState<string>('All');
   const [selectedPeriod, setSelectedPeriod] = useState<string>('This Week');
+  const [selectedChartTab, setSelectedChartTab] = useState<string>('Steps');
+  
+  // Calculate chart data based on selected period and history data
+  const calculateChartData = () => {
+    if (!logs || logs.length === 0) {
+      return {
+        labels: ['', '', '', '', '', '', ''],
+        datasets: [
+          { data: [0, 0, 0, 0, 0, 0, 0], strokeWidth: responsive.width(2) }, // Steps
+          { data: [0, 0, 0, 0, 0, 0, 0], strokeWidth: responsive.width(2) }, // Sleep
+          { data: [0, 0, 0, 0, 0, 0, 0], strokeWidth: responsive.width(2) }, // RHR
+        ],
+      };
+    }
+    
+    // Filter logs based on selected period
+    let filteredLogs = [...logs];
+    
+    switch (selectedPeriod) {
+      case 'This Week':
+        filteredLogs = logs.slice(0, 7);
+        break;
+      case 'Last 30 Days':
+        filteredLogs = logs.slice(0, 30);
+        break;
+      case '3 Months':
+        filteredLogs = logs.slice(0, 90);
+        break;
+      default:
+        break;
+    }
+    
+    // Take only the last N items based on the selected period
+    const maxItems = selectedPeriod === 'This Week' ? 7 : 
+                   selectedPeriod === 'Last 30 Days' ? 10 : 
+                   selectedPeriod === '3 Months' ? 12 : 7;
+    
+    const recentLogs = filteredLogs.slice(-maxItems);
+    
+    // Extract data for each metric
+    const stepsData = recentLogs.map(log => log.steps);
+    const sleepData = recentLogs.map(log => parseFloat(log.sleep.replace('h', '').split(' ')[0]) * 60 + 
+                              parseFloat(log.sleep.replace(/.*h/, '').replace('m', '')));
+    const rhrData = recentLogs.map(log => log.rhr);
+    
+    // Create labels based on dates
+    const labels = recentLogs.map(log => {
+      const dateParts = log.date.split(' ');
+      return `${dateParts[0]} ${dateParts[1]}`; // e.g., "Jan 1"
+    });
+    
+    return {
+      labels,
+      datasets: [
+        { data: stepsData, strokeWidth: responsive.width(2) }, // Steps
+        { data: sleepData, strokeWidth: responsive.width(2) }, // Sleep in minutes
+        { data: rhrData, strokeWidth: responsive.width(2) }, // RHR
+      ],
+    };
+  };
+  
+  const chartData = calculateChartData();
 
   interface LogEntry {
     date: string;
@@ -50,8 +115,10 @@ const ExerciseHistoryScreen = ({ navigation }: ExerciseHistoryScreenProps) => {
 
   useEffect(() => {
     // Fetch exercise history from API via Redux
-    dispatch(getExerciseHistory());
-  }, [dispatch]);
+    if (user && user.email) {
+      dispatch(getExerciseHistory({ user: user.email }));
+    }
+  }, [dispatch, user]);
 
   // Transform API data to match UI format
   const logs: LogEntry[] = history && Array.isArray(history) ? history.map((item: any) => ({
@@ -61,6 +128,53 @@ const ExerciseHistoryScreen = ({ navigation }: ExerciseHistoryScreenProps) => {
     rhr: parseInt(item.resting_hr) || 0,
     synced: true, // Assuming all API data is synced
   })) : [];
+  
+  // Helper function to calculate trend percentage
+  const calculateTrend = (data: LogEntry[], metric: keyof LogEntry) => {
+    if (!data || data.length < 2) return '0';
+    
+    const recentValues = data.slice(0, 3).map(item => Number(item[metric])); // Last 3 entries
+    const earlierValues = data.slice(3, 6).map(item => Number(item[metric])); // Previous 3 entries
+    
+    if (recentValues.length === 0 || earlierValues.length === 0) return '0';
+    
+    const recentAvg = recentValues.reduce((sum, val) => sum + val, 0) / recentValues.length;
+    const earlierAvg = earlierValues.reduce((sum, val) => sum + val, 0) / earlierValues.length;
+    
+    if (earlierAvg === 0) return recentAvg > 0 ? '+100' : '0';
+    
+    const trend = ((recentAvg - earlierAvg) / earlierAvg) * 100;
+    return trend >= 0 ? `+${Math.round(trend)}` : `${Math.round(trend)}`;
+  };
+  
+  // Helper function to calculate average sleep
+  const calculateAverageSleep = (data: LogEntry[]) => {
+    if (!data || data.length === 0) return '0h 0m';
+    
+    const totalSleepInMinutes = data.reduce((sum, log) => {
+      const [hoursStr, minutesStr] = log.sleep.split('h ');
+      const hours = parseInt(hoursStr) || 0;
+      const minutes = parseInt(minutesStr.replace('m', '')) || 0;
+      return sum + (hours * 60 + minutes);
+    }, 0);
+    
+    const avgSleepInMinutes = totalSleepInMinutes / data.length;
+    const avgHours = Math.floor(avgSleepInMinutes / 60);
+    const avgMinutes = Math.round(avgSleepInMinutes % 60);
+    
+    return `${avgHours}h ${avgMinutes}m`;
+  };
+  
+  // Handler for download buttons
+  const handleDownloadCSV = () => {
+    // Implement CSV download functionality
+    console.log('Downloading CSV...');
+  };
+  
+  const handleDownloadPDF = () => {
+    // Implement PDF download functionality
+    console.log('Downloading PDF Report...');
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -71,7 +185,7 @@ const ExerciseHistoryScreen = ({ navigation }: ExerciseHistoryScreenProps) => {
         {/* Title */}
         <View style={styles.titleSection}>
           <TouchableOpacity onPress={() => navigation.goBack()} accessibilityLabel="Go back" accessibilityRole="button">
-            <Icon name="arrow-back" size={24} color={colors.darkGray} />
+            <Icon name="arrow-back" size={responsive.fontSize(24)} color={colors.darkGray} />
           </TouchableOpacity>
           <View style={styles.titleContent}>
             <Text style={styles.title} accessibilityRole="header">Exercise History</Text>
@@ -98,76 +212,88 @@ const ExerciseHistoryScreen = ({ navigation }: ExerciseHistoryScreenProps) => {
 
         {/* Period Selector */}
         <View style={styles.periodContainer}>
-          {['This Week', 'Last 30 Days', '3 Months', 'Custom Range'].map((period) => (
-            <TouchableOpacity
-              key={period}
-              style={[styles.periodButton, selectedPeriod === period && styles.periodActive]}
-              onPress={() => setSelectedPeriod(period)}
-            >
-              <Text style={styles.periodText}>{period}</Text>
-            </TouchableOpacity>
-          ))}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {['This Week', 'Last 30 Days', '3 Months', 'Custom Range'].map((period) => (
+              <TouchableOpacity
+                key={period}
+                style={[styles.periodButton, selectedPeriod === period && styles.periodActive]}
+                onPress={() => setSelectedPeriod(period)}
+              >
+                <Text style={styles.periodText}>{period}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         </View>
 
         {/* Trends Chart */}
         <View style={styles.chartCard}>
           <View style={styles.chartHeader}>
-            <Icon name="trending-up-outline" size={20} color={colors.darkGray} />
+            <Icon name="trending-up-outline" size={responsive.fontSize(20)} color={colors.darkGray} />
             <Text style={styles.chartTitle}>Trends</Text>
           </View>
           <View style={styles.chartTabs}>
             {['Steps', 'Sleep', 'Resting HR'].map((tab) => (
-              <TouchableOpacity accessibilityRole="button" key={tab} style={styles.chartTab}>
-                <Text style={styles.chartTabText}>{tab}</Text>
+              <TouchableOpacity 
+                accessibilityRole="button" 
+                key={tab} 
+                style={[styles.chartTab, selectedChartTab === tab && styles.chartTabActive]}
+                onPress={() => setSelectedChartTab(tab)}
+              >
+                <Text style={[styles.chartTabText, selectedChartTab === tab && styles.chartTabTextActive]}>{tab}</Text>
               </TouchableOpacity>
             ))}
           </View>
           <View style={styles.chartLegend}>
             <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: colors.darkGray }]} />
+              <View style={[styles.legendDot, { backgroundColor: '#52AB3C' }]} />
               <Text style={styles.legendText}>Steps</Text>
             </View>
             <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: colors.coolGray }]} />
+              <View style={[styles.legendDot, { backgroundColor: '#FF6B6B' }]} />
               <Text style={styles.legendText}>Sleep</Text>
             </View>
             <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: colors.gray200 }]} />
+              <View style={[styles.legendDot, { backgroundColor: '#4ECDC4' }]} />
               <Text style={styles.legendText}>RHR</Text>
             </View>
           </View>
           <LineChart
-            data={{
-              labels: ['', '', '', '', '', '', ''],
-              datasets: [{ data: [5, 7, 6, 8, 7, 9, 8] }],
-            }}
-            width={width - responsive.width(64)}
-            height={responsive.height(180)}
+            data={chartData}
+            width={width - responsive.width(32)}
+            height={responsive.height(220)}
             chartConfig={{
               backgroundColor: colors.white,
               backgroundGradientFrom: colors.white,
               backgroundGradientTo: colors.white,
               decimalPlaces: 0,
-              color: (opacity = 1) => `${colors.black}00`.replace('00', Math.round(opacity * 255).toString(16).padStart(2, '0')),
+              color: (opacity = 1) => `rgba(82, 171, 60, ${opacity})`, // Using primary green color
+              strokeWidth: responsive.width(2),
               style: { borderRadius: responsive.borderRadius(16) },
+              propsForDots: {
+                r: responsive.width(4),
+                strokeWidth: responsive.width(2),
+                stroke: '#52AB3C'
+              },
             }}
             bezier
             withDots={true}
             withInnerLines={false}
             withOuterLines={false}
-            withVerticalLabels={false}
+            withVerticalLabels={true}
             style={styles.chart}
           />
           <View style={styles.trendStats}>
             <View style={styles.statItem}>
               <Text style={styles.statLabel}>Steps Trend</Text>
-              <Text style={styles.statValue}>+12%</Text>
+              <Text style={styles.statValue}>{calculateTrend(logs, 'steps')}%</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={styles.statLabel}>Average Sleep</Text>
+              <Text style={styles.statLabel}>Avg Sleep</Text>
+              <Text style={styles.statValue}>{calculateAverageSleep(logs)}</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={styles.statLabel}>Resting HR Trend</Text>
+              <Text style={styles.statLabel}>RHR Trend</Text>
+              <Text style={styles.statValue}>{calculateTrend(logs, 'rhr')}%</Text>
             </View>
           </View>
         </View>
@@ -175,7 +301,7 @@ const ExerciseHistoryScreen = ({ navigation }: ExerciseHistoryScreenProps) => {
         {/* AI Insights */}
         <View style={styles.insightsCard}>
           <View style={styles.insightsHeader}>
-            <Icon name="sparkles" size={20} color={colors.white} />
+            <Icon name="sparkles" size={responsive.fontSize(20)} color={colors.white} />
             <Text style={styles.insightsTitle}>AI Activity Insights</Text>
           </View>
           <View style={styles.insightItem}>
@@ -211,7 +337,7 @@ const ExerciseHistoryScreen = ({ navigation }: ExerciseHistoryScreenProps) => {
         {/* Logs */}
         <View style={styles.logsSection}>
           <View style={styles.logsHeader}>
-            <Icon name="list-outline" size={20} color={colors.darkGray} />
+            <Icon name="list-outline" size={responsive.fontSize(20)} color={colors.darkGray} />
             <Text style={styles.logsTitle}>Logs</Text>
             <Text style={styles.logsSubtitle}>Chronological • Most recent first</Text>
           </View>
@@ -241,14 +367,20 @@ const ExerciseHistoryScreen = ({ navigation }: ExerciseHistoryScreenProps) => {
 
         {/* Download Buttons */}
         <View style={styles.downloadSection}>
-          <TouchableOpacity style={styles.downloadButton} accessibilityLabel="Download CSV" accessibilityRole="button">
-            <Icon name="document-outline" size={20} color={colors.darkGray} />
-            <Text style={styles.downloadText}>Download CSV</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.downloadButtonPrimary} accessibilityLabel="Download PDF Report" accessibilityRole="button">
-            <Icon name="document-text-outline" size={20} color={colors.white} />
-            <Text style={styles.downloadTextPrimary}>Download PDF Report</Text>
-          </TouchableOpacity>
+          <CommonButton 
+            title="Download CSV" 
+            onPress={handleDownloadCSV}
+            bgColor={colors.white}
+            textColor={colors.darkGray}
+            style={styles.downloadButton}
+          />
+          <CommonButton 
+            title="Download PDF Report" 
+            onPress={handleDownloadPDF}
+            bgColor={colors.primary}
+            textColor={colors.white}
+            style={styles.downloadButtonPrimary}
+          />
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -333,26 +465,23 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   periodContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    padding: responsive.padding(16),
     backgroundColor: colors.white,
     marginTop: responsive.margin(8),
+    paddingVertical: responsive.padding(8),
   },
   periodButton: {
     paddingVertical: responsive.padding(8),
     paddingHorizontal: responsive.padding(16),
-    marginRight: responsive.margin(8),
-    marginBottom: responsive.margin(8),
-    borderRadius: responsive.borderRadius(6),
+    marginHorizontal: responsive.margin(8),
+    borderRadius: responsive.borderRadius(20),
     backgroundColor: colors.gray100,
   },
   periodActive: {
-    backgroundColor: colors.gray200,
+    backgroundColor: colors.primary,
   },
   periodText: {
     fontSize: responsive.fontSize(13),
-    color: colors.gray,
+    color: colors.darkGray,
     fontWeight: '500',
   },
   chartCard: {
@@ -385,18 +514,26 @@ const styles = StyleSheet.create({
     borderRadius: responsive.borderRadius(6),
     backgroundColor: colors.gray100,
   },
+  chartTabActive: {
+    backgroundColor: colors.primary,
+  },
   chartTabText: {
     fontSize: responsive.fontSize(13),
     color: colors.gray,
   },
+  chartTabTextActive: {
+    color: colors.white,
+  },
   chartLegend: {
     flexDirection: 'row',
-    marginBottom: responsive.margin(12),
+    flexWrap: 'wrap',
+    marginVertical: responsive.margin(12),
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
     marginRight: responsive.margin(16),
+    marginBottom: responsive.margin(8),
   },
   legendDot: {
     width: responsive.width(8),
@@ -410,7 +547,7 @@ const styles = StyleSheet.create({
   },
   chart: {
     marginVertical: responsive.margin(8),
-    borderRadius: responsive.borderRadius(8),
+    borderRadius: responsive.borderRadius(16),
   },
   trendStats: {
     flexDirection: 'row',
@@ -432,8 +569,8 @@ const styles = StyleSheet.create({
   },
   insightsCard: {
     backgroundColor: colors.tealGreen,
-    margin: responsive.margin(16),
-    marginTop: responsive.margin(0),
+    marginHorizontal: responsive.margin(16),
+    marginVertical: responsive.margin(8),
     padding: responsive.padding(16),
     borderRadius: responsive.borderRadius(12),
   },
@@ -486,7 +623,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     padding: responsive.padding(16),
     borderRadius: responsive.borderRadius(12),
-    marginBottom: responsive.margin(12),
+    marginVertical: responsive.margin(8),
     borderWidth: 1,
     borderColor: colors.gray200,
   },
@@ -523,40 +660,27 @@ const styles = StyleSheet.create({
   },
   downloadSection: {
     flexDirection: 'row',
-    padding: responsive.padding(16),
+    paddingHorizontal: responsive.padding(16),
+    paddingVertical: responsive.padding(12),
     gap: responsive.margin(12),
   },
   downloadButton: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
     backgroundColor: colors.white,
     paddingVertical: responsive.padding(12),
     borderRadius: responsive.borderRadius(8),
     borderWidth: 1,
     borderColor: colors.gray200,
-  },
-  downloadText: {
-    fontSize: responsive.fontSize(15),
-    fontWeight: '600',
-    color: colors.gray,
-    marginLeft: responsive.margin(8),
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   downloadButtonPrimary: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
     backgroundColor: colors.primary,
     paddingVertical: responsive.padding(12),
     borderRadius: responsive.borderRadius(8),
-  },
-  downloadTextPrimary: {
-    fontSize: responsive.fontSize(15),
-    fontWeight: '600',
-    color: colors.white,
-    marginLeft: responsive.margin(8),
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   errorContainer: {
     padding: responsive.padding(16),

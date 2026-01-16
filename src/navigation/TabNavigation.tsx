@@ -52,13 +52,18 @@ export default function TabNavigation() {
       <Tab.Screen
         name="Reminders"
         component={RemindersAlertsScreen}
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <View style={styles.navItem}>
-              <Bell size={24} color={focused ? colors.primary : colors.lightGray} />
-              <Text style={[styles.navText, focused && styles.navTextActive]}>Reminders</Text>
-            </View>
-          ),
+        // options={{
+        //   tabBarIcon: ({ focused }) => (
+        //     <View style={styles.navItem}>
+        //       <Bell size={24} color={focused ? colors.primary : colors.lightGray} />
+        //       <Text style={[styles.navText, focused && styles.navTextActive]}>Reminders</Text>
+        //     </View>
+        //   ),
+        // }}
+         options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: 'none' },
+          headerShown: false,
         }}
       />
       <Tab.Screen

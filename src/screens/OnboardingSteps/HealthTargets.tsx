@@ -10,6 +10,7 @@ import CommonDropdown from '../../components/CommonDropdown';
 const HealthTargets = () => {
 
   const [sodium, setSodium] = useState('');
+  const [protein, setProtein] = useState('');
   const [fluid, setFluid] = useState('');
   const [weightGain, setWeightGain] = useState('');
   const [restingHR, setRestingHR] = useState('');
@@ -35,6 +36,20 @@ const HealthTargets = () => {
           />
         </View>
         <Text style={styles.subtitle}>Typical target: 1500–2000 mg/day for fluid control</Text>
+      </View>
+      <View style={styles.container}>
+        <Text style={styles.title}>Daily Protein Intake</Text>
+        <View style={styles.singleInputContainer}>
+          <CommonTextInput 
+            placeholder="e.g., 60" 
+            onChangeText={setProtein} 
+            value={protein} 
+            style={styles.inputtext} 
+            keyboardType="numeric"
+            suffixText="g"
+          />
+        </View>
+        <Text style={styles.subtitle}>Recommended daily protein intake in grams</Text>
       </View>
        <View style={styles.container}>
         <Text style={styles.title}>Daily Fluid Limit</Text>

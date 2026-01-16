@@ -11,13 +11,16 @@ import {
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import responsive from '../../../theme/responsive'; 
 import { useNavigation } from '@react-navigation/native';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../../redux/store';
-
+// import { addAILabReport } from '../../slices/reportSlice';
+import Toast from 'react-native-toast-message';
+import { addAILabReport } from '../slices/reportSlice';
 const LabParametersScreen = () => {
   const navigation = useNavigation<any>();
+  const dispatch = useDispatch();
   
-  const { labData: reduxLabData } = useSelector((state: any) => state.reports);
+  const { labData: reduxLabData, loading } = useSelector((state: any) => state.reports);
   const { user } = useSelector((state: RootState) => state.auth);
   
   // Define the proper type for lab data
@@ -146,7 +149,11 @@ const LabParametersScreen = () => {
         {Object.keys(labData)
           .filter(key => typeof labData[key] === 'object' && 'value' in labData[key])
           .sort() // Sort parameter names alphabetically for consistent display
-          .map(paramKey => renderLabDataRow(paramKey, paramKey))}
+          .map((paramKey, index) => {
+            const element = renderLabDataRow(paramKey, paramKey);
+            return element ? React.cloneElement(element, { key: paramKey }) : null;
+          })
+          .filter(Boolean)}
 
         {/* Sex Selection - Pre-filled and disabled based on user profile */}
         <View style={styles.parameterRow}>
@@ -202,9 +209,55 @@ const LabParametersScreen = () => {
         {/* Continue Button */}
         <TouchableOpacity 
           style={styles.continueButton}
-          onPress={() => navigation.navigate('MeldTrendScreen', { labData })}
+          onPress={async () => {
+            // Prepare the data for the API call
+            const aiLabReportData = {
+              bilirubin: (labData.bilirubin as LabParameter)?.value || '0',
+              creatinine: (labData.creatinine as LabParameter)?.value || '0',
+              sodium: (labData.sodium as LabParameter)?.value || '0',
+              albumin: (labData.albumin as LabParameter)?.value || '0',
+              ast: (labData.ast as LabParameter)?.value || '0',
+              alt: (labData.alt as LabParameter)?.value || '0',
+              platelet_count: (labData.platelet_count as LabParameter)?.value || '0',
+              hemoglobin: (labData.hemoglobin as LabParameter)?.value || '0',
+              wbc: (labData.wbc as LabParameter)?.value || '0',
+              potassium: (labData.potassium as LabParameter)?.value || '0',
+              ammonia: (labData.ammonia as LabParameter)?.value || '0',
+              inr: (labData.inr as LabParameter)?.value || '0',
+              user: user?.email || '',
+            };
+            
+            try {
+              const resultAction = await dispatch(addAILabReport(aiLabReportData));
+              if (addAILabReport.fulfilled.match(resultAction)) {
+                // Success - show toast and navigate
+                Toast.show({
+                  type: 'success',
+                  text1: 'Success',
+                  text2: resultAction.payload.message.message,
+                });
+                navigation.navigate('MeldTrendScreen', { labData });
+              } else {
+                // Error - show error toast
+                const error = resultAction.payload as string || 'Failed to save AI Lab Report';
+                Toast.show({
+                  type: 'error',
+                  text1: 'Error',
+                  text2: error,
+                });
+              }
+            } catch (error) {
+              console.error('Error submitting AI Lab Report:', error);
+              Toast.show({
+                type: 'error',
+                text1: 'Error',
+                text2: 'An unexpected error occurred',
+              });
+            }
+          }}
+          disabled={loading}
         >
-          <Text style={styles.continueButtonText}>Continue</Text>
+          <Text style={styles.continueButtonText}>{loading ? 'Submitting...' : 'Calculate MELD'}</Text>
           <Icon name="arrow-forward" size={responsive.fontSize(20)} color="#fff" />
         </TouchableOpacity>
 
