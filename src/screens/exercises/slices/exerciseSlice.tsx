@@ -6,6 +6,10 @@ import Toast from 'react-native-toast-message';
 export interface ExerciseData {
   steps?: string;
   resting_hr?: string;
+  active_hr?: string;
+  oxygen_saturation?: string;
+  calories_burned?: string;
+  blood_pressure?: string;
   sleep_minutes?: string;
   user?: string;
   date?: string;
@@ -21,6 +25,10 @@ export interface ExerciseApiResponse {
   data: {
     steps: string;
     resting_hr: string;
+    active_hr: string;
+    oxygen_saturation: string;
+    calories_burned: string;
+    blood_pressure: string;
     sleep_minutes: string;
     date: string;
     User: string;
@@ -41,6 +49,10 @@ export interface ExerciseHistoryItem {
   name: string;
   steps: string;
   resting_hr: string;
+  active_hr: string;
+  oxygen_saturation: string;
+  calories_burned: string;
+  blood_pressure: string;
   sleep_minutes: string;
   creation: string;
   modified: string;
@@ -49,6 +61,10 @@ export interface ExerciseHistoryItem {
 
 export interface ExerciseApiRequest {
   resting_hr: string;
+  active_hr: string;
+  oxygen_saturation: string;
+  calories_burned: string;
+  blood_pressure: string;
   sleep_minutes: string;
   steps: string;
   user: string;

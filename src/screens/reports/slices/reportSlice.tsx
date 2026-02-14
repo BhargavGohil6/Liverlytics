@@ -38,6 +38,97 @@ export interface LabReportResponse {
   };
 }
 
+export interface UserDocument {
+  name: string;
+  file: string;
+  date: string;
+  user: string;
+  source: string;
+  accurate: number;
+}
+
+export interface UserDocumentsResponse {
+  message: {
+    status: string;
+    user: string;
+    count: number;
+    documents: UserDocument[];
+  };
+}
+
+// Types for fetching AI Lab Reports
+export interface ParameterData {
+  value: string;
+  normal_range: string;
+  flag: string;
+  difference: number;
+  difference_formatted: string;
+  previous_value: string;
+}
+
+export interface AILabReportItem {
+  name: string;
+  gender: string;
+  parameters: {
+    [key: string]: ParameterData;
+  };
+  on_dialysis: string;
+  notes: string | null;
+  date: string;
+  creation: string;
+  modified: string;
+  user: string;
+  ai_lab_report_document: string;
+  ai_uploded_lab_report: {
+    name: string;
+    file: string;
+    date: string;
+    user: string;
+    source: string;
+    accurate: number;
+  };
+}
+
+export interface AILabReportApiResponse {
+  message: {
+    status: string;
+    count: number;
+    user: string;
+    data: AILabReportItem[];
+  };
+}
+
+// Types for fetching latest two AI Lab Reports for comparison
+export interface LatestTwoAILabReportItem {
+  name: string;
+  gender: string;
+  parameters: {
+    [key: string]: {
+      value: string;
+      normal_range: string;
+      flag: string;
+    };
+  };
+  on_dialysis: string;
+  notes: string | null;
+  date: string;
+  creation: string;
+  modified: string;
+  user: string;
+  ai_lab_report_document: string | null;
+}
+
+export interface LatestTwoAILabReportApiResponse {
+  message: {
+    status: string;
+    count: number;
+    to_date: string;
+    from_date: string;
+    user: string;
+    data: LatestTwoAILabReportItem[];
+  };
+}
+
 // Types for AI Lab Report
 export interface AILabReportData {
   bilirubin: string;
@@ -133,6 +224,11 @@ export interface LabReportState {
   error: string | null;
   meldError: string | null;
   uploadComplete: boolean;
+  userDocuments: UserDocument[];
+  aiLabReports: AILabReportItem[];
+  latestTwoAILabReports: LatestTwoAILabReportItem[];
+  latestTwoAILabReportsLoading: boolean;
+  latestTwoAILabReportsError: string | null;
 }
 
 // API call for file upload
@@ -232,6 +328,69 @@ export const addAILabReport = createAsyncThunk<
   }
 });
 
+// Async thunk to fetch AI Lab Reports
+export const fetchAILabReports = createAsyncThunk<
+  AILabReportApiResponse,
+  { user: string },
+  { rejectValue: string }
+>('reports/fetchAILabReports', async ({ user }, { rejectWithValue }) => {
+  try {
+    const response = await api.post('/cirrhosis_custom.cirrhosis_ai_lab_report.get_ai_lab_report', {
+      user: user
+    });
+    return response.data;
+  } catch (error: any) {
+    const msg =
+      error.response?.data?.message?.message ||
+      error.response?.data?.message ||
+      error.message ||
+      'Failed to fetch AI lab reports';
+
+    return rejectWithValue(msg);
+  }
+});
+
+export const fetchLatestTwoAILabReports = createAsyncThunk<
+  LatestTwoAILabReportApiResponse,
+  { user: string },
+  { rejectValue: string }
+>('reports/fetchLatestTwoAILabReports', async ({ user }, { rejectWithValue }) => {
+  try {
+    const response = await api.post('/cirrhosis_custom.cirrhosis_ai_lab_report.get_latest_two_ai_report', {
+      user: user
+    });
+    return response.data;
+  } catch (error: any) {
+    const msg =
+      error.response?.data?.message?.message ||
+      error.response?.data?.message ||
+      error.message ||
+      'Failed to fetch latest two AI lab reports';
+
+    return rejectWithValue(msg);
+  }
+});
+
+// API call to fetch user documents
+export const fetchUserDocuments = createAsyncThunk<
+  UserDocumentsResponse,
+  void,
+  { rejectValue: string }
+>('reports/fetchUserDocuments', async (_, { rejectWithValue }) => {
+  try {
+    const response = await api.get('/cirrhosis_custom.cirrhosis_vital_img.get_user_documents');
+    return response.data;
+  } catch (error: any) {
+    const msg =
+      error.response?.data?.message?.message ||
+      error.response?.data?.message ||
+      error.message ||
+      'Failed to fetch reports';
+
+    return rejectWithValue(msg);
+  }
+});
+
 const reportSlice = createSlice({
   name: 'reports',
   initialState: {
@@ -242,6 +401,11 @@ const reportSlice = createSlice({
     error: null,
     meldError: null,
     uploadComplete: false,
+    userDocuments: [],
+    aiLabReports: [],
+    latestTwoAILabReports: [],
+    latestTwoAILabReportsLoading: false,
+    latestTwoAILabReportsError: null,
   } as LabReportState,
 
   reducers: {
@@ -339,6 +503,45 @@ const reportSlice = createSlice({
       .addCase(addAILabReport.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'AI Lab Report creation failed';
+      })
+      // Fetch User Documents reducers
+      .addCase(fetchUserDocuments.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchUserDocuments.fulfilled, (state, action: PayloadAction<UserDocumentsResponse>) => {
+        state.loading = false;
+        state.userDocuments = action.payload.message.documents;
+      })
+      .addCase(fetchUserDocuments.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to fetch reports';
+      })
+      // Fetch AI Lab Reports reducers
+      .addCase(fetchAILabReports.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchAILabReports.fulfilled, (state, action: PayloadAction<AILabReportApiResponse>) => {
+        state.loading = false;
+        state.aiLabReports = action.payload.message.data;
+      })
+      .addCase(fetchAILabReports.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to fetch AI lab reports';
+      })
+      // Fetch Latest Two AI Lab Reports reducers
+      .addCase(fetchLatestTwoAILabReports.pending, (state) => {
+        state.latestTwoAILabReportsLoading = true;
+        state.latestTwoAILabReportsError = null;
+      })
+      .addCase(fetchLatestTwoAILabReports.fulfilled, (state, action: PayloadAction<LatestTwoAILabReportApiResponse>) => {
+        state.latestTwoAILabReportsLoading = false;
+        state.latestTwoAILabReports = action.payload.message.data;
+      })
+      .addCase(fetchLatestTwoAILabReports.rejected, (state, action) => {
+        state.latestTwoAILabReportsLoading = false;
+        state.latestTwoAILabReportsError = action.payload || 'Failed to fetch latest two AI lab reports';
       });
   },
 });

@@ -11,9 +11,9 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchTodaysVitalsForUser } from './slices/vitalsSlice';
+import { fetchTodaysVitalsForUser, clearVitalsState, resetVitalsSuccess } from './slices/vitalsSlice';
 import CommonLoader from '../../components/CommonLoader';
 import colors from '../../theme/color';
 import responsive from '../../theme/responsive';
@@ -26,11 +26,17 @@ export default function VitalsOverviewScreen() {
   const navigation = useNavigation();
   const dispatch = useDispatch();
   const { todayData, loading, error } = useSelector((state: any) => state.vitals);
+  const { user } = useSelector((state: any) => state.auth);
+  const isFocused = useIsFocused();
   
+  // Fetch vitals data every time user enters the screen or user email becomes available
   useEffect(() => {
-    // Fetch today's vitals data when the component mounts
-    dispatch(fetchTodaysVitalsForUser() as any);
-  }, []);
+    if (isFocused && user?.email) {
+      // Clear any success state when entering this screen
+      dispatch(resetVitalsSuccess());
+      dispatch(fetchTodaysVitalsForUser() as any);
+    }
+  }, [isFocused, user?.email, dispatch]);
   
 
 
@@ -40,7 +46,7 @@ export default function VitalsOverviewScreen() {
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="dark-content" backgroundColor="#fff" />
         <View style={styles.navBar}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate('Dashboard' as never)}>
             <Icon name="arrow-left" size={responsive.fontSize(20)} color="#333" />
           </TouchableOpacity>
           <TouchableOpacity style={styles.addButton} onPress={() => navigation.navigate('AddVitalsScreen' as never)}>
@@ -70,7 +76,7 @@ export default function VitalsOverviewScreen() {
   
   // Format the vital values for display
   const rhrValue = vitalData?.heart_rate ? `${vitalData.heart_rate} bpm` : '0';
-  const stepsValue = vitalData?.steps ? `${vitalData.steps}` : '0';
+  const glucoseValue = vitalData?.glucose ? `${vitalData.glucose} mg/dL` : '0';
   const sleepValue = vitalData?.sleep ? `${vitalData.sleep}m` : '0';
   const spO2Value = vitalData?.spo2 ? `${vitalData.spo2}%` : '0';
   const weightValue = vitalData?.weight ? `${vitalData.weight} kg` : '0';
@@ -109,15 +115,15 @@ export default function VitalsOverviewScreen() {
       >
         {/* Navigation Bar */}
         <View style={styles.navBar}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate('Dashboard' as never)}>
             <Icon name="arrow-left" size={responsive.fontSize(20)} color="#333" />
             {/* <Text style={styles.backText}>Back</Text> */}
           </TouchableOpacity>
           
-          <TouchableOpacity style={styles.addButton} onPress={() => navigation.navigate('AddVitalsScreen' as never)}>
+          {/* <TouchableOpacity style={styles.addButton} onPress={() => navigation.navigate('AddVitalsScreen' as never)}>
             <Icon name="plus" size={responsive.fontSize(18)} color="#333" />
             <Text style={styles.addText}>Add Vitals</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
 
         {/* Title Section */}
@@ -128,8 +134,11 @@ export default function VitalsOverviewScreen() {
 
         {/* Vitals Grid */}
         <View style={styles.vitalsGrid}>
-          {/* RHR Card */}
-          <View style={styles.vitalCard}>
+          {/* RHR Card - Clickable */}
+          <TouchableOpacity 
+            style={styles.vitalCard}
+            onPress={() => navigation.navigate('RHRChartScreen' as never)}
+          >
             <View style={styles.vitalHeader}>
               <View style={styles.vitalHeaderLeft}>
                 <Icon name="heart" size={responsive.fontSize(16)} color="#333" />
@@ -141,25 +150,39 @@ export default function VitalsOverviewScreen() {
             </View>
             <Text style={styles.vitalValue}>{rhrValue}</Text>
             <Text style={styles.vitalDescription}>Resting Heart Rate</Text>
-          </View>
+            <View style={styles.cardFooter}>
+              <Text style={styles.viewChartText}>View Chart</Text>
+              <Icon name="chevron-right" size={responsive.fontSize(14)} color={colors.primary} />
+            </View>
+          </TouchableOpacity>
 
-          {/* Steps Card */}
-          <View style={styles.vitalCard}>
+          {/* Glucose Card - Clickable */}
+          <TouchableOpacity 
+            style={styles.vitalCard}
+            onPress={() => navigation.navigate('GlucoseChartScreen' as never)}
+          >
             <View style={styles.vitalHeader}>
               <View style={styles.vitalHeaderLeft}>
-                <MaterialCommunityIcons name="shoe-print" size={responsive.fontSize(16)} color="#333" />
-                <Text style={styles.vitalLabel}>Steps</Text>
+                <MaterialCommunityIcons name="water-percent" size={responsive.fontSize(16)} color="#333" />
+                <Text style={styles.vitalLabel}>Glucose</Text>
               </View>
-              <View style={[styles.statusBadge, styles.statusLow]}>
-                <Text style={[styles.statusText, styles.statusTextLow]}>low</Text>
+              <View style={[styles.statusBadge, styles.statusNormal]}>
+                <Text style={[styles.statusText, styles.statusTextNormal]}>normal</Text>
               </View>
             </View>
-            <Text style={styles.vitalValue}>{stepsValue}</Text>
-            <Text style={styles.vitalDescription}>Steps Today</Text>
-          </View>
+            <Text style={styles.vitalValue}>{glucoseValue}</Text>
+            <Text style={styles.vitalDescription}>Blood Sugar Level</Text>
+            <View style={styles.cardFooter}>
+              <Text style={styles.viewChartText}>View Chart</Text>
+              <Icon name="chevron-right" size={responsive.fontSize(14)} color={colors.primary} />
+            </View>
+          </TouchableOpacity>
 
-          {/* Sleep Card */}
-          <View style={styles.vitalCard}>
+          {/* Sleep Card - Clickable */}
+          <TouchableOpacity 
+            style={styles.vitalCard}
+            onPress={() => navigation.navigate('SleepChartScreen' as never)}
+          >
             <View style={styles.vitalHeader}>
               <View style={styles.vitalHeaderLeft}>
                 <Icon name="moon" size={responsive.fontSize(16)} color="#333" />
@@ -169,10 +192,17 @@ export default function VitalsOverviewScreen() {
             </View>
             <Text style={styles.vitalValue}>{sleepValue}</Text>
             <Text style={styles.vitalDescription}>Last Night</Text>
-          </View>
+            <View style={styles.cardFooter}>
+              <Text style={styles.viewChartText}>View Chart</Text>
+              <Icon name="chevron-right" size={responsive.fontSize(14)} color={colors.primary} />
+            </View>
+          </TouchableOpacity>
 
-          {/* SpO2 Card */}
-          <View style={styles.vitalCard}>
+          {/* SpO2 Card - Clickable */}
+          <TouchableOpacity 
+            style={styles.vitalCard}
+            onPress={() => navigation.navigate('SpO2ChartScreen' as never)}
+          >
             <View style={styles.vitalHeader}>
               <View style={styles.vitalHeaderLeft}>
                 <MaterialCommunityIcons name="water-percent" size={responsive.fontSize(16)} color="#333" />
@@ -184,10 +214,17 @@ export default function VitalsOverviewScreen() {
             </View>
             <Text style={styles.vitalValue}>{spO2Value}</Text>
             <Text style={styles.vitalDescription}>Oxygen Saturation</Text>
-          </View>
+            <View style={styles.cardFooter}>
+              <Text style={styles.viewChartText}>View Chart</Text>
+              <Icon name="chevron-right" size={responsive.fontSize(14)} color={colors.primary} />
+            </View>
+          </TouchableOpacity>
 
-          {/* Weight Card */}
-          <View style={styles.vitalCard}>
+          {/* Weight Card - Clickable */}
+          <TouchableOpacity 
+            style={styles.vitalCard}
+            onPress={() => navigation.navigate('WeightChartScreen' as never)}
+          >
             <View style={styles.vitalHeader}>
               <View style={styles.vitalHeaderLeft}>
                 <Icon name="shopping-bag" size={responsive.fontSize(16)} color="#333" />
@@ -199,10 +236,17 @@ export default function VitalsOverviewScreen() {
             </View>
             <Text style={styles.vitalValue}>{weightValue}</Text>
             <Text style={styles.vitalDescription}>Body Weight</Text>
-          </View>
+            <View style={styles.cardFooter}>
+              <Text style={styles.viewChartText}>View Chart</Text>
+              <Icon name="chevron-right" size={responsive.fontSize(14)} color={colors.primary} />
+            </View>
+          </TouchableOpacity>
 
-          {/* BP Card */}
-          <View style={styles.vitalCard}>
+          {/* BP Card - Clickable */}
+          <TouchableOpacity 
+            style={styles.vitalCard}
+            onPress={() => navigation.navigate('BPChartScreen' as never)}
+          >
             <View style={styles.vitalHeader}>
               <View style={styles.vitalHeaderLeft}>
                 <Icon name="activity" size={responsive.fontSize(16)} color="#333" />
@@ -214,7 +258,11 @@ export default function VitalsOverviewScreen() {
             </View>
             <Text style={styles.vitalValue}>{bpValue}</Text>
             <Text style={styles.vitalDescription}>Blood Pressure</Text>
-          </View>
+            <View style={styles.cardFooter}>
+              <Text style={styles.viewChartText}>View Chart</Text>
+              <Icon name="chevron-right" size={responsive.fontSize(14)} color={colors.primary} />
+            </View>
+          </TouchableOpacity>
         </View>
 
         {/* Recent Trends */}
@@ -240,7 +288,7 @@ export default function VitalsOverviewScreen() {
         </View>
 
         {/* Mini Charts */}
-        <View style={styles.section}>
+        {/* <View style={styles.section}>
           <Text style={styles.sectionTitle}>Vitals Mini Charts</Text>
           
           <View style={styles.chartsRow}>
@@ -264,7 +312,7 @@ export default function VitalsOverviewScreen() {
               </View>
             </View>
           </View>
-        </View>
+        </View> */}
 
         {/* Warning Alert */}
         <View style={styles.warningCard}>
@@ -289,20 +337,19 @@ export default function VitalsOverviewScreen() {
         </View>
 
         {/* View All Link */}
-        <TouchableOpacity style={styles.viewAllButton} onPress={()=>navigation.navigate('VitalsHistoryScreen' as never)}>
+        {/* <TouchableOpacity style={styles.viewAllButton} onPress={()=>navigation.navigate('VitalsHistoryScreen' as never)}>
           <Text style={styles.viewAllText}>View All Vitals History</Text>
           <Icon name="arrow-right" size={responsive.fontSize(16)} color="#666" />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
         {/* Bottom Section Divider */}
-        <View style={styles.divider} />
+        {/* <View style={styles.divider} /> */}
 
         {/* Warnings & Flags Section */}
-        <View style={styles.bottomSection}>
+        {/* <View style={styles.bottomSection}>
           <Text style={styles.bottomTitle}>Warnings & Flags</Text>
-        </View>
+        </View> */}
 
-        <View style={{ height: responsive.height(100) }} />
       </ScrollView>
 
       
@@ -432,6 +479,21 @@ const styles = StyleSheet.create({
     minWidth: '45%', // For responsive grid on different screen sizes
     maxWidth: '48%', // Ensures proper spacing
   },
+  vitalCardTouchable: {
+    // Inherits all vitalCard styles plus touch feedback
+  },
+  cardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    marginTop: responsive.margin(8),
+    gap: responsive.padding(4),
+  },
+  viewChartText: {
+    fontSize: font.xs,
+    color: colors.primary,
+    fontWeight: '600',
+  },
   vitalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -470,6 +532,12 @@ const styles = StyleSheet.create({
   },
   statusTextCheck: {
     color: colors.primary,
+  },
+  statusNormal: {
+    backgroundColor: colors.grayEFEF,
+  },
+  statusTextNormal: {
+    color: colors.gray666,
   },
   timeText: {
     fontSize: font.xs,

@@ -59,12 +59,8 @@ const UploadLabReportScreen = () => {
         return true;
       }
     } else {
-      // iOS permission handling
-      const permissionResult = await check(PERMISSIONS.IOS.PHOTO_LIBRARY);
-      if (permissionResult !== 'granted') {
-        const requestResult = await request(PERMISSIONS.IOS.PHOTO_LIBRARY);
-        return requestResult === 'granted';
-      }
+      // iOS permission handling - Photo library permission is handled by the document picker
+      // No explicit permission request needed for document picker on iOS
       return true;
     }
   };
@@ -76,7 +72,7 @@ const UploadLabReportScreen = () => {
   }, [uploadComplete, navigation]);
 
   const handleFileSelection = async () => {
-    // Request permissions before file selection
+    // Request permissions before file selection (mainly for Android)
     const hasPermission = await requestFilePermissions();
     
     if (!hasPermission) {
@@ -98,10 +94,17 @@ const UploadLabReportScreen = () => {
     } catch (err) {
       if (isErrorWithCode(err) && err.code === errorCodes.OPERATION_CANCELED) {
         console.log('User cancelled the document picker');
-      } else {
-        console.log('Error picking document:', err);
-        Alert.alert('Error', 'Failed to pick document');
+        return;
       }
+      
+      // Handle permission errors
+      if (err instanceof Error && err.message?.includes('permission')) {
+        Alert.alert('Permission Error', 'Please allow file access permission in Settings to upload lab reports.');
+        return;
+      }
+      
+      console.log('Error picking document:', err);
+      Alert.alert('Error', 'Failed to pick document. Please try again.');
     }
   };
 

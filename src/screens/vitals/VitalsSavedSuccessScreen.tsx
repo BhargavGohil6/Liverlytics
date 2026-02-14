@@ -14,7 +14,7 @@ import {
 import Icon from 'react-native-vector-icons/Feather';
 import {useNavigation} from '@react-navigation/native';
 import { useDispatch } from 'react-redux';
-import { clearVitalsState } from './slices/vitalsSlice';
+import { clearVitalsState, resetVitalsSuccess } from './slices/vitalsSlice';
 import {colors, font} from '../../theme/index';
 import responsive from '../../theme/responsive';
 import CommonButton from '../../components/CommonButton';
@@ -40,7 +40,13 @@ export default function VitalsSavedSuccessScreen() {
         useNativeDriver: true,
       }),
     ]).start();
-  }, []);
+    
+    // Clear the success state when this screen is mounted to ensure clean state
+    return () => {
+      // Dispatch clearVitalsState when component unmounts
+      dispatch(clearVitalsState());
+    };
+  }, [dispatch]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -88,7 +94,7 @@ export default function VitalsSavedSuccessScreen() {
           
           {/* Check Icon */}
           <View style={styles.checkCircle}>
-            <Icon name="check" size={36} color="#fff" strokeWidth={3} />
+            <Icon name="check" size={36} color="#fff" />
           </View>
         </Animated.View>
 
@@ -109,19 +115,23 @@ export default function VitalsSavedSuccessScreen() {
         <CommonButton 
           title="Add More Vitals" 
           onPress={() => {
-            dispatch(clearVitalsState());
-            navigation.navigate('AddVitalsScreen');
+            dispatch(resetVitalsSuccess());
+            navigation.navigate('AddVitalsScreen' as never);
           }}
           bgColor={colors.primary}
           textColor={colors.white}
           paddingVertical={responsive.padding(16)}
           fontSize={font.lg}
           radius={responsive.borderRadius(12)}
-          marginBottom={responsive.margin(12)}
         />
+        <View style={{ marginBottom: responsive.margin(12) }} />
         <TouchableOpacity 
           style={styles.secondaryButton}
-          onPress={()=>navigation.navigate('Dashboard')}
+          onPress={() => {
+            // Clear the success state before navigating back to dashboard
+            dispatch(resetVitalsSuccess());
+            navigation.navigate('Dashboard' as never);
+          }}
         >
           <Text style={styles.secondaryButtonText}>Back to Dashboard</Text>
         </TouchableOpacity>

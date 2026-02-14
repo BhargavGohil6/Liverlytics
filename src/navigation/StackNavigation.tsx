@@ -31,11 +31,15 @@ import RemindersScreen from "../screens/reminders/RemindersScreen";
 import RemindersAlertsScreen from "../screens/reminders/RemindersAlertsScreen";
 import ReportsMainScreen from "../screens/reports/ReportsMainScreen";
 import LabReportScreen from "../screens/reports/lab-report/LabReportResultsScreen";
+import ExerciseSavedScreen from "../screens/exercises/ExerciseSavedScreen";
 
 import ReportMetadata from "../screens/reports/ReportMetadata";
+import CompareReports from "../screens/reports/CompareReports";
 import ViewTimeline from "../screens/timeline/ViewTimeline";
 import ProfileMainScreen from "../screens/profile/ProfileMainScreen";
 import EditProfileScreen from "../screens/profile/EditProfileScreen";
+import ProfilePictureScreen from "../screens/profile/ProfilePictureScreen";
+import PrivacySettingsScreen from "../screens/profile/PrivacySettingsScreen";
 
 const Stack = createStackNavigator();
 
@@ -65,6 +69,7 @@ export default function AuthNavigation() {
         <Stack.Screen name="LabReportResultsScreen" component={LabReportResultsScreen} options={{headerShown:false}}/>
        <Stack.Screen name="ExerciseHistoryScreen" component={ExerciseHistoryScreen} options={{headerShown:false}}/>
        <Stack.Screen name="ExerciseActivityScreen" component={ExerciseActivityScreen} options={{headerShown:false}}/>
+       <Stack.Screen name="ExerciseSavedScreen" component={ExerciseSavedScreen} options={{headerShown:false}}/>
         <Stack.Screen name="MedicationAddedScreen" component={MedicationAddedScreen} options={{headerShown:false}}/>
         <Stack.Screen name="MedicationDetailsScreen" component={MedicationDetailsScreen} options={{headerShown:false}}/>
        <Stack.Screen name="MedicationsListScreen" component={MedicationsListScreen} options={{headerShown:false}}/>
@@ -74,8 +79,11 @@ export default function AuthNavigation() {
        <Stack.Screen name="RemindersScreen" component={RemindersScreen} options={{headerShown:false}}/>
 
         <Stack.Screen name="ReportMetadata" component={ReportMetadata} options={{headerShown:false}}/>
+        <Stack.Screen name="CompareReports" component={CompareReports} options={{headerShown:false}}/>
        <Stack.Screen name="ViewTimeline" component={ViewTimeline} options={{headerShown:false}}/>
         <Stack.Screen name="EditProfileScreen" component={EditProfileScreen} options={{headerShown:false}}/>
+        <Stack.Screen name="ProfilePictureScreen" component={ProfilePictureScreen} options={{headerShown:false}}/>
+        <Stack.Screen name="PrivacySettingsScreen" component={PrivacySettingsScreen} options={{headerShown:false}}/>
         </Stack.Navigator>
     );
 }

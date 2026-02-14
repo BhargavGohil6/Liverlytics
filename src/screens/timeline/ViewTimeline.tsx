@@ -61,17 +61,17 @@ const flagsData: FlagItem[] = [
     timestamp: 'May 10 • 20:30',
     backgroundColor: '#FFF7ED',
   },
-  {
-    id: '4',
-    icon: 'pill',
-    iconColor: '#8B5CF6',
-    title: 'Missed evening dose',
-    description: 'Medication adherence below 80% this week due to missed 20:00 dose.',
-    source: 'Medications',
-    sourceIcon: 'pill',
-    timestamp: 'May 09 • 21:15',
-    backgroundColor: '#F5F3FF',
-  },
+  // {
+  //   id: '4',
+  //   icon: 'pill',
+  //   iconColor: '#8B5CF6',
+  //   title: 'Missed evening dose',
+  //   description: 'Medication adherence below 80% this week due to missed 20:00 dose.',
+  //   source: 'Medications',
+  //   sourceIcon: 'pill',
+  //   timestamp: 'May 09 • 21:15',
+  //   backgroundColor: '#F5F3FF',
+  // },
 ];
 
 const ViewTimeline = () => {

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, FlatList } from 'react-native';
+import responsive from '../theme/responsive';
 
 interface CommonDropdownProps {
   label: string;
@@ -51,20 +52,21 @@ const CommonDropdown = ({
       <Modal
         visible={isVisible}
         transparent={true}
-        animationType="none"
+        animationType="fade"
         onRequestClose={() => setIsVisible(false)}
       >
         <TouchableOpacity
           style={styles.modalOverlay}
+          activeOpacity={1}
           onPress={() => setIsVisible(false)}
         >
           <View style={styles.modalContent}>
             <FlatList
               data={data || options}
               keyExtractor={(item) => item.value}
-              renderItem={({ item }) => (
+              renderItem={({ item, index }) => (
                 <TouchableOpacity
-                  style={styles.option}
+                  style={[styles.option, index === (data || options).length - 1 && styles.lastOption]}
                   onPress={() => handleSelect(item)}
                 >
                   <Text style={styles.optionText}>{item.label}</Text>
@@ -80,54 +82,63 @@ const CommonDropdown = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 15,
+    marginBottom: responsive.height(15),
     width: '100%',
   },
   label: {
-    marginBottom: 5,
-    fontSize: 14,
-    color: '#333',
-    fontWeight: '500',
+    marginBottom: responsive.height(6),
+    fontSize: responsive.fontSize(14),
+    color: '#4A5568',
+    fontWeight: '600',
   },
   dropdown: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 12,
+    borderColor: '#E2E8F0',
+    borderRadius: responsive.borderRadius(12),
+    paddingHorizontal: responsive.padding(14),
+    height: responsive.height(52),
     backgroundColor: '#fff',
   },
   selectedText: {
-    fontSize: 16,
-    color: '#000',
+    fontSize: responsive.fontSize(16),
+    color: '#2D3748',
   },
   dropdownIcon: {
-    fontSize: 18,
-    color: '#555',
+    fontSize: responsive.fontSize(14),
+    color: '#718096',
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalContent: {
     backgroundColor: '#fff',
-    borderRadius: 10,
-    maxHeight: 200,
-    width: '80%',
+    borderRadius: responsive.borderRadius(16),
+    maxHeight: responsive.height(250),
+    width: '85%',
+    paddingVertical: responsive.padding(10),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 5,
   },
   option: {
-    padding: 15,
+    padding: responsive.padding(16),
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: '#F7FAFC',
+  },
+  lastOption: {
+    borderBottomWidth: 0,
   },
   optionText: {
-    fontSize: 16,
-    color: '#000',
+    fontSize: responsive.fontSize(16),
+    color: '#2D3748',
   },
 });
 

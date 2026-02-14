@@ -1,9 +1,20 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, TouchableOpacityProps } from 'react-native';
 import responsive  from '../theme/responsive.js';
 
+interface ButtonProps extends Omit<TouchableOpacityProps, 'onPress'> {
+  title: any;
+  onPress: any;
+  bgColor?: string;
+  textColor?: string;
+  radius?: number;
+  paddingVertical?: number;
+  fontSize?: number;
+  style?: {};
+  disabled?: boolean;
+}
 
-const CommonButton = ({
+const CommonButton: React.FC<ButtonProps> = ({
   title,
   onPress,
   bgColor = '#52ab3c',
@@ -11,18 +22,26 @@ const CommonButton = ({
   radius = 10,
   paddingVertical = 8,
   fontSize = 16,
-  style = {}
+  style = {},
+  disabled = false,
+  ...props
 }) => {
   return (
     <TouchableOpacity
       onPress={onPress}
+      disabled={disabled}
       style={[
         styles.button,
-        { backgroundColor: bgColor, borderRadius: radius, paddingVertical },
+        { 
+          backgroundColor: disabled ? '#ccc' : bgColor, 
+          borderRadius: radius, 
+          paddingVertical 
+        },
         style
       ]}
+      {...props}
     >
-      <Text style={[styles.text, { color: textColor, fontSize }]}>{title}</Text>
+      <Text style={[styles.text, { color: disabled ? '#666' : textColor, fontSize }]}>{title}</Text>
     </TouchableOpacity>
   );
 };

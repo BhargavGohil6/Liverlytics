@@ -31,8 +31,8 @@ const ToggleItem = ({ icon, title, subtitle, value, onToggle }) => (
     <Switch
       value={value}
       onValueChange={onToggle}
-      trackColor={{ false: colors.gray200, true: colors.emerald }}
-      thumbColor={value ? colors.primary : colors.white}
+      trackColor={{ false: colors.gray200, true: colors.primary }}
+      thumbColor={value ? colors.white : colors.gray200}
     />
   </View>
 );
@@ -49,15 +49,27 @@ const ConsentItem = ({ color, title, description }) => (
 
 const HealthAccessScreen = () => {
   const navigation = useNavigation();
-  const [toggles, setToggles] = useState({
+  interface HealthToggles {
+    steps: boolean;
+    restingHeartRate: boolean;
+    activeHeartRate: boolean;
+    sleepDuration: boolean;
+    calories: boolean;
+    oxygen: boolean;
+    bloodPressure: boolean;
+  }
+
+  const [toggles, setToggles] = useState<HealthToggles>({
     steps: true,
     restingHeartRate: true,
     activeHeartRate: true,
     sleepDuration: true,
     calories: false,
+    oxygen: true,
+    bloodPressure: true,
   });
 
-  const handleToggle = key => {
+  const handleToggle = (key: keyof HealthToggles) => {
     setToggles(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
@@ -85,6 +97,7 @@ const HealthAccessScreen = () => {
               'Auto-sync daily steps',
               'Fetch resting heart rate',
               'Read sleep duration',
+              'Monitor SpO₂ & Blood Pressure',
               'Improve AI safety checks',
               'Reduce manual entries',
             ].map((item, index) => (
@@ -143,6 +156,20 @@ const HealthAccessScreen = () => {
               subtitle="Optional"
               value={toggles.calories}
               onToggle={() => handleToggle('calories')}
+            />
+            <ToggleItem
+              icon="water-outline"
+              title="Oxygen Level (SpO₂)"
+              subtitle="Blood oxygen saturation"
+              value={toggles.oxygen}
+              onToggle={() => handleToggle('oxygen')}
+            />
+            <ToggleItem
+              icon="pulse-outline"
+              title="Blood Pressure"
+              subtitle="Systolic & Diastolic"
+              value={toggles.bloodPressure}
+              onToggle={() => handleToggle('bloodPressure')}
             />
           </View>
 

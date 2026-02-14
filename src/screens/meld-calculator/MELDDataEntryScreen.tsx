@@ -12,12 +12,13 @@ import {
   Dimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import {useNavigation, useRoute} from '@react-navigation/native';
+import {useNavigation, useRoute, CommonActions} from '@react-navigation/native';
 import { useSelector, useDispatch } from 'react-redux';
 import { addMeldCalculator } from './slices/meldSlice';
 import { RootState, AppDispatch } from '../../redux/store';
 import { MeldCalculatorPayload } from './slices/meldSlice';
 import responsive from '../../theme/responsive';
+import Toast from 'react-native-toast-message';
 
 const MELDDataEntryScreen = () => {
   const navigation = useNavigation();
@@ -25,6 +26,7 @@ const MELDDataEntryScreen = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const { loading: meldLoading, error: meldError } = useSelector((state: RootState) => state.meld);
   
+  const [entryMethod, setEntryMethod] = useState<'manual' | 'upload'>('manual');
   const [bilirubin, setBilirubin] = useState('');
   const [inr, setInr] = useState('');
   const [creatinine, setCreatinine] = useState('');
@@ -44,10 +46,32 @@ const MELDDataEntryScreen = () => {
   const { width } = Dimensions.get('window');
   const isSmallScreen = width < 768;
 
+  // Function to reset all form fields to initial state
+  const resetFormFields = () => {
+    setBilirubin('');
+    setInr('');
+    setCreatinine('');
+    setSodium('');
+    setAlbumin('');
+    setAst('');
+    setAlt('');
+    setPlateletCount('');
+    setHemoglobin('');
+    setWbc('');
+    setPotassium('');
+    setAmmonia('');
+    setDialysis('No');
+    setNotes('');
+  };
+
   const handleSaveAndRecalculate = () => {
     // Validate required fields
     if (!bilirubin || !inr || !creatinine) {
-      Alert.alert('Validation Error', 'Please enter required fields: Bilirubin, INR, and Creatinine');
+      Toast.show({
+        type: 'error',
+        text1: 'Validation Error',
+        text2: 'Please enter required fields: Bilirubin, INR, and Creatinine',
+      });
       return;
     }
 
@@ -75,11 +99,26 @@ const MELDDataEntryScreen = () => {
       .unwrap()
       .then((result: MeldCalculatorPayload) => {
         console.log('MELD calculation successful:', result);
-        Alert.alert('Success', 'MELD calculation completed successfully');
+        Toast.show({
+          type: 'success',
+          text1: 'MELD calculation completed successfully',
+        });
+        
+        // Clear form fields and navigate to dashboard after showing the toast
+        resetFormFields();
+        // Navigate back to the main tab navigator which contains the Dashboard
+        // Use proper navigation to go to the Dashboard tab
+        // Navigate to the Dashboard tab in the parent TabNavigator
+        navigation.navigate('Dashboard' as never);
+        
       })
       .catch((error: any) => {
         console.error('MELD calculation failed:', error);
-        Alert.alert('Error', 'Failed to calculate MELD score: ' + error.message);
+        Toast.show({
+          type: 'error',
+          text1: 'Failed to calculate MELD score',
+          text2: error.message,
+        });
       });
   };
 
@@ -98,15 +137,22 @@ const MELDDataEntryScreen = () => {
 
           {/* Entry Method */}
           <View style={isSmallScreen ? styles.methodColumn : styles.methodCard}>
-            <TouchableOpacity style={styles.methodButton}>
-              <Icon name="create-outline" size={responsive.fontSize(20)} color="#1f2937" />
-              <Text style={styles.methodText}>Manual Entry</Text>
-              <Text style={styles.methodSubtext}>Enter Lab Values Manually</Text>
+            <TouchableOpacity 
+              style={[styles.methodButton, entryMethod === 'manual' && styles.methodButtonActive]}
+              onPress={() => setEntryMethod('manual')}
+            >
+              <Icon name="create-outline" size={responsive.fontSize(20)} color={entryMethod === 'manual' ? "#fff" : "#1f2937"} />
+              <Text style={[styles.methodText, entryMethod === 'manual' && styles.methodTextActive]}>Manual Entry</Text>
+              <Text style={[styles.methodSubtext, entryMethod === 'manual' && styles.methodSubtextActive]}>Enter Lab Values Manually</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.methodButton}>
-              <Icon name="cloud-upload-outline" size={responsive.fontSize(20)} color="#1f2937" />
-              <Text style={styles.methodText}>Upload Report</Text>
-              <Text style={styles.methodSubtext}>Upload Lab Report (AI Extraction)</Text>
+            <TouchableOpacity 
+              style={[styles.methodButton, entryMethod === 'upload' && styles.methodButtonActive]}
+              // onPress={() => setEntryMethod('upload')}
+              onPress={() => navigation.navigate('UploadLabReportScreen' as never)}
+            >
+              <Icon name="cloud-upload-outline" size={responsive.fontSize(20)} color={entryMethod === 'upload' ? "#fff" : "#1f2937"} />
+              <Text style={[styles.methodText, entryMethod === 'upload' && styles.methodTextActive]}>Upload Report</Text>
+              <Text style={[styles.methodSubtext, entryMethod === 'upload' && styles.methodSubtextActive]}>Upload Lab Report (AI Extraction)</Text>
             </TouchableOpacity>
           </View>
 
@@ -624,7 +670,7 @@ const MELDDataEntryScreen = () => {
           </View>
 
           {/* Results Preview */}
-          <View style={styles.resultsCard}>
+          {/* <View style={styles.resultsCard}>
             <Text style={styles.resultsTitle}>MELD Results</Text>
             <View style={isSmallScreen ? styles.resultColumn : styles.resultRow}>
               <View style={styles.resultItem}>
@@ -639,26 +685,26 @@ const MELDDataEntryScreen = () => {
                 <Text style={styles.resultHint}>Uses bilirubin, INR, creatinine, albumin, sex</Text>
               </View>
             </View>
-          </View>
+          </View> */}
 
           {/* Action Buttons */}
           <View style={isSmallScreen ? styles.actionsColumn : styles.actions}>
-            <TouchableOpacity style={styles.clearButton}>
+            {/* <TouchableOpacity style={styles.clearButton}>
               <Text style={styles.clearText}>Clear</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
             <TouchableOpacity 
               style={styles.saveButton} 
               onPress={handleSaveAndRecalculate}
               disabled={meldLoading}
             >
               <Text style={styles.saveText}>
-                {meldLoading ? 'Saving...' : 'Save & Recalculate'}
+                {meldLoading ? 'Saving...' : 'Save'}
               </Text>
             </TouchableOpacity>
           </View>
 
           {/* AI Insights */}
-          <View style={styles.insightsCard}>
+          {/* <View style={styles.insightsCard}>
             <Text style={styles.insightsTitle}>AI Insights (Informational Only)</Text>
             <View style={styles.insightItem}>
               <Text style={styles.insightBullet}>•</Text>
@@ -681,7 +727,7 @@ const MELDDataEntryScreen = () => {
             <Text style={styles.disclaimer}>
               These statements are informational and not a diagnosis.
             </Text>
-          </View>
+          </View> */}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -718,7 +764,7 @@ const styles = StyleSheet.create({
     marginBottom: responsive.margin(16),
   },
   methodColumn: {
-    flexDirection: 'column',
+    flexDirection: 'row',
     gap: responsive.width(12),
     marginBottom: responsive.margin(16),
   },
@@ -742,6 +788,16 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     textAlign: 'center',
     marginTop: responsive.margin(4),
+  },
+  methodButtonActive: {
+    backgroundColor: '#52a64a',
+    borderColor: '#52a64a',
+  },
+  methodTextActive: {
+    color: '#fff',
+  },
+  methodSubtextActive: {
+    color: '#d1fae5',
   },
   formCard: {
     backgroundColor: '#fff',

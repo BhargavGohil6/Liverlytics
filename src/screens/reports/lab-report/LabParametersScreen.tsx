@@ -89,12 +89,32 @@ const LabParametersScreen = () => {
     return '';
   };
 
-  const renderParameterRow = (label: string, extracted: string, unit: string, flag: string, hasTest: boolean = true) => (
+  const handleUpdateValue = (key: string, newValue: string) => {
+    setLabData(prev => {
+      const currentParam = prev[key];
+      if (typeof currentParam === 'object' && 'value' in currentParam) {
+        const medicalData = reduxLabData?.medical_analysis?.medical_data?.[key];
+        const normalRange = medicalData?.normal_range;
+        
+        return {
+          ...prev,
+          [key]: {
+            ...currentParam,
+            value: newValue,
+            flag: getFlagValue({ value: newValue }, normalRange),
+          },
+        };
+      }
+      return prev;
+    });
+  };
+
+  const renderParameterRow = (label: string, extracted: string, unit: string, flag: string, paramKey: string, hasTest: boolean = false) => (
     <View style={styles.parameterRow}>
       <Text style={styles.parameterLabel}>{label}</Text>
       <View style={styles.extractedContainer}>
         <Text style={styles.extractedValue}>
-          {extracted}
+          {reduxLabData?.medical_analysis?.medical_data?.[paramKey]?.value || extracted}
           {flag && (
             <View style={[styles.flagBadge, flag === 'high' || flag === 'low' ? styles.abnormalBadge : (flag === 'high' ? styles.highBadge : styles.lowBadge)]}>
               <Text style={[styles.flagText, (flag === 'high' || flag === 'low') && styles.abnormalFlagText]}>{flag}</Text>
@@ -104,11 +124,16 @@ const LabParametersScreen = () => {
         {hasTest && <Text style={styles.testInfo}>+4 since last{'\n'}test</Text>}
       </View>
       <View style={styles.unitValueContainer}>
-              <Text style={styles.unitValueText}>
-                <Text style={styles.unitValueBold}>{extracted}</Text>
-                <Text style={styles.unitValueUnit}>{unit}</Text>
-              </Text>
-            </View>
+        <View style={styles.unitValueText}>
+          <TextInput
+            style={styles.unitValueBold}
+            value={extracted}
+            onChangeText={(text) => handleUpdateValue(paramKey, text)}
+            keyboardType="numeric"
+          />
+          <Text style={styles.unitValueUnit}>{unit}</Text>
+        </View>
+      </View>
     </View>
   );
 
@@ -117,7 +142,7 @@ const LabParametersScreen = () => {
     const paramData = labData[paramKey];
     if (paramData && typeof paramData === 'object' && 'value' in paramData && 'unit' in paramData && 'flag' in paramData) {
       const typedParamData = paramData as LabParameter;
-      return renderParameterRow(label, typedParamData.value, typedParamData.unit, typedParamData.flag);
+      return renderParameterRow(label, typedParamData.value, typedParamData.unit, typedParamData.flag, paramKey);
     }
     return null; // Return null for non-object values like 'sex' and 'onDialysis'
   };
@@ -184,14 +209,14 @@ const LabParametersScreen = () => {
           </View>
           <View style={styles.dialysisButtons}>
             <TouchableOpacity
-              style={[styles.dialysisButton, labData.onDialysis === 'No' && styles.dialysisButtonInactive]}
+              style={[styles.dialysisButton, labData.onDialysis === 'No' && styles.dialysisButtonActive]}
               onPress={() => setLabData({ ...labData, onDialysis: 'No' })}>
-              <Text style={styles.dialysisButtonText}>No</Text>
+              <Text style={[styles.dialysisButtonText, labData.onDialysis === 'No' && styles.dialysisButtonTextActive]}>No</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.dialysisButton, labData.onDialysis === 'Yes' && styles.dialysisButtonActive]}
               onPress={() => setLabData({ ...labData, onDialysis: 'Yes' })}>
-              <Text style={[styles.dialysisButtonText, styles.dialysisButtonTextActive]}>Yes</Text>
+              <Text style={[styles.dialysisButtonText, labData.onDialysis === 'Yes' && styles.dialysisButtonTextActive]}>Yes</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -355,11 +380,16 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     borderRadius: responsive.borderRadius(4),
     padding: responsive.padding(4),
+    flexDirection: 'row',
+    alignItems: 'center',
+    minWidth: responsive.width(70),
   },
   unitValueBold: {
     fontSize: responsive.fontSize(16),
     fontWeight: 'bold',
     color: '#000',
+    padding: 0,
+    marginRight: responsive.margin(4),
   },
   unitValueUnit: {
     fontSize: responsive.fontSize(14),
@@ -379,7 +409,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#D1ECF1',
   },
   flagText: {
-    fontSize: responsive.fontSize(10),
+    fontSize: responsive.fontSize(5),
     fontWeight: '600',
   },
   abnormalBadge: {

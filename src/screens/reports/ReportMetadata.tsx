@@ -1,5 +1,5 @@
 // App.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,12 +11,18 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 // import { Shadow } from 'react-native-shadow-2';
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
 import { useNavigation } from '@react-navigation/native';
+import { useSelector, useDispatch } from 'react-redux';
+import { fetchAILabReports } from './slices/reportSlice';
+import { RootState, AppDispatch } from '../../redux/store';
+import responsive from '../../theme/responsive'; // Import responsive utility functions
+import { formatRelativeTime } from '../../utils/timeUtils';
 
 interface LabResult {
   parameter: string;
@@ -27,22 +33,93 @@ interface LabResult {
 
 const ReportMetadata: React.FC = () => {
     const navigation = useNavigation();
-  const [activeTab, setActiveTab] = useState<string>('Reports');
+    const dispatch = useDispatch<AppDispatch>();
+    const { aiLabReports, loading } = useSelector((state: RootState) => state.reports);
+    const { user } = useSelector((state: RootState) => state.auth);
+    const [activeTab, setActiveTab] = useState<string>('Reports');
+    const userEmail = user?.email || '';
 
-  const labResults: LabResult[] = [
-    { parameter: 'Bilirubin', extractedValue: '1.8 mg/dL', normalRange: '0.1–1.2', flag: 'High' },
-    { parameter: 'INR', extractedValue: '1.5', normalRange: '0.9–1.2', flag: 'Mild' },
-    { parameter: 'Creatinine', extractedValue: '0.9 mg/dL', normalRange: '0.7–1.3', flag: 'Normal' },
-    { parameter: 'Sodium', extractedValue: '132 mmol/L', normalRange: '135–145', flag: 'Low' },
-    { parameter: 'Albumin', extractedValue: '3.1 g/dL', normalRange: '3.5–5.0', flag: 'Low' },
-    { parameter: 'AST', extractedValue: '58 U/L', normalRange: '10–40', flag: 'High' },
-    { parameter: 'ALT', extractedValue: '72 U/L', normalRange: '7–56', flag: 'High' },
-    { parameter: 'Platelet Count', extractedValue: '130 ×10⁹/L', normalRange: '150–400', flag: 'Low' },
-    { parameter: 'Hemoglobin', extractedValue: '12.9 g/dL', normalRange: '13.5–17.5', flag: 'Low' },
-    { parameter: 'WBC', extractedValue: '5.6 ×10⁹/L', normalRange: '4.0–11.0', flag: 'Normal' },
-    { parameter: 'Potassium', extractedValue: '4.2 mmol/L', normalRange: '3.5–5.1', flag: 'Normal' },
-    { parameter: 'Ammonia', extractedValue: '42 µmol/L', normalRange: '15–45', flag: 'Normal' },
-  ];
+    useEffect(() => {
+      // Fetch AI lab reports when component mounts
+      if (userEmail) {
+        dispatch(fetchAILabReports({ user: userEmail }));
+      }
+    }, [dispatch, userEmail]);
+
+    // Helper function to extract unit from normal range string
+    const extractUnitFromRange = (range: string): string => {
+      const unitMatch = range.match(/(mg\/dL|mmol\/L|g\/dL|U\/L|×10⁹\/L|mEq\/L|μmol\/L|per μL)/);
+      return unitMatch ? unitMatch[0] : '';
+    };
+
+    // Helper function to format date from API
+    const formatDate = (dateString: string): string => {
+      // Handle the case where dateString is already in the desired format
+      if (dateString.includes('•')) {
+        // If it contains '•', it might have time, so extract only date part
+        const datePart = dateString.split(' • ')[0];
+        return datePart;
+      }
+      
+      // Try to parse the date string from API (handle various formats)
+      let date: Date;
+      
+      // If dateString is in 'YYYY-MM-DD' format, append time to make it valid
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+        date = new Date(`${dateString}T00:00:00`);
+      } else {
+        date = new Date(dateString);
+      }
+      
+      // Check if the date is valid
+      if (isNaN(date.getTime())) {
+        // If invalid, return as is
+        return dateString;
+      }
+      
+      // Format the date as "Month DD, YYYY" (without time)
+      const options: Intl.DateTimeFormatOptions = { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      };
+      const formattedDate = date.toLocaleDateString(undefined, options);
+      
+      return formattedDate;
+    };
+
+    // Map API flag values to UI flag values
+    const mapApiFlagToDisplayFlag = (apiFlag: string): 'High' | 'Low' | 'Normal' | 'Mild' => {
+      switch(apiFlag.toLowerCase()) {
+        case 'high':
+          return 'High';
+        case 'low':
+          return 'Low';
+        case 'normal':
+          return 'Normal';
+        case 'mild':
+          return 'Mild';
+        default:
+          return 'Normal';
+      }
+    };
+
+    // Convert API response to LabResult format
+    const labResults: LabResult[] = aiLabReports.flatMap(report => {
+      return Object.entries(report.parameters).map(([paramKey, paramData]) => {
+        // Convert parameter key to proper display name
+        const displayName = paramKey.split('_').map(word => 
+          word.charAt(0).toUpperCase() + word.slice(1)
+        ).join(' ');
+        
+        return {
+          parameter: displayName,
+          extractedValue: `${paramData.value} ${extractUnitFromRange(paramData.normal_range)}`,
+          normalRange: paramData.normal_range.replace(/ mg\/dL| mmol\/L| g\/dL| U\/L| ×10⁹\/L/g, ''), // Clean range without units
+          flag: mapApiFlagToDisplayFlag(paramData.flag),
+        };
+      });
+    });
 
   const getFlagColor = (flag: string) => {
     switch (flag) {
@@ -95,7 +172,7 @@ const ReportMetadata: React.FC = () => {
       {/* Back Button & Title */}
       <View style={styles.titleSection}>
         <TouchableOpacity style={styles.backButton} onPress={()=>navigation.goBack()}>
-          <Icon name="arrow-back" size={24} color="#333333" />
+          <Icon name="arrow-back" size={responsive.fontSize(24)} color="#333333" />
           <Text style={styles.backText}>Back</Text>
         </TouchableOpacity>
         <Text style={styles.pageTitle}>Reports</Text>
@@ -121,25 +198,25 @@ const ReportMetadata: React.FC = () => {
             <Text style={styles.cardTitle}>Report Metadata</Text>
 
             <View style={styles.metadataRow}>
-              <Icon name="calendar-today" size={20} color="#333333" />
+              <Icon name="calendar-today" size={responsive.fontSize(20)} color="#333333" />
               <Text style={styles.metadataText}>
-                Uploaded: May 11, 2025 • 09:15
+                Uploaded: {aiLabReports.length > 0 && aiLabReports[0].date ? formatDate(aiLabReports[0].date) : 'May 11, 2025'}
               </Text>
               <View style={styles.pdfBadge}>
                 <Text style={styles.pdfText}>PDF</Text>
               </View>
             </View>
 
-            <View style={styles.metadataRow}>
-              <Icon name="autorenew" size={20} color="#333333" />
+            {/* <View style={styles.metadataRow}>
+              <Icon name="autorenew" size={responsive.fontSize(20)} color="#333333" />
               <Text style={styles.metadataText}>Parsing confidence</Text>
               <View style={styles.confidenceBadge}>
                 <Text style={styles.confidenceText}>93%</Text>
               </View>
-            </View>
+            </View> */}
 
             <TouchableOpacity style={styles.downloadButton}>
-              <Icon name="file-download" size={20} color="#333333" />
+              <Icon name="file-download" size={responsive.fontSize(20)} color="#333333" />
               <Text style={styles.downloadText}>Download Parsed PDF</Text>
             </TouchableOpacity>
           </View>
@@ -162,33 +239,54 @@ const ReportMetadata: React.FC = () => {
               <Text style={styles.tableHeaderText}>Flag</Text>
             </View>
 
-            {labResults.map((result, index) => renderLabRow(result, index))}
+            {loading ? (
+              <View style={styles.loadingContainer}>
+                <Text style={styles.loadingText}>Loading lab results...</Text>
+              </View>
+            ) : labResults.length > 0 ? (
+              labResults.map((result, index) => renderLabRow(result, index))
+            ) : (
+              <View style={styles.noDataContainer}>
+                <Text style={styles.noDataText}>No lab results available</Text>
+              </View>
+            )}
           </View>
         {/* </Shadow> */}
 
         {/* Insights Card */}
-        <LinearGradient
-          colors={['#0D8282', '#0FA3A3']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.insightsCard}
-        >
-          <Text style={styles.insightsTitle}>Insights</Text>
-
-          <View style={styles.insightRow}>
-            <Icon name="lightbulb-outline" size={20} color="#FFFFFF" />
-            <Text style={styles.insightText}>
-              Sodium slightly lower than previous reading.
-            </Text>
+        <View style={styles.newAiInsightsCard}>
+          <View style={styles.insightsHeader}>
+            <View style={styles.sectionTitleRow}>
+              <MaterialCommunityIcons name="lightbulb" size={20} color="#1A1A1A" />
+              <Text style={styles.newInsightsTitle}>AI Insights</Text>
+            </View>
+            <View style={styles.infoBadge}>
+              <Text style={styles.infoBadgeText}>{aiLabReports.length > 0 && aiLabReports[0].date ? formatRelativeTime(aiLabReports[0].date) : 'Today'}</Text>
+            </View>
           </View>
 
-          <View style={styles.insightRow}>
-            <Icon name="trending-up" size={20} color="#FFFFFF" />
-            <Text style={styles.insightText}>
-              ALT increased compared to last report.
-            </Text>
+          <View style={styles.newInsightBox}>
+            {/* Sodium Insight */}
+            <View style={[styles.insightItem, { backgroundColor: '#FFF8E1' }]}>              
+              <Icon name="trending-up" size={22} color="#FBC02D" style={styles.insightIcon} />
+              <View style={styles.insightContent}>
+                <Text style={[styles.insightItemText, { color: '#FBC02D' }]}>Sodium</Text>
+                <Text style={styles.insightItemSubText}>Slightly high compared to your daily limit.</Text>
+              </View>
+            </View>
+
+            {/* ALT Insight */}
+            <View style={[styles.insightItem, { backgroundColor: '#FEECEE' }]}>              
+              <Icon name="trending-up" size={22} color="#D32F2F" style={styles.insightIcon} />
+              <View style={styles.insightContent}>
+                <Text style={[styles.insightItemText, { color: '#D32F2F' }]}>ALT</Text>
+                <Text style={styles.insightItemSubText}>Increased compared to last report.</Text>
+              </View>
+            </View>
+
+            <Text style={styles.disclaimerText}>These insights are informational only and not a diagnosis.</Text>
           </View>
-        </LinearGradient>
+        </View>
 
         {/* Related MELD Values Card */}
         {/* <Shadow
@@ -202,18 +300,18 @@ const ReportMetadata: React.FC = () => {
 
             <View style={styles.meldContent}>
               <View style={styles.meldLeft}>
-                <Icon name="show-chart" size={24} color="#333333" />
+                <Icon name="show-chart" size={responsive.fontSize(24)} color="#333333" />
                 <View style={styles.meldInfo}>
                   <Text style={styles.meldTitle}>MELD-Na: 18</Text>
                   <Text style={styles.meldSubtitle}>MELD 3.0: 20</Text>
                   <Text style={styles.meldTimestamp}>
-                    Timestamp: May 11, 2025 • 09:16
+                    Timestamp: {aiLabReports.length > 0 && aiLabReports[0].date ? formatDate(aiLabReports[0].date) : 'May 11, 2025'}
                   </Text>
                 </View>
               </View>
               {/* <TouchableOpacity style={styles.viewFullButton}>
                 <Text style={styles.viewFullText}>View Full MELD History</Text>
-                <Icon name="chevron-right" size={20} color="#0D8282" />
+                <Icon name="chevron-right" size={responsive.fontSize(20)} color="#0D8282" />
               </TouchableOpacity> */}
             </View>
           </View>
@@ -230,7 +328,7 @@ const ReportMetadata: React.FC = () => {
         >
           <Icon
             name="home"
-            size={26}
+            size={responsive.fontSize(26)}
             color={activeTab === 'Home' ? '#333333' : '#999999'}
           />
           <Text
@@ -249,7 +347,7 @@ const ReportMetadata: React.FC = () => {
         >
           <Icon
             name="bar-chart"
-            size={26}
+            size={responsive.fontSize(26)}
             color={activeTab === 'Reports' ? '#333333' : '#999999'}
           />
           <Text
@@ -268,7 +366,7 @@ const ReportMetadata: React.FC = () => {
         >
           <Icon
             name="access-alarm"
-            size={26}
+            size={responsive.fontSize(26)}
             color={activeTab === 'Reminders' ? '#333333' : '#999999'}
           />
           <Text
@@ -287,7 +385,7 @@ const ReportMetadata: React.FC = () => {
         >
           <Icon
             name="person"
-            size={26}
+            size={responsive.fontSize(26)}
             color={activeTab === 'Profile' ? '#333333' : '#999999'}
           />
           <Text
@@ -319,21 +417,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logoGradient: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
+    width: responsive.width(48),
+    height: responsive.height(48),
+    borderRadius: responsive.borderRadius(12),
     justifyContent: 'center',
     alignItems: 'center',
   },
   logoText: {
-    fontSize: 22,
+    fontSize: responsive.fontSize(22),
     fontWeight: '700',
     color: '#1F1F1F',
-    marginLeft: 12,
+    marginLeft: responsive.margin(12),
     letterSpacing: -0.5,
   },
   headerDivider: {
-    height: 1,
+    height: responsive.height(1),
     backgroundColor: '#E8E8E8',
   },
   titleSection: {
@@ -347,19 +445,19 @@ const styles = StyleSheet.create({
     marginBottom: hp('1.5%'),
   },
   backText: {
-    fontSize: 16,
+    fontSize: responsive.fontSize(16),
     color: '#333333',
-    marginLeft: 8,
+    marginLeft: responsive.margin(8),
     fontWeight: '500',
   },
   pageTitle: {
-    fontSize: 28,
+    fontSize: responsive.fontSize(28),
     fontWeight: '700',
     color: '#1F1F1F',
     letterSpacing: -0.5,
   },
   contentDivider: {
-    height: 1,
+    height: responsive.height(1),
     backgroundColor: '#E8E8E8',
   },
   scrollView: {
@@ -376,16 +474,82 @@ const styles = StyleSheet.create({
   },
   metadataCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: responsive.borderRadius(12),
     padding: wp('4%'),
-    borderWidth: 1,
+    borderWidth: responsive.width(1),
     borderColor: '#E8E8E8',
   },
   cardTitle: {
-    fontSize: 16,
+    fontSize: responsive.fontSize(16),
     fontWeight: '700',
     color: '#1F1F1F',
     marginBottom: hp('2%'),
+  },
+  newAiInsightsCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: responsive.borderRadius(12),
+    padding: wp('4%'),
+    borderWidth: responsive.width(1),
+    borderColor: '#E8E8E8',
+    marginBottom: hp('2%'),
+  },
+  insightsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: hp('2%'),
+  },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  newInsightsTitle: {
+    fontSize: responsive.fontSize(16),
+    fontWeight: '700',
+    color: '#1F1A1A',
+    marginLeft: responsive.margin(8),
+  },
+  infoBadge: {
+    backgroundColor: '#F0F0F0',
+    paddingHorizontal: responsive.padding(8),
+    paddingVertical: responsive.padding(4),
+    borderRadius: responsive.borderRadius(12),
+  },
+  infoBadgeText: {
+    fontSize: responsive.fontSize(12),
+    fontWeight: '500',
+    color: '#666666',
+  },
+  newInsightBox: {
+    gap: hp('1.5%'),
+  },
+  insightItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: wp('3%'),
+    borderRadius: responsive.borderRadius(12),
+  },
+  insightIcon: {
+    marginRight: responsive.margin(10),
+  },
+  insightContent: {
+    flex: 1,
+  },
+  insightItemText: {
+    fontSize: responsive.fontSize(14),
+    fontWeight: '600',
+  },
+  insightItemSubText: {
+    fontSize: responsive.fontSize(12),
+    color: '#666666',
+    marginTop: hp('0.3%'),
+  },
+  disclaimerText: {
+    fontSize: responsive.fontSize(11),
+    color: '#999999',
+    fontStyle: 'italic',
+    marginTop: hp('2%'),
+    textAlign: 'center',
   },
   metadataRow: {
     flexDirection: 'row',
@@ -394,30 +558,30 @@ const styles = StyleSheet.create({
   },
   metadataText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: responsive.fontSize(14),
     color: '#333333',
-    marginLeft: 10,
+    marginLeft: responsive.margin(10),
     fontWeight: '500',
   },
   pdfBadge: {
     backgroundColor: '#F5F5F5',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingHorizontal: responsive.padding(10),
+    paddingVertical: responsive.padding(4),
+    borderRadius: responsive.borderRadius(6),
   },
   pdfText: {
-    fontSize: 11,
+    fontSize: responsive.fontSize(11),
     fontWeight: '600',
     color: '#666666',
   },
   confidenceBadge: {
     backgroundColor: '#52ab3c',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: responsive.padding(10),
+    paddingVertical: responsive.padding(4),
+    borderRadius: responsive.borderRadius(12),
   },
   confidenceText: {
-    fontSize: 12,
+    fontSize: responsive.fontSize(12),
     fontWeight: '700',
     color: '#FFFFFF',
   },
@@ -429,28 +593,28 @@ const styles = StyleSheet.create({
     paddingVertical: hp('1.2%'),
   },
   downloadText: {
-    fontSize: 14,
+    fontSize: responsive.fontSize(14),
     fontWeight: '600',
     color: '#333333',
-    marginLeft: 8,
+    marginLeft: responsive.margin(8),
   },
   labsCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: responsive.borderRadius(12),
     padding: wp('4%'),
-    borderWidth: 1,
+    borderWidth: responsive.width(1),
     borderColor: '#E8E8E8',
   },
   tableHeader: {
     flexDirection: 'row',
     paddingBottom: hp('1.5%'),
-    borderBottomWidth: 1,
+    borderBottomWidth: responsive.width(1),
     borderBottomColor: '#E8E8E8',
     marginBottom: hp('1%'),
   },
   tableHeaderText: {
     flex: 1,
-    fontSize: 12,
+    fontSize: responsive.fontSize(12),
     fontWeight: '700',
     color: '#666666',
     textAlign: 'left',
@@ -458,7 +622,7 @@ const styles = StyleSheet.create({
   labRow: {
     flexDirection: 'row',
     paddingVertical: hp('1.5%'),
-    borderBottomWidth: 1,
+    borderBottomWidth: responsive.width(1),
     borderBottomColor: '#F5F5F5',
     alignItems: 'center',
   },
@@ -467,41 +631,42 @@ const styles = StyleSheet.create({
   },
   parameterText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: responsive.fontSize(13),
     fontWeight: '600',
     color: '#1F1F1F',
   },
   extractedValue: {
     flex: 1,
-    fontSize: 13,
+    fontSize: responsive.fontSize(13),
     fontWeight: '500',
     color: '#333333',
   },
   normalRange: {
     flex: 1,
-    fontSize: 13,
+    fontSize: responsive.fontSize(13),
     fontWeight: '400',
     color: '#666666',
   },
   flagBadge: {
-    flex: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
+    width: responsive.width(60),
+    paddingHorizontal: responsive.padding(8),
+    paddingVertical: responsive.padding(4),
+    borderRadius: responsive.borderRadius(12),
     alignItems: 'center',
+    justifyContent: 'center',
   },
   flagText: {
-    fontSize: 11,
+    fontSize: responsive.fontSize(10),
     fontWeight: '700',
     color: '#FFFFFF',
   },
   insightsCard: {
-    borderRadius: 12,
+    borderRadius: responsive.borderRadius(12),
     padding: wp('4%'),
     marginBottom: hp('2%'),
   },
   insightsTitle: {
-    fontSize: 16,
+    fontSize: responsive.fontSize(16),
     fontWeight: '700',
     color: '#FFFFFF',
     marginBottom: hp('1.5%'),
@@ -513,16 +678,16 @@ const styles = StyleSheet.create({
   },
   insightText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: responsive.fontSize(14),
     color: '#FFFFFF',
-    marginLeft: 10,
-    lineHeight: 20,
+    marginLeft: responsive.margin(10),
+    lineHeight: responsive.fontSize(20),
   },
   meldCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: responsive.borderRadius(12),
     padding: wp('4%'),
-    borderWidth: 1,
+    borderWidth: responsive.width(1),
     borderColor: '#E8E8E8',
   },
   meldContent: {
@@ -534,23 +699,23 @@ const styles = StyleSheet.create({
     marginBottom: hp('1.5%'),
   },
   meldInfo: {
-    marginLeft: 12,
+    marginLeft: responsive.margin(12),
     flex: 1,
   },
   meldTitle: {
-    fontSize: 15,
+    fontSize: responsive.fontSize(15),
     fontWeight: '700',
     color: '#1F1F1F',
-    marginBottom: 4,
+    marginBottom: responsive.margin(4),
   },
   meldSubtitle: {
-    fontSize: 13,
+    fontSize: responsive.fontSize(13),
     fontWeight: '500',
     color: '#333333',
-    marginBottom: 4,
+    marginBottom: responsive.margin(4),
   },
   meldTimestamp: {
-    fontSize: 12,
+    fontSize: responsive.fontSize(12),
     color: '#666666',
   },
   viewFullButton: {
@@ -560,17 +725,35 @@ const styles = StyleSheet.create({
     paddingVertical: hp('1%'),
   },
   viewFullText: {
-    fontSize: 14,
+    fontSize: responsive.fontSize(14),
     fontWeight: '600',
     color: '#0D8282',
   },
   bottomSpacer: {
     height: hp('2%'),
   },
+  loadingContainer: {
+    paddingVertical: hp('2%'),
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: responsive.fontSize(16),
+    color: '#666666',
+    textAlign: 'center',
+  },
+  noDataContainer: {
+    paddingVertical: hp('2%'),
+    alignItems: 'center',
+  },
+  noDataText: {
+    fontSize: responsive.fontSize(16),
+    color: '#999999',
+    textAlign: 'center',
+  },
   bottomNav: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
+    borderTopWidth: responsive.width(1),
     borderTopColor: '#E8E8E8',
     paddingVertical: hp('1%'),
     paddingHorizontal: wp('2%'),
@@ -583,9 +766,9 @@ const styles = StyleSheet.create({
     paddingVertical: hp('0.5%'),
   },
   navText: {
-    fontSize: 11,
+    fontSize: responsive.fontSize(11),
     color: '#999999',
-    marginTop: 4,
+    marginTop: responsive.margin(4),
     fontWeight: '500',
   },
   navTextActive: {

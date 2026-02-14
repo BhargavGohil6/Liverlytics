@@ -22,11 +22,10 @@ import HealthAccess from './HealthAccess';
 import AIConsent from './AIConsent';
 import HealthTargets from './HealthTargets';
 import Allset from './Allset';
+import BasicDetailsScreen from './BasicDetailsScreen';
 import { useDispatch, useSelector } from 'react-redux';
 import { submitAllConsents } from './slices/onboardingSlice';
 import { useNavigation } from '@react-navigation/native';
-import EncryptedStorage from 'react-native-encrypted-storage';
-import { logout } from '../auth/slices/authSlice';
 import { useRoute } from '@react-navigation/native';
 import {
   widthPercentageToDP as wp,
@@ -36,21 +35,24 @@ import {
 // Production use should import a full implementation of this.
 const { width, height } = Dimensions.get('window');
 
+// Import CommonPopup component
+import CommonPopup from '../../components/CommonPopup';
+
 // 2. Mock slidesData
 const slides = [
   {
     id: '1',
-    title: 'Before You Begin',
-    content: 'AgreementScreen',
+    title: 'Tell us about you',
+    content: 'BasicDetailsScreen',
     nextButtonText: 'Next',
   },
   {
     id: '2',
-    title: 'Health Data Permissions',
-    content: 'HealthAccess',
+    title: 'Before You Begin',
+    content: 'AgreementScreen',
     nextButtonText: 'Next',
   },
-  {
+   {
     id: '3',
     title: 'AI Assistance Consent',
     content: 'AIConsent',
@@ -64,16 +66,21 @@ const slides = [
   },
   {
     id: '5',
+    title: 'Health Data Permissions',
+    content: 'HealthAccess',
+    nextButtonText: 'Next',
+  },
+  {
+    id: '6',
     title: 'Welcome!',
     content: 'Allset',
     nextButtonText: 'Go to Dashboard',
   },
 ];
 
-
-
 // 6. Content Component Mapping
-const contentComponents = {
+const contentComponents: { [key: string]: React.ComponentType } = {
+  BasicDetailsScreen: BasicDetailsScreen,
   AgreementScreen: AgreementScreen,
   HealthAccess: HealthAccess,
   AIConsent: AIConsent,
@@ -84,15 +91,14 @@ const contentComponents = {
 // --- Main Component ---
 export default function OnboardingSteps() {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [showWearablePopup, setShowWearablePopup] = useState(false);
+  const [hasRespondedToWearablePopup, setHasRespondedToWearablePopup] = useState(false); 
   const flatListRef = useRef<FlatList>(null);
   const dispatch = useDispatch();
   const { submitting } = useSelector((state: any) => state.onboarding);
-  const submitting1 = useSelector((state: any) =>
-    console.log('submitting', state),
-  );
   const navigation = useNavigation<any>();
 
-  const route = useRoute();
+  const route = useRoute<any>();
   const startIndex = route?.params?.startIndex ?? 0;
 
   useEffect(() => {
@@ -101,7 +107,13 @@ export default function OnboardingSteps() {
       setCurrentIndex(startIndex);
     }
   }, [startIndex]);
-  // Redux Agreement status
+
+  useEffect(() => {
+    if (currentIndex === 4 && !showWearablePopup && !hasRespondedToWearablePopup) { 
+      setShowWearablePopup(true);
+    }
+  }, [currentIndex, showWearablePopup, hasRespondedToWearablePopup]);
+
   const { privacyAccepted, termsAccepted, medicalAccepted, aiConsentOption } = useSelector(
     (state: any) => state.onboarding,
   );
@@ -111,7 +123,6 @@ export default function OnboardingSteps() {
   
   const aiConsentSelected = aiConsentOption !== null && aiConsentOption !== undefined;
 
-  // FlatList viewability logic
   const handleViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: Array<any> }) => {
     if (viewableItems.length > 0) {
       setCurrentIndex(viewableItems[0].index);
@@ -122,63 +133,35 @@ export default function OnboardingSteps() {
     itemVisiblePercentThreshold: 50,
   }).current;
 
-  // Next button click handler
-  // const scrollToNext = () => {
-  //   if (currentIndex === 0 && !allAgreementsAccepted) {
-  //     Toast.show({
-  //       type: 'error',
-  //       text1: 'Agreement Required',
-  //       text2: 'Please accept all terms and conditions to continue.',
-  //       position: 'Top',
-
-  //     });
-  //     return;
-  //   }
-  //   if (currentIndex < slides.length - 1) {
-  //     flatListRef.current.scrollToIndex({
-  //       index: currentIndex + 1,
-  //       animated: true,
-  //     });
-  //   } else {
-  //     console.log('Onboarding Finished! Navigating to Home...');
-  //     // navigation.navigate('Home'); // Replace with actual navigation logic
-  //   }
-  // };
-
   const scrollToNext = () => {
-    if (currentIndex === 0 && !allAgreementsAccepted) {
+    if (currentIndex === 1 && !allAgreementsAccepted) {
       Toast.show({ type: 'error', text1: 'Please accept all agreements' });
       return;
     }
     
-    // Check if we're on the AI consent screen (index 2) and user hasn't selected an option
     if (currentIndex === 2 && !aiConsentSelected) {
       Toast.show({ type: 'error', text1: 'Please select an AI consent option' });
       return;
     }
 
     if (currentIndex < slides.length - 1) {
+      if (currentIndex === 3 && !hasRespondedToWearablePopup) { 
+        setShowWearablePopup(true);
+      }
       flatListRef.current?.scrollToIndex({ index: currentIndex + 1 });
     } else {
-      // LAST SCREEN → API CALL VIA REDUX
-      // dispatch(submitAllConsents()).then((action) => {
-      //   console.log('Onboarding Finished! Navigating to Home...', action);
-      //   if (action.meta.requestStatus === 'fulfilled') {
-      //     navigation.replace('Dashboard');
-      //   }
-      // });
-      //   dispatch(submitAllConsents())
-      // .unwrap() // ← Yeh important hai
-      // .then(() => {
-      navigation.replace('Dashboard');
-      // })
-      // .catch((error) => {
-      //   Toast.show({
-      //     type: 'error',
-      //     text1: 'Submission failed',
-      //     text2: error?.message || 'Please try again',
-      //   });
-      // });
+      dispatch(submitAllConsents() as any)
+        .unwrap()
+        .then(() => {
+          navigation.replace('Dashboard');
+        })
+        .catch((error: any) => {
+          Toast.show({
+            type: 'error',
+            text1: 'Submission failed',
+            text2: error?.message || 'Please try again',
+          });
+        });
     }
   };
 
@@ -188,44 +171,23 @@ export default function OnboardingSteps() {
     }
   };
 
-  // Step Indicator Component (moved inside to be self-contained)
   const StepIndicator = ({ currentStep, totalSteps }: { currentStep: number; totalSteps: number }) => {
     const currentSlide = slides[currentIndex];
 
     return (
       <View style={stepIndicatorStyles.container}>
-        {/* Dynamically get the title from the slide data */}
         <Text style={stepIndicatorStyles.stepTitleText}>
           {currentSlide.title}
         </Text>
-        {/* <Text style={stepIndicatorStyles.stepText}>
+        <Text style={stepIndicatorStyles.stepText}>
           Step {currentStep} of {totalSteps}
-        </Text> */}
-        {/* <View style={stepIndicatorStyles.dotsContainer}>
-          {Array.from({ length: totalSteps }).map((_, index) => (
-            <View
-              key={index}
-              style={[
-                stepIndicatorStyles.dot,
-                {
-                  backgroundColor:
-                    index === currentStep - 1 ? '#4CAF50' : '#D0D0D0', // Only current step is green
-                  width:
-                    index === currentStep - 1
-                      ? responsive.width(16)
-                      : responsive.width(8), // Make current dot longer
-                },
-              ]}
-            />
-          ))}
-        </View> */}
+        </Text>
       </View>
     );
   };
 
-  // FlatList Item Renderer
   const renderItem = ({ item }: { item: any }) => {
-    const ContentComponent = contentComponents[item.content];
+    const ContentComponent = contentComponents[item.content as keyof typeof contentComponents];
 
     return (
       <View style={localStyles.slide}>
@@ -236,35 +198,15 @@ export default function OnboardingSteps() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header (Logo) */}
       <Image
         source={require('../../assets/Transparent 1.png')}
         style={styles.image}
       />
 
-      {/* Step Indicator (Steps 1 to 5) */}
       <StepIndicator
         currentStep={currentIndex + 1}
         totalSteps={slides.length}
       />
-
-      {/* Main Content (Changes on Next click) */}
-      {/* <FlatList
-        ref={flatListRef}
-        data={slides}
-        renderItem={renderItem}
-        keyExtractor={item => item.id}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        pagingEnabled
-        bounces={false}
-        scrollEnabled={false} 
-        onViewableItemsChanged={handleViewableItemsChanged}
-        viewabilityConfig={viewabilityConfig}
-        scrollEventThrottle={16}
-        disableIntervalMomentum={true}
-        style={localStyles.flatList} // Use localStyles for FlatList
-      /> */}
 
       <FlatList
         ref={flatListRef}
@@ -294,16 +236,15 @@ export default function OnboardingSteps() {
         }}
       />
 
-      {/* Next Button and Disclaimer */}
-      <View
-        style={{
-          width: '100%',
-          alignItems: 'center',
-          marginTop: 20,
-          paddingHorizontal: 20,
-        }}
-      >
-        {currentIndex === 4 ? ( // On the Allset screen (index 4), show only the next button centered
+      <View style={styles.navButtonContainer}>
+        {currentIndex === 5 ? (
+          <CommonButton
+            onPress={scrollToNext}
+            style={styles.fullWidthButton}
+            title={slides[currentIndex].nextButtonText}
+            disabled={submitting}
+          />
+        ) : currentIndex === 0 ? (
           <CommonButton
             onPress={scrollToNext}
             style={styles.fullWidthButton}
@@ -315,23 +256,20 @@ export default function OnboardingSteps() {
             style={{
               flexDirection: 'row',
               justifyContent: 'space-between',
-              width: responsive.width(300),
-              gap: 20,
+              alignItems: 'center',
+              width: '100%',
             }}
           >
-            {currentIndex > 0 ? (
-              <TouchableOpacity
-                onPress={scrollToPrevious}
-                style={styles.navButton}
-              >
-                <Text style={{ fontSize: 16, color: '#333' }}>Previous</Text>
-              </TouchableOpacity>
-            ) : (
-              <View style={{ width: responsive.width(150) }} /> // align fix for first screen
-            )}
+            <TouchableOpacity
+              onPress={scrollToPrevious}
+              style={styles.navButton}
+            >
+              <Text style={styles.previousText}>Previous</Text>
+            </TouchableOpacity>
+            
             <CommonButton
               onPress={scrollToNext}
-              style={styles.navButton}
+              style={styles.primaryNavButton}
               title={slides[currentIndex].nextButtonText}
               disabled={submitting}
             />
@@ -341,6 +279,30 @@ export default function OnboardingSteps() {
       <Text style={styles.disclaimer}>
         This app does NOT replace professional medical care.
       </Text>
+
+      <CommonPopup
+        visible={showWearablePopup && currentIndex === 4}
+        title="Connect Your Wearable"
+        message="Connect your smartwatch to automatically sync your health data like steps, heart rate, sleep, oxygen, and blood pressure.This helps us give you accurate insights and personalized recommendations."
+        showBottomButtons={true}
+        bottomPrimaryButtonText="Yes"
+        bottomSecondaryButtonText="Skip"
+        onBottomPrimaryPress={() => {
+          setShowWearablePopup(false);
+          setHasRespondedToWearablePopup(true);
+        }}
+        onBottomSecondaryPress={() => {
+          setShowWearablePopup(false);
+          setHasRespondedToWearablePopup(true);
+          if (currentIndex < slides.length - 1) {
+            flatListRef.current?.scrollToIndex({ index: currentIndex + 1 });
+          }
+        }}
+        onClose={() => {
+          setShowWearablePopup(false);
+          setHasRespondedToWearablePopup(true);
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -348,124 +310,111 @@ export default function OnboardingSteps() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    // padding: responsive.padding(20),
-    backgroundColor: 'white',
-    marginTop: '10%',
-    // width: responsive.width(400),
+    backgroundColor: '#FFFFFF',
+    paddingTop: Platform.OS === 'ios' ? 0 : responsive.height(20),
   },
-  tital: {
-    fontSize: responsive.fontSize(22),
-    color: '#0F2740',
+  // image: {
+  //   width: responsive.width(160),
+  //   height: responsive.height(48),
+  //   alignSelf: 'center',
+  //   marginTop: responsive.height(10),
+  //   marginBottom: responsive.height(10),
+  //   resizeMode: 'contain',
+  // },
+    image: {
+    width: responsive.width(200),
+    height: responsive.height(60),
+    marginTop: responsive.margin(10),
+    alignSelf: 'center'
   },
   disclaimer: {
     marginTop: responsive.height(15),
     fontSize: responsive.fontSize(12),
-    color: '#777',
+    color: '#A0AEC0',
     textAlign: 'center',
+    paddingHorizontal: responsive.padding(20),
+    marginBottom: responsive.height(10),
   },
-  button: {
-    width: responsive.width(150),
-    alignSelf: 'center',
-    height: responsive.height(40),
+  navButtonContainer: {
+    width: '100%',
+    paddingHorizontal: responsive.padding(25),
+    paddingBottom: responsive.height(10),
+    marginTop: responsive.height(10),
   },
   navButton: {
-    width: responsive.width(150),
-    padding: 12,
+    width: responsive.width(140),
+    padding: responsive.padding(12),
     borderWidth: 1,
-    borderColor: '#999',
-    borderRadius: 8,
+    borderColor: '#E2E8F0',
+    borderRadius: responsive.borderRadius(12),
     alignItems: 'center',
     justifyContent: 'center',
-    height: responsive.height(40),
+    height: responsive.height(48),
+    backgroundColor: '#FFFFFF',
+  },
+  primaryNavButton: {
+    width: responsive.width(140),
+    padding: responsive.padding(12),
+    borderRadius: responsive.borderRadius(12),
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: responsive.height(48),
+    backgroundColor: '#52ab3c', 
   },
   fullWidthButton: {
-    width: '85%', // Make it full width but with some margin
-    alignSelf: 'center',
-    marginHorizontal: '7.5%', // Center the button with equal margins
+    width: '100%',
+    height: responsive.height(52),
+    borderRadius: responsive.borderRadius(14),
   },
-  image: {
-    width: responsive.width(200),
-    height: responsive.height(60),
-    marginTop: responsive.margin(10),
+  skipButton: {
+    width: '100%',
+    padding: responsive.padding(12),
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: responsive.borderRadius(14),
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    height: responsive.height(52),
   },
+  skipButtonText: {
+    fontSize: responsive.fontSize(16),
+    color: '#4A5568',
+    fontWeight: '600',
+  },
+  previousText: {
+    fontSize: responsive.fontSize(16),
+    color: '#4A5568',
+    fontWeight: '500',
+  }
 });
 
 const localStyles = StyleSheet.create({
   flatList: {
     flex: 1,
-    // The FlatList must manage the scrolling space
   },
   slide: {
-    // width: Dimensions.get('window').width, // Full width for Paging
-    // width: Platform.OS === 'ios' ? Dimensions.get('screen').width : Dimensions.get('screen').width,
     width: wp('100%'),
-
-    flex: 1,
-    // marginHorizontal: responsive.margin(20),
-    // marginHorizontal: responsive.margin(120),
-    alignItems: 'center',
-    // justifyContent:'center',
-    // alignSelf: 'center',
-  },
-  slideContent: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
-  },
-  contentTitle: {
-    fontSize: responsive.fontSize(20),
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  image: {
-    width: responsive.width(200),
-    height: responsive.height(100),
-  },
-});
-
-const headerStyles = StyleSheet.create({
-  container: {
-    paddingHorizontal: responsive.padding(20),
-    paddingVertical: responsive.padding(10),
-    alignItems: 'center',
-  },
-  logoText: {
-    fontSize: responsive.fontSize(28),
-    fontWeight: '900',
-    color: '#4CAF50', // Liverlytics Green
-    // For a better look, you might use a custom font or icon here
   },
 });
 
 const stepIndicatorStyles = StyleSheet.create({
   container: {
     alignItems: 'center',
-    paddingVertical: responsive.padding(10),
-    marginBottom: responsive.padding(15),
-  },
-  stepTitleText: {
-    fontSize: responsive.fontSize(22),
-    fontWeight: 'bold',
-    color: '#0F2740',
-    marginBottom: responsive.padding(5),
-  },
-  stepText: {
-    fontSize: responsive.fontSize(16),
-    color: '#555',
+    paddingVertical: responsive.padding(5),
     marginBottom: responsive.padding(10),
   },
-  dotsContainer: {
-    flexDirection: 'row',
-    marginTop: responsive.padding(5),
-    alignItems: 'center',
+  stepTitleText: {
+    fontSize: responsive.fontSize(24),
+    fontWeight: '800',
+    color: '#0F2740',
+    marginBottom: responsive.padding(4),
   },
-  dot: {
-    height: responsive.height(8),
-    borderRadius: responsive.width(4),
-    marginHorizontal: responsive.width(4),
-    transitionProperty: 'width',
-    transitionDuration: '0.3s',
+  stepText: {
+    fontSize: responsive.fontSize(14),
+    color: '#718096',
+    fontWeight: '500',
   },
 });

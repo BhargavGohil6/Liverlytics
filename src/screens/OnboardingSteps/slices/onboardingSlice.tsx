@@ -19,6 +19,13 @@ interface OnboardingState {
     blood_pressure: number;
     spo2: number;
   };
+  basicDetails: {
+    fullName: string;
+    gender: string;
+    age: string;
+    country: string;
+    weight: string;
+  };
   submitting: boolean;
   submitError: string | null;
 }
@@ -36,6 +43,13 @@ const initialState: OnboardingState = {
     weight: 1,
     blood_pressure: 1,
     spo2: 1,
+  },
+  basicDetails: {
+    fullName: '',
+    gender: '',
+    age: '',
+    country: '',
+    weight: '',
   },
   submitting: false,
   submitError: null,
@@ -59,10 +73,15 @@ console.log('userEmail',userEmail);
       return rejectWithValue('User email not found in auth state');
     }
 
-    const { privacyAccepted, termsAccepted, medicalAccepted, aiConsentOption, healthAccess } = state.onboarding;
+    const { privacyAccepted, termsAccepted, medicalAccepted, aiConsentOption, healthAccess, basicDetails } = state.onboarding;
 
     const payload = {
       user_email: userEmail, // YE HAI WO CORRECT EMAIL JO LOGIN KIYA HAI
+      full_name: basicDetails.fullName || state.auth?.user?.full_name,
+      gender: basicDetails.gender,
+      age: basicDetails.age,
+      country: basicDetails.country,
+      user_weight: basicDetails.weight,
       all_conditions: {
         i_agree_to_the_privacy_policy: privacyAccepted ? 1 : 0,
         i_agree_to_the_terms_of_use: termsAccepted ? 1 : 0,
@@ -125,6 +144,9 @@ const onboardingSlice = createSlice({
     setHealthAccess: (state, action: PayloadAction<OnboardingState['healthAccess']>) => {
       state.healthAccess = action.payload;
     },
+    updateBasicDetails: (state, action: PayloadAction<Partial<OnboardingState['basicDetails']>>) => {
+      state.basicDetails = { ...state.basicDetails, ...action.payload };
+    },
     completeOnboarding: (state) => {
       state.onboardingCompleted = true;
       EncryptedStorage.setItem('onboarding_completed', 'true');
@@ -157,6 +179,7 @@ export const {
   acceptMedical,
   setAIConsentOption,
   setHealthAccess,
+  updateBasicDetails,
   completeOnboarding,
 } = onboardingSlice.actions;
 

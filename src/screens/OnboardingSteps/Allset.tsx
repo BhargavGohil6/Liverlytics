@@ -59,10 +59,11 @@ const Allset = () => {
       {/* <Text style={styles.subtitle}>
         Your profile is ready and all preferences have been saved.
       </Text> */}
-      <Text style={styles.subtitle}>
+      {/* 31-1-26 */}
+      {/* <Text style={styles.subtitle}>
          You can adjust your targets anytime in Settings. We’ll start
           monitoring your logs and alert you based on your thresholds.
-      </Text>
+      </Text> */}
 
       {/* <View style={styles.subcontainer}>
         <Text>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
 import responsive from "../../theme/responsive";
 import Icon from 'react-native-vector-icons/Feather';
@@ -6,41 +6,16 @@ import Icon1 from 'react-native-vector-icons/FontAwesome';
 import CustomCheckbox from '../../components/CommonCheckbox';
 import { useNavigation } from "@react-navigation/native";
 import { useSelector, useDispatch } from 'react-redux';
+import { RootState } from "../../redux/store";
 import {acceptMedical, acceptPrivacy, acceptTerms, completeOnboarding} from './slices/onboardingSlice';
 import Toast from 'react-native-toast-message';
-import {widthPercentageToDP as wp, heightPercentageToDP as hp} from 'react-native-responsive-screen';
-
-
-
 
 const AgreementScreen = () => {
-  const [privacyChecked, setPrivacyChecked] = useState(false);
-  const [termsChecked, setTermsChecked] = useState(false);
-  const [medicalChecked, setMedicalChecked] = useState(false);
-
-  const navigation = useNavigation();
-
- const dispatch = useDispatch();
-const { privacyAccepted, termsAccepted, medicalAccepted } = useSelector(
-  (state: RootState) => state.onboarding
-);
-
-const allAccepted = privacyAccepted && termsAccepted && medicalAccepted;
-
-const handleNext = () => {
-    if (allAccepted) {
-      dispatch(completeOnboarding()); 
-      navigation.navigate('NextScreenName'); 
-    } else {
-      Toast.show({
-        type: 'error',
-        text1: 'Incomplete Agreement',
-        text2: 'Please accept all terms, privacy policy, and medical disclaimer to continue.',
-        position: 'bottom',
-        visibilityTime: 4000,
-      });
-    }
-  };
+  const navigation = useNavigation<any>();
+  const dispatch = useDispatch();
+  const { privacyAccepted, termsAccepted, medicalAccepted } = useSelector(
+    (state: RootState) => state.onboarding
+  );
 
   return (
     <ScrollView
@@ -137,47 +112,49 @@ const agreementStyles = StyleSheet.create({
     paddingBottom: responsive.height(20),
   },
   card: {
-    backgroundColor: '#f9f9f9',
-    borderRadius: responsive.width(12),
+    backgroundColor: '#fff',
+    borderRadius: responsive.borderRadius(16),
     padding: responsive.padding(20),
     marginBottom: responsive.height(15),
     borderWidth: 1,
-    borderColor: '#eee',
-    // width: wp('80%'),
+    borderColor: '#E8EDF2',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: responsive.height(5),
+    marginBottom: responsive.height(10),
   },
   icon: {
     marginRight: responsive.width(10),
   },
   cardTitle: {
     fontSize: responsive.fontSize(18),
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: '700',
+    color: '#0F2740',
   },
   cardText: {
     fontSize: responsive.fontSize(14),
-    color: '#666',
-    marginTop: responsive.height(5),
-    // width:'90%',
+    color: '#4A5568',
+    lineHeight: responsive.height(20),
   },
   cardLink: {
     fontSize: responsive.fontSize(14),
-    color: '#4CAF50',
+    color: '#52ab3c',
     fontWeight: '600',
-    marginTop: responsive.height(10),
+    marginTop: responsive.height(12),
   },
   checkboxContainer: {
-    marginTop: responsive.height(10),
+    marginTop: responsive.height(5),
+    paddingHorizontal: responsive.padding(5),
   },
   scrollContainer: {
     flex: 1,
-    width: responsive.width(320),
-    marginHorizontal: responsive.margin(20),
+    width: '100%',
+    paddingHorizontal: responsive.padding(20),
   },
 });
-
-

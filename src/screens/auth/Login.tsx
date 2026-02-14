@@ -8,76 +8,57 @@ import { useDispatch, useSelector } from 'react-redux';
 import { loginUser } from './slices/authSlice';
 import Toast from 'react-native-toast-message';
 import { AppDispatch, RootState } from '../../redux/store';
-export default function Login({ navigation }) {
 
-const [email, setEmail] = useState<string>('');
+export default function Login({ navigation }: { navigation: any }) {
+
+  const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
 
   const dispatch = useDispatch<AppDispatch>();
-  const { loading, error, login } = useSelector((state: RootState) => state.auth);
+  const { loading } = useSelector((state: RootState) => state.auth);
 
   const handleLogin = async () => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-  if (!email.trim() || !password.trim()) {
-    // Alert.alert('Error', 'Please fill all fields');
-    Toast.show({
-      type: 'error',
-      text1: 'Error',
-      text2: 'Please fill all fields',
-    })
-    return;
-  }else if (!password) {
-    Toast.show({
-      type: 'error',
-      text1: 'Error',
-      text2: 'Please enter a password',
-    });
-    return;
-  }
+    if (!email.trim() || !password.trim()) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please fill all fields',
+      });
+      return;
+    }
 
-  if (!emailRegex.test(email.trim())) {
-    Toast.show({
-      type: 'error',
-      text1: 'Invalid Email',
-      text2: 'Please enter a valid email address',
-    });
-    return;
-  }
+    if (!emailRegex.test(email.trim())) {
+      Toast.show({
+        type: 'error',
+        text1: 'Invalid Email',
+        text2: 'Please enter a valid email address',
+      });
+      return;
+    }
 
-  try {
-    await dispatch(loginUser({ email: email.trim(), password })).unwrap();
-    
-    // Check if login was successful
-    if (login) {
+    try {
+      await dispatch(loginUser({ email: email.trim(), password })).unwrap();
+      
       Toast.show({
         type: 'success',
         text1: 'Login Success',
         text2: 'Welcome back!',
       });
-      // Navigate to dashboard after successful login
-      navigation.navigate('Dashboard');
-    } else {
-      // Login failed, show error message
+    } catch (err: any) {
       Toast.show({
         type: 'error',
         text1: 'Login Failed',
-        text2: error || 'Invalid credentials',
+        text2: err || 'Invalid credentials',
       });
     }
-  } catch (err: any) {
-    Toast.show({
-      type: 'error',
-      text1: 'Login Failed',
-      text2: err || 'Invalid credentials',
-    });
-  }
-};
+  };
 
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
+      style={{ flex: 1, backgroundColor: '#fff' }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
@@ -90,17 +71,15 @@ const [email, setEmail] = useState<string>('');
         Track your liver health with confidence
       </Text>
       <CommonTextInput
-        placeholder="Email"
+        placeholder="Enter your Email"
         label={'Email'}
-        style={styles.textInput}
         value={email}
         onChangeText={setEmail}
       />
       <CommonTextInput
-        placeholder="Password"
+        placeholder="Enter your Password"
         label={'Password'}
         secureTextEntry
-        style={styles.textInput}
         value={password}
         onChangeText={setPassword}
       />
@@ -129,26 +108,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: responsive.padding(30),
+    
   },
   button: {
     marginTop: responsive.margin(20),
     marginBottom: responsive.margin(20),
-  },
-  textInput: {
-    padding: responsive.padding(10),
-    alignSelf: 'center',
   },
   image:{
     width: responsive.width(200),
     height: responsive.height(100),
   },
   text: {
+
     fontSize: responsive.fontSize(18),
     marginBottom: responsive.margin(20),
     alignSelf: 'center',
     textAlign: 'center',
     color: 'gray',
     width: responsive.width(200),
+    marginTop: responsive.margin(-20),
   },
   forgetPasswordButton: {
       alignItems:'flex-end',alignSelf:'flex-end'

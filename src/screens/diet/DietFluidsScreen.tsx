@@ -14,7 +14,7 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../../redux/store';
-import { fetchDietEntries, addDietEntry, deleteDietEntry, fetchDietEntryById, updateDietEntry } from './slices/dietSlice';
+import { fetchDietEntries, addDietEntry, deleteDietEntry, fetchDietEntryById, updateDietEntry, fetchTodayDiet } from './slices/dietSlice';
 import Toast from 'react-native-toast-message';
 import responsive from '../../theme/responsive';
 import colors from '../../theme/color';
@@ -32,10 +32,10 @@ const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   
   const dispatch = useDispatch<AppDispatch>();
-  const { data: entries, loading, error } = useSelector((state: RootState) => state.diet);
-  console.log('data', entries)
+  const { data: entries, daily_limits, overall_totals, loading, error } = useSelector((state: RootState) => state.diet);
+  console.log('diet data', { entries, daily_limits, overall_totals })
   useEffect(() => {
-    dispatch(fetchDietEntries());
+    dispatch(fetchTodayDiet());
   }, [dispatch]);
 
   // Get user from auth state
@@ -52,7 +52,7 @@ const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
       return;
     }
 
-    const userEmail = user?.email || 'pareshwaghela18mukesoft@gmail.com'; // Fallback email
+    const userEmail = user?.email || ''; // Use email from auth state
     
     dispatch(addDietEntry({
       item_name: itemName,
@@ -65,6 +65,8 @@ const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
         setItemName('');
         setSodium('');
         setFluid('');
+        // Refresh today's diet to get updated totals and limits
+        dispatch(fetchTodayDiet());
       }
     });
   };
@@ -80,7 +82,7 @@ const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
       return;
     }
 
-    const userEmail = user?.email || 'pareshwaghela18mukesoft@gmail.com'; // Fallback email
+    const userEmail = user?.email || ''; // Use email from auth state
     
     dispatch(updateDietEntry({
       diet_and_fluids_id: editingEntryId,
@@ -95,6 +97,8 @@ const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
         setSodium('');
         setFluid('');
         setEditingEntryId(null);
+        // Refresh today's diet to get updated totals and limits
+        dispatch(fetchTodayDiet());
       }
     });
   };
@@ -109,6 +113,9 @@ const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
           visibilityTime: 2000,
         });
         
+        // Refresh today's diet to get updated totals and limits
+        dispatch(fetchTodayDiet());
+
         // If we were editing this entry, clear the form
         if (editingEntryId === entryId) {
           setItemName('');
@@ -138,8 +145,15 @@ const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
     setEditingEntryId(null);
   };
 
-  // Calculate totals for today only
+  // Use totals from API if available, otherwise calculate
   const calculateTotals = () => {
+    if (overall_totals) {
+      return {
+        totalSodium: overall_totals.sodium || 0,
+        totalFluid: overall_totals.fluid_ml || 0
+      };
+    }
+    
     if (!entries) return { totalSodium: 0, totalFluid: 0 };
     
     // Get today's date for comparison
@@ -172,17 +186,13 @@ const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
   
   // Check if daily totals exceed user targets
   const checkIfTargetsExceeded = () => {
-    // Default targets (these should ideally come from user profile)
+    // Default targets
     const defaultSodiumTarget = 2000; // mg
     const defaultFluidTarget = 1800; // mL
     
-    // Check if user exists in auth state
-    const userEmail = user?.email;
-    
-    // For now using default values, in a real implementation these would come from user profile
-    // You would fetch these from the user's profile in the auth state
-    const sodiumTarget = defaultSodiumTarget;
-    const fluidTarget = defaultFluidTarget;
+    // Use limits from API if available
+    const sodiumTarget = daily_limits?.daily_sodium_limit || defaultSodiumTarget;
+    const fluidTarget = daily_limits?.daily_fluid_limit || defaultFluidTarget;
     
     // Check if current totals exceed targets
     const isSodiumExceeded = totalSodium > sodiumTarget;

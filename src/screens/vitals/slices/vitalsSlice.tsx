@@ -5,29 +5,36 @@ import Toast from 'react-native-toast-message';
 // Types
 export interface VitalsData {
   heart_rate?: string | number;
+  resting_heart_rate?: string | number;
   weight?: string | number;
-  blood_pressure?: string | number;
+  glucose?: string | number;
+  blood_pressure_systolic?: string | number;
+  blood_pressure_diastolic?: string | number;
+  spo2?: string | number;
   sleep?: string | number;
-  steps?: string | number;
-  spO2?: string | number;
   user?: string;
   date?: string;
-  // Deprecated fields - kept for backward compatibility
-  resting_heart_rate?: number;
+  vital_id?: string;
+  // Keep these for backward compatibility if needed by other components
+  blood_pressure?: string | number;
+  steps?: string | number;
+  spO2?: string | number; 
   sleep_minutes?: number;
-  spo2?: number;
   weight_unit?: string;
-  systolic?: number;
-  diastolic?: number;
 }
 
 export interface VitalRecord {
   name?: string;
   heart_rate?: number;
+  resting_heart_rate?: number;
   weight?: number;
+  weight_unit?: string;
   blood_pressure?: string;
+  blood_pressure_systolic?: number;
+  blood_pressure_diastolic?: number;
   sleep?: number;
   steps?: number;
+  glucose?: number;
   spo2?: number;
   date?: string;
   report_upload?: string | null;
@@ -185,26 +192,37 @@ export const addVitals = createAsyncThunk<
     
     // Map the data to match API requirements
     if (vitalsData.heart_rate !== undefined) payload.heart_rate = vitalsData.heart_rate;
+    if (vitalsData.resting_heart_rate !== undefined) payload.resting_heart_rate = vitalsData.resting_heart_rate;
     if (vitalsData.weight !== undefined) payload.weight = vitalsData.weight;
-    if (vitalsData.blood_pressure !== undefined) payload.blood_pressure = vitalsData.blood_pressure;
+    if (vitalsData.glucose !== undefined) payload.glucose = vitalsData.glucose;
+    if (vitalsData.blood_pressure_systolic !== undefined) payload.blood_pressure_systolic = vitalsData.blood_pressure_systolic;
+    if (vitalsData.blood_pressure_diastolic !== undefined) payload.blood_pressure_diastolic = vitalsData.blood_pressure_diastolic;
+    if (vitalsData.spo2 !== undefined) payload.spo2 = vitalsData.spo2;
     if (vitalsData.sleep !== undefined) payload.sleep = vitalsData.sleep;
-    if (vitalsData.steps !== undefined) payload.steps = vitalsData.steps;
-    if (vitalsData.spO2 !== undefined) payload.SpO2 = vitalsData.spO2;
     if (vitalsData.user !== undefined) payload.user = vitalsData.user;
-    if (vitalsData.date !== undefined) payload.date = vitalsData.date;
     
-    // Handle deprecated fields for backward compatibility
-    if (payload.heart_rate === undefined && vitalsData.resting_heart_rate !== undefined) {
-      payload.heart_rate = vitalsData.resting_heart_rate;
+    // Handle date
+    if (vitalsData.date !== undefined) {
+      payload.date = vitalsData.date;
+    } else {
+      payload.date = new Date().toISOString().split('T')[0];
+    }
+
+    // Handle backward compatibility / alternative names
+    if (payload.resting_heart_rate === undefined && vitalsData.resting_heart_rate !== undefined) {
+      payload.resting_heart_rate = vitalsData.resting_heart_rate;
     }
     if (payload.sleep === undefined && vitalsData.sleep_minutes !== undefined) {
       payload.sleep = vitalsData.sleep_minutes;
     }
-    if (payload.SpO2 === undefined && vitalsData.spo2 !== undefined) {
-      payload.SpO2 = vitalsData.spo2;
+    if (payload.spo2 === undefined && vitalsData.spO2 !== undefined) {
+      payload.spo2 = vitalsData.spO2;
     }
-    if (payload.date === undefined) {
-      payload.date = new Date().toISOString().split('T')[0]; // Today's date if not provided
+    if (payload.blood_pressure_systolic === undefined && (vitalsData as any).systolic !== undefined) {
+      payload.blood_pressure_systolic = (vitalsData as any).systolic;
+    }
+    if (payload.blood_pressure_diastolic === undefined && (vitalsData as any).diastolic !== undefined) {
+      payload.blood_pressure_diastolic = (vitalsData as any).diastolic;
     }
 
     console.log('Sending vitals data:', payload);
@@ -215,7 +233,22 @@ export const addVitals = createAsyncThunk<
       payload
     );
     const data = response.data;
+    const msg = data.message;
     console.log('Vitals API Response:', data);
+
+    // Check if the response indicates failure
+    if (data.status === 'fail' || (msg && msg.status === 'fail')) {
+      const errorMsg = (msg && msg.message) || data.message || 'Failed to add vitals';
+      
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: errorMsg,
+        visibilityTime: 3000,
+      });
+      
+      return rejectWithValue(errorMsg);
+    }
 
     // Show success message
     Toast.show({
@@ -260,23 +293,28 @@ export const updateVitals = createAsyncThunk<
     
     // Map the data to match API requirements
     if (vitalsData.heart_rate !== undefined) payload.heart_rate = vitalsData.heart_rate;
+    if (vitalsData.resting_heart_rate !== undefined) payload.resting_heart_rate = vitalsData.resting_heart_rate;
     if (vitalsData.weight !== undefined) payload.weight = vitalsData.weight;
-    if (vitalsData.blood_pressure !== undefined) payload.blood_pressure = vitalsData.blood_pressure;
+    if (vitalsData.glucose !== undefined) payload.glucose = vitalsData.glucose;
+    if (vitalsData.blood_pressure_systolic !== undefined) payload.blood_pressure_systolic = vitalsData.blood_pressure_systolic;
+    if (vitalsData.blood_pressure_diastolic !== undefined) payload.blood_pressure_diastolic = vitalsData.blood_pressure_diastolic;
+    if (vitalsData.spo2 !== undefined) payload.spo2 = vitalsData.spo2;
     if (vitalsData.sleep !== undefined) payload.sleep = vitalsData.sleep;
-    if (vitalsData.steps !== undefined) payload.steps = vitalsData.steps;
-    if (vitalsData.spO2 !== undefined) payload.SpO2 = vitalsData.spO2;
     if (vitalsData.user !== undefined) payload.user = vitalsData.user;
     if (vitalsData.date !== undefined) payload.date = vitalsData.date;
     
-    // Handle deprecated fields for backward compatibility
-    if (payload.heart_rate === undefined && vitalsData.resting_heart_rate !== undefined) {
-      payload.heart_rate = vitalsData.resting_heart_rate;
-    }
+    // Handle backward compatibility / alternative names
     if (payload.sleep === undefined && vitalsData.sleep_minutes !== undefined) {
       payload.sleep = vitalsData.sleep_minutes;
     }
-    if (payload.SpO2 === undefined && vitalsData.spo2 !== undefined) {
-      payload.SpO2 = vitalsData.spo2;
+    if (payload.spo2 === undefined && vitalsData.spO2 !== undefined) {
+      payload.spo2 = vitalsData.spO2;
+    }
+    if (payload.blood_pressure_systolic === undefined && (vitalsData as any).systolic !== undefined) {
+      payload.blood_pressure_systolic = (vitalsData as any).systolic;
+    }
+    if (payload.blood_pressure_diastolic === undefined && (vitalsData as any).diastolic !== undefined) {
+      payload.blood_pressure_diastolic = (vitalsData as any).diastolic;
     }
 
     console.log('Updating vitals data:', payload);
@@ -287,7 +325,22 @@ export const updateVitals = createAsyncThunk<
       payload
     );
     const data = response.data;
+    const msg = data.message;
     console.log('Update Vitals API Response:', data);
+
+    // Check if the response indicates failure
+    if (data.status === 'fail' || (msg && msg.status === 'fail')) {
+      const errorMsg = (msg && msg.message) || data.message || 'Failed to update vitals';
+      
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: errorMsg,
+        visibilityTime: 3000,
+      });
+      
+      return rejectWithValue(errorMsg);
+    }
 
     // Show success message
     Toast.show({
@@ -327,6 +380,11 @@ const vitalsSlice = createSlice({
       state.loading = false;
       state.error = null;
       state.success = false;
+    },
+    resetVitalsSuccess: (state) => {
+      state.success = false;
+      state.error = null;
+      state.loading = false;
     },
     setVitalsData: (state, action: PayloadAction<VitalsData>) => {
       state.data = action.payload;
@@ -418,5 +476,5 @@ const vitalsSlice = createSlice({
   },
 });
 
-export const { clearVitalsState, setVitalsData, setTodayVitalsData } = vitalsSlice.actions;
+export const { clearVitalsState, resetVitalsSuccess, setVitalsData, setTodayVitalsData } = vitalsSlice.actions;
 export default vitalsSlice.reducer;

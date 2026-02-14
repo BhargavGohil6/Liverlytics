@@ -9,14 +9,15 @@ import {
   SafeAreaView,
   StatusBar,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 
 // Note: Install react-native-vector-icons or use expo icons
 // npm install react-native-vector-icons
 import Icon from 'react-native-vector-icons/Feather';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
-import { addVitals, updateVitals, VitalsData, clearVitalsState, fetchTodayVitals, fetchTodayVitalsById, VitalsApiResponse, VitalRecord } from './slices/vitalsSlice';
+import { addVitals, updateVitals, VitalsData, clearVitalsState, resetVitalsSuccess, fetchTodaysVitalsForUser, fetchTodayVitalsById, VitalsApiResponse, VitalRecord } from './slices/vitalsSlice';
 import { RootState, AppDispatch } from '../../redux/store';
 import { colors, font } from '../../theme/index';
 import responsive from '../../theme/responsive';
@@ -27,8 +28,9 @@ interface UserData {
 }
 
 export default function AddVitalsScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const dispatch: AppDispatch = useDispatch();
+  const isFocused = useIsFocused();
   
   // Get user data from auth state
   const { user } = useSelector((state: RootState) => state.auth);
@@ -49,7 +51,7 @@ export default function AddVitalsScreen() {
   
   const [heartRate, setHeartRate] = useState('');
   const [restingHR, setRestingHR] = useState('');
-  const [steps, setSteps] = useState('');
+  const [glucose, setGlucose] = useState('');
   const [sleepMinutes, setSleepMinutes] = useState('');
   const [spo2, setSpo2] = useState('');
   const [weight, setWeight] = useState('');
@@ -62,8 +64,8 @@ export default function AddVitalsScreen() {
   // Handle form submission
   const handleSaveVitals = () => {
     // Validate required fields
-    if (!heartRate && !restingHR && !steps && !sleepMinutes && !spo2 && !weight && !systolic && !diastolic) {
-      alert('Please enter at least one vital reading');
+    if (!heartRate && !restingHR && !glucose && !sleepMinutes && !spo2 && !weight && !systolic && !diastolic) {
+      Alert.alert('Empty Vitals', 'Please enter at least one vital reading');
       return;
     }
 
@@ -71,15 +73,25 @@ export default function AddVitalsScreen() {
     const vitalsData: VitalsData = {
       heart_rate: heartRate ? parseFloat(heartRate) : undefined,
       resting_heart_rate: restingHR ? parseFloat(restingHR) : undefined,
-      steps: steps ? parseInt(steps, 10) : undefined,
-      sleep_minutes: sleepMinutes ? parseInt(sleepMinutes, 10) : undefined,
+      glucose: glucose ? parseFloat(glucose) : undefined,
+      sleep: sleepMinutes ? parseInt(sleepMinutes, 10) : undefined,
       spo2: spo2 ? parseFloat(spo2) : undefined,
       weight: weight ? parseFloat(weight) : undefined,
-      weight_unit: weightUnit,
-      systolic: systolic ? parseInt(systolic, 10) : undefined,
-      diastolic: diastolic ? parseInt(diastolic, 10) : undefined,
+      blood_pressure_systolic: systolic ? parseInt(systolic, 10) : undefined,
+      blood_pressure_diastolic: diastolic ? parseInt(diastolic, 10) : undefined,
       user: user?.email || '',
     };
+
+    // Clear form immediately before dispatching
+    setHeartRate('');
+    setRestingHR('');
+    setGlucose('');
+    setSleepMinutes('');
+    setSpo2('');
+    setWeight('');
+    setSystolic('');
+    setDiastolic('');
+    setVitalId(null);
 
     // Dispatch the action to save vitals
     if (vitalId) {
@@ -92,71 +104,37 @@ export default function AddVitalsScreen() {
   };
 
   // Navigate to success screen when submission is successful
-  // Use a ref to track if we've just cleared the state to prevent immediate navigation
-  const hasClearedState = React.useRef(false);
-  
-  // Handle component mount
   useEffect(() => {
-    console.log('AddVitalsScreen mounted, current success state:', success);
-  }, []);
-  
+    if (success && isFocused) {
+      console.log('Success state detected, navigating to success screen');
+      // Navigate to success screen
+      navigation.navigate('VitalsSavedSuccessScreen');
+      
+      // Reset success state after navigation
+      dispatch(resetVitalsSuccess());
+    }
+  }, [success, navigation, isFocused, dispatch]);
+
   // Handle component focus (when navigating back from success screen)
   useFocusEffect(
     React.useCallback(() => {
-      console.log('AddVitalsScreen focused, current success state:', success);
+      console.log('AddVitalsScreen focused, resetting success state');
       // Clear any previous success state when screen comes into focus
-      dispatch(clearVitalsState());
-      hasClearedState.current = true;
-      console.log('Cleared vitals state on focus');
+      dispatch(resetVitalsSuccess());
       
-      // Add a small delay to ensure component is fully mounted
-      const timer = setTimeout(() => {
-        console.log('Fetching today vitals after clearing state');
-        // Fetch today's vitals for the current user
-        dispatch(fetchTodayVitals());
-      }, 100);
-      
-      // To fetch vitals by ID, use:
-      // dispatch(fetchTodayVitalsById('vital_id_here'));
-      
-      // Cleanup timer
-      return () => clearTimeout(timer);
+      // Fetch today's vitals for the current user
+      // dispatch(fetchTodaysVitalsForUser() as any);
     }, [dispatch])
   );
-  
-  useEffect(() => {
-    // Reset the ref when success becomes false
-    if (!success) {
-      hasClearedState.current = false;
-    }
-    
-    if (success && !hasClearedState.current) {
-      console.log('Success state detected, navigating to success screen');
-      // Reset form
-      setHeartRate('');
-      setRestingHR('');
-      setSteps('');
-      setSleepMinutes('');
-      setSpo2('');
-      setWeight('');
-      setSystolic('');
-      setDiastolic('');
-      setVitalId(null);
-      
-      // Navigate to success screen
-      navigation.navigate('VitalsSavedSuccessScreen');
-    } else if (success && hasClearedState.current) {
-      console.log('Ignoring success state as we just cleared it');
-      hasClearedState.current = false;
-    }
-  }, [success, navigation]);
 
-  // Clear success state when component unmounts
+  // Clear success state when leaving the screen
   useEffect(() => {
-    return () => {
-      dispatch(clearVitalsState());
-    };
-  }, [dispatch]);
+    const unsubscribe = navigation.addListener('blur', () => {
+      dispatch(resetVitalsSuccess());
+    });
+    
+    return unsubscribe;
+  }, [navigation, dispatch]);
   
   // Populate form fields when todayData is available
   useEffect(() => {
@@ -225,10 +203,10 @@ export default function AddVitalsScreen() {
       setSleepMinutes(sleepValue);
       console.log('Setting sleepMinutes:', sleepValue);
     }
-    if (record.steps !== undefined && record.steps !== null) {
-      const stepsValue = record.steps.toString();
-      setSteps(stepsValue);
-      console.log('Setting steps:', stepsValue);
+    if (record.glucose !== undefined && record.glucose !== null) {
+      const glucoseValue = record.glucose.toString();
+      setGlucose(glucoseValue);
+      console.log('Setting glucose:', glucoseValue);
     }
     // Note: API uses 'spo2' but form uses 'spo2'
     if (record.spo2 !== undefined && record.spo2 !== null) {
@@ -238,7 +216,14 @@ export default function AddVitalsScreen() {
     }
     
     // Parse blood pressure if available
-    if (record.blood_pressure) {
+    if (record.blood_pressure_systolic !== undefined && record.blood_pressure_systolic !== null) {
+      setSystolic(record.blood_pressure_systolic.toString());
+    }
+    if (record.blood_pressure_diastolic !== undefined && record.blood_pressure_diastolic !== null) {
+      setDiastolic(record.blood_pressure_diastolic.toString());
+    }
+
+    if (!record.blood_pressure_systolic && record.blood_pressure) {
       const bpParts = record.blood_pressure.split('/');
       if (bpParts.length === 2) {
         setSystolic(bpParts[0]);
@@ -271,7 +256,7 @@ export default function AddVitalsScreen() {
       
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={()=>navigation.goBack()}>
+        <TouchableOpacity style={styles.backButton} onPress={()=>navigation.navigate('Dashboard')}>
           <Icon name="arrow-left" size={24} color="#333" />
         </TouchableOpacity>
         
@@ -349,24 +334,24 @@ export default function AddVitalsScreen() {
           </View>
         </View>
 
-        {/* Steps */}
+        {/* Glucose */}
         <View style={styles.inputCard}>
-          <Text style={styles.label}>Steps</Text>
+          <Text style={styles.label}>Glucose</Text>
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.input}
               placeholder="Tap to enter"
               placeholderTextColor="#999"
               keyboardType="numeric"
-              value={steps}
-              onChangeText={setSteps}
+              value={glucose}
+              onChangeText={setGlucose}
             />
-            <Text style={styles.unit}>steps</Text>
+            <Text style={styles.unit}>mg/dL</Text>
           </View>
           <View style={styles.infoRow}>
             <Icon name="smartphone" size={16} color="#666" />
             <Text style={styles.infoText}>
-              Imported from smartwatch when available.
+              Imported from glucometer when available.
             </Text>
           </View>
         </View>
@@ -509,13 +494,13 @@ export default function AddVitalsScreen() {
         </View>
 
         {/* AI Trend Check Info */}
-        <View style={styles.aiInfoCard}>
+        {/* <View style={styles.aiInfoCard}>
           <Text style={styles.aiInfoTitle}>AI Trend Check (On-Device)</Text>
           <Text style={styles.aiInfoText}>
             Your entries will be analyzed for unusual changes.{'\n'}
             Cloud-based analytics only used if you opted in.
           </Text>
-        </View>
+        </View> */}
 
         {/* Save Button */}
         <TouchableOpacity 

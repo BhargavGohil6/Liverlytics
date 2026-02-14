@@ -1,5 +1,5 @@
-import React,{ useState} from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import React,{ useState, useEffect } from 'react';
+import { View, Text, Image, StyleSheet, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import responsive from '../../theme/responsive';
 import CommonButton from '../../components/CommonButton';
 import CommonTextInput from '../../components/CommonTextInput';
@@ -8,7 +8,7 @@ import CountryPicker from '../../components/CountryPicker';
 import { useDispatch,useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../../redux/store';
 import Toast from 'react-native-toast-message';
-import {registerUser} from './slices/authSlice'
+import {registerUser} from './slices/authSlice';
 
 
 
@@ -69,101 +69,110 @@ export default function SinUp({ navigation }: SignUpProps) {
       return;
     }
 
-    const result = await dispatch(
-      registerUser({
-        email: form.email.trim(),
-        full_name: form.full_name.trim(),
-        password: form.password,
-        country_code: form.country_code,
-        gender_custom: form.gender_custom,
-      })
-    );
+    try {
+      const result = await dispatch(
+        registerUser({
+          email: form.email.trim(),
+          full_name: form.full_name.trim(),
+          password: form.password,
+          country_code: form.country_code,
+          gender_custom: form.gender_custom,
+        })
+      ).unwrap();
 
-    if (registerUser.fulfilled.match(result)) {
-      // Success → directly home ya onboarding pe bhejo
-       Toast.show({
-            type: 'success',
-            text1: 'Registration Success',
-          });
-          navigation.navigate('OnboardingSteps');
-    } else {
-      // Alert.alert('Registration Failed', result.payload || 'Something went wrong');
+      // Success → directly onboarding pe bhejo
+      Toast.show({
+        type: 'success',
+        text1: 'Registration Success',
+        text2: 'Welcome to Liverlytics!',
+      });
+      navigation.navigate('OnboardingSteps');
+    } catch (error: any) {
       Toast.show({
         type: 'error',
         text1: 'Registration Failed',
-        text2: result.payload || 'Something went wrong',
-      })
+        text2: error || 'Something went wrong',
+      });
     }
   };
   return (
-    <View style={styles.container}>
-      <Image
-        source={require('../../assets/Transparent 1.png')}
-        style={styles.image}
-      />
-      <Text style={styles.tital}>Create your account</Text>
-      <Text style={styles.text}>Track your liver health smarter</Text>
-      <CommonTextInput
-        placeholder="Full Name"
-        label={'Full Name'}
-        value={form.full_name}
-        onChangeText={(text) => setForm({ ...form, full_name: text })}
-        style={styles.textInput}
-      />
-      <CommonTextInput
-        placeholder="Email Address"
-        label={'Email Address'}
-        value={form.email}
-        onChangeText={(text) => setForm({ ...form, email: text })}
-        style={styles.textInput}
-      />
-      <CommonTextInput
-        placeholder="Password"
-        label={'Password'}
-        value={form.password}
-        onChangeText={(text) => setForm({ ...form, password: text })}
-        style={styles.textInput}
-        secureTextEntry
-      />
-      <CommonTextInput
-        placeholder="Confirm Password"
-        label={'Confirm Password'}
-        value={form.confirmPassword}
-        onChangeText={(text) => setForm({ ...form, confirmPassword: text })}
-        style={styles.textInput}
-        secureTextEntry
-      />
-      <CommonDropdown
-        label="Gender"
-        placeholder="Select Gender"
-        value={form.gender_custom}
-        options={[{ label: 'Male', value: 'Male' }, { label: 'Female', value: 'Female' }, { label: 'Other', value: 'Other' }]}
-        onValueChange={(value) => setForm({ ...form, gender_custom: value })}
-        style={styles.textInput}
-      />
-      <CountryPicker
-        label="Country"
-        placeholder="Select Country"
-        value={form.country_code}
-        onValueChange={(value) => setForm({ ...form, country_code: value })}
-        style={styles.textInput}
-      />
-      <CommonButton
-        title="Create Account"
-        fontSize={22}
-        style={styles.buttion}
-        onPress={handleRegister}
-      />
-      <View style={styles.footer}>
-        <Text>Already have an account ? </Text>
-        <TouchableOpacity  onPress={() => navigation.navigate('Login')}>
-          <Text style={{ color: '#52AB3C',fontWeight:'bold'}}>Login</Text>
-        </TouchableOpacity>
-      </View>
-      <Text style={styles.subtext}>
-        By continuing, you agree to the Terms & Privacy Policy
-      </Text>
-    </View>
+    <KeyboardAvoidingView 
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Image
+          source={require('../../assets/Transparent 1.png')}
+          style={styles.image}
+        />
+        <Text style={styles.tital}>Create your account</Text>
+        <Text style={styles.text}>Track your liver health smarter</Text>
+        <CommonTextInput
+          placeholder="Full Name"
+          label={'Full Name'}
+          value={form.full_name}
+          onChangeText={(text) => setForm({ ...form, full_name: text })}
+          style={styles.textInput}
+        />
+        <CommonTextInput
+          placeholder="Email Address"
+          label={'Email Address'}
+          value={form.email}
+          onChangeText={(text) => setForm({ ...form, email: text })}
+          style={styles.textInput}
+          keyboardType="email-address"
+        />
+        <CommonTextInput
+          placeholder="Password"
+          label={'Password'}
+          value={form.password}
+          onChangeText={(text) => setForm({ ...form, password: text })}
+          style={styles.textInput}
+          secureTextEntry
+        />
+        <CommonTextInput
+          placeholder="Confirm Password"
+          label={'Confirm Password'}
+          value={form.confirmPassword}
+          onChangeText={(text) => setForm({ ...form, confirmPassword: text })}
+          style={styles.textInput}
+          secureTextEntry
+        />
+        <CommonDropdown
+          label="Gender"
+          placeholder="Select Gender"
+          value={form.gender_custom}
+          options={[{ label: 'Male', value: 'Male' }, { label: 'Female', value: 'Female' }, { label: 'Other', value: 'Other' }]}
+          onValueChange={(value) => setForm({ ...form, gender_custom: value })}
+          style={styles.textInput}
+        />
+        <CountryPicker
+          label="Country"
+          placeholder="Select Country"
+          value={form.country_code}
+          onValueChange={(value) => setForm({ ...form, country_code: value })}
+          style={styles.textInput}
+        />
+        <CommonButton
+          title="Create Account"
+          fontSize={22}
+          style={styles.buttion}
+          onPress={handleRegister}
+        />
+        <View style={styles.footer}>
+          <Text>Already have an account? </Text>
+          <TouchableOpacity  onPress={() => navigation.navigate('Login')}>
+            <Text style={{ color: '#52AB3C',fontWeight:'bold'}}>Login</Text>
+          </TouchableOpacity>
+        </View>
+        <Text style={styles.subtext}>
+          By continuing, you agree to the Terms & Privacy Policy
+        </Text>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -173,6 +182,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: responsive.padding(30),
+    backgroundColor: '#fff',
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    // padding: responsive.padding(30),
   },
   image: {
     width: responsive.width(200),

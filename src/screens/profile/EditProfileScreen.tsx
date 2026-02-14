@@ -1,5 +1,5 @@
 // src/screens/EditProfileScreen.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,12 +9,199 @@ import {
   TextInput,
   Switch,
   SafeAreaView,
+  Image,
 } from 'react-native';
+import Toast from 'react-native-toast-message';
+import CommonLoader from '../../components/CommonLoader';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useDispatch, useSelector } from 'react-redux';
+import { getUserProfile } from './slices/profileSlice';
+import { RootState } from '../../redux/store';
+import { updateUserProfile } from './slices/profileSlice';
+import type { AppDispatch } from '../../redux/store';
 
-const EditProfileScreen = ({ navigation }) => {
+
+type EditProfileScreenProps = {
+  navigation: any;
+};
+
+const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation }) => {
+  const dispatch: AppDispatch = useDispatch();
+  const { userProfile, loading, error } = useSelector((state: RootState) => state.profile);
+  
+  // State for form fields
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [mobileNumber, setMobileNumber] = useState('');
+  const [gender, setGender] = useState('');
+  const [dob, setDob] = useState('');
+  const [address, setAddress] = useState('');
+  const [bio, setBio] = useState('');
+  const [medicalCondition, setMedicalCondition] = useState('');
+  const [emergencyContact, setEmergencyContact] = useState('');
+  const [bloodType, setBloodType] = useState('');
+  const [allergies, setAllergies] = useState('');
+  const [medications, setMedications] = useState('');
+  const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [notifications, setNotifications] = useState(true);
+  
+  // Validation states
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  // Loader state
+  const [isUpdating, setIsUpdating] = useState(false);
+  
+  // Get user email from auth state
+  const { user } = useSelector((state: RootState) => state.auth);
+  
+  // Update local state when profile data is fetched
+  useEffect(() => {
+    if (userProfile) {
+      setFullName(userProfile.full_name || '');
+      setEmail(userProfile.email || '');
+      setGender(userProfile.gender_custom || '');
+      setBio(userProfile.bio || '');
+      setMedicalCondition(userProfile.medical_condition || '');
+      setEmergencyContact(userProfile.emergency_contact || '');
+      setBloodType(userProfile.blood_type || '');
+      setAllergies(userProfile.allergies || '');
+      setMedications(userProfile.medications || '');
+      setProfilePicture(userProfile.profile_picture || null);
+      setNotifications(Boolean(userProfile.notifications));
+    }
+  }, [userProfile]);
+  
+  // Fetch user profile on component mount
+  useEffect(() => {
+    if (user?.email) {
+      dispatch(getUserProfile({ user: user.email }));
+    }
+  }, [dispatch, user?.email]);
+  
+  // Handle profile picture selection
+  const handleProfilePictureSelect = () => {
+    // For Toast, we'll use a simpler approach
+    // Since Toast doesn't support multiple options like Alert, we'll implement a custom modal or use a different approach
+    // For now, let's implement a simple approach with individual buttons
+    // Or you could implement a custom modal for image selection
+    console.log('Image selection options should appear here');
+  };
 
+  // Validate form
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    
+    if (!fullName.trim()) {
+      newErrors.fullName = 'Full name is required';
+    }
+    
+    if (!email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      newErrors.email = 'Please enter a valid email address';
+    }
+    
+    if (emergencyContact && !/^[+]?[0-9]{10,15}$/.test(emergencyContact.replace(/\s/g, ''))) {
+      newErrors.emergencyContact = 'Please enter a valid phone number';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // Handle save changes
+  const handleSaveChanges = async () => {
+    if (!userProfile) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'User profile data not loaded',
+        visibilityTime: 3000,
+      });
+      return;
+    }
+    
+    // Validate form
+    if (!validateForm()) {
+      Toast.show({
+        type: 'error',
+        text1: 'Validation Error',
+        text2: 'Please fix the errors in the form',
+        visibilityTime: 3000,
+      });
+      return;
+    }
+    
+    setIsUpdating(true);
+    
+    try {
+      // Extract first name and last name from full name
+      const nameParts = fullName.trim().split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+      
+      // Prepare the payload for the API call according to the required format
+      const updatedProfile = {
+        full_name: fullName,
+        first_name: firstName,
+        last_name: lastName,
+      };
+      
+      const result = await dispatch(updateUserProfile(updatedProfile));
+      if (updateUserProfile.fulfilled.match(result)) {
+        // Note: Currently only name fields are updated via API
+        // Other profile fields may require different endpoints
+        Toast.show({
+          type: 'success',
+          text1: 'Success',
+          text2: 'Name updated successfully.\nNote: Other profile fields may require additional API endpoints.',
+          visibilityTime: 3000,
+        });
+        navigation.goBack();
+      } else {
+        throw new Error(result.payload || 'Failed to update profile');
+      }
+    } catch (error: any) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: error.message || 'Failed to update profile',
+        visibilityTime: 3000,
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  // Loading and error handling
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text>Loading profile...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+  
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.errorContainer}>
+          <Text>Error loading profile: {error}</Text>
+          <TouchableOpacity onPress={() => {
+            if (user?.email) {
+              dispatch(getUserProfile({ user: user.email }));
+            }
+          }}>
+            <Text style={styles.retryText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+  
+  // Render the main content
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView>
@@ -26,30 +213,40 @@ const EditProfileScreen = ({ navigation }) => {
             <Text style={styles.logoText}>Liverlytics</Text>
           </View>
         </View> */}
-
+  
         <View style={styles.titleSection}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Icon name="arrow-back" size={24} color="#1f2937" />
           </TouchableOpacity>
           <Text style={styles.title}>Edit Profile</Text>
         </View>
-
+  
         <View style={styles.content}>
           {/* Profile Section */}
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Profile</Text>
             <Text style={styles.cardSubtitle}>Update your personal information.</Text>
-
+  
             <View style={styles.avatarSection}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>JS</Text>
-              </View>
-              <TouchableOpacity style={styles.changePhotoButton}>
+              <TouchableOpacity onPress={handleProfilePictureSelect}>
+                {profilePicture ? (
+                  <Image source={{ uri: profilePicture }} style={styles.avatarImage} />
+                ) : (
+                  <View style={styles.avatar}>
+                    <Text style={styles.avatarText}>
+                      {fullName.split(' ').map(n => n[0]).join('').toUpperCase()}
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.changePhotoButton} onPress={handleProfilePictureSelect}>
                 <Icon name="camera-outline" size={16} color="#52a64a" />
-                <Text style={styles.changePhotoText}>Change Photo</Text>
+                <Text style={styles.changePhotoText}>
+                  {profilePicture ? 'Change Photo' : 'Add Photo'}
+                </Text>
               </TouchableOpacity>
             </View>
-
+  
             <View style={styles.inputGroup}>
               <View style={styles.inputRow}>
                 <Icon name="person-outline" size={20} color="#6b7280" />
@@ -57,79 +254,88 @@ const EditProfileScreen = ({ navigation }) => {
                   <Text style={styles.inputLabel}>Full Name</Text>
                   <TextInput
                     style={styles.input}
-                    defaultValue="Jordan Smith"
+                    value={fullName}
+                    onChangeText={setFullName}
                     placeholder="Enter full name"
                   />
                 </View>
               </View>
-
+  
               <View style={styles.inputRow}>
                 <Icon name="mail-outline" size={20} color="#6b7280" />
                 <View style={styles.inputContent}>
                   <Text style={styles.inputLabel}>Email</Text>
                   <TextInput
                     style={styles.input}
-                    defaultValue="jordan.smith@example.com"
+                    value={email}
+                    onChangeText={setEmail}
                     placeholder="Enter email"
                     keyboardType="email-address"
                   />
                 </View>
               </View>
-
+  
               <View style={styles.inputRow}>
                 <Icon name="call-outline" size={20} color="#6b7280" />
                 <View style={styles.inputContent}>
                   <Text style={styles.inputLabel}>Mobile Number</Text>
                   <TextInput
                     style={styles.input}
-                    defaultValue="+1 (555) 987-2345"
+                    value={mobileNumber}
+                    onChangeText={setMobileNumber}
                     placeholder="Enter phone number"
                     keyboardType="phone-pad"
                   />
                 </View>
               </View>
-
+  
               <View style={styles.inputRow}>
                 <Icon name="male-female-outline" size={20} color="#6b7280" />
                 <View style={styles.inputContent}>
                   <Text style={styles.inputLabel}>Gender</Text>
                   <TouchableOpacity style={styles.selectInput}>
-                    <Text style={styles.selectText}>Male</Text>
+                    <Text style={styles.selectText}>{gender || 'Select Gender'}</Text>
                     <Icon name="chevron-down" size={20} color="#9ca3af" />
                   </TouchableOpacity>
                 </View>
               </View>
-
+  
               <View style={styles.inputRow}>
                 <Icon name="calendar-outline" size={20} color="#6b7280" />
                 <View style={styles.inputContent}>
                   <Text style={styles.inputLabel}>Date of Birth</Text>
-                  <TouchableOpacity style={styles.selectInput}>
-                    <Text style={styles.selectText}>1968-04-12</Text>
+                  <TouchableOpacity style={styles.selectInput}
+                    onPress={() => {
+                      // TODO: Implement date picker
+                      // For now, we can use a modal or native date picker
+                    }}
+                  >
+                    <Text style={styles.selectText}>{dob || 'Select Date'}</Text>
                     <Icon name="chevron-down" size={20} color="#9ca3af" />
                   </TouchableOpacity>
                 </View>
               </View>
-
+  
               <View style={styles.inputRow}>
                 <Icon name="location-outline" size={20} color="#6b7280" />
                 <View style={styles.inputContent}>
                   <Text style={styles.inputLabel}>Address</Text>
                   <TextInput
                     style={styles.input}
-                    defaultValue="Add home address"
+                    value={address}
+                    onChangeText={setAddress}
                     placeholder="Enter address"
                   />
                 </View>
               </View>
             </View>
           </View>
-
+  
           {/* Preferences */}
-          <View style={styles.card}>
+          {/* <View style={styles.card}>
             <Text style={styles.cardTitle}>Preferences</Text>
             <Text style={styles.cardSubtitle}>Control alerts and account options.</Text>
-
+  
             <View style={styles.preferenceRow}>
               <View style={styles.preferenceInfo}>
                 <Icon name="notifications-outline" size={20} color="#374151" />
@@ -147,7 +353,7 @@ const EditProfileScreen = ({ navigation }) => {
                 thumbColor={notifications ? '#52a64a' : '#f3f4f6'}
               />
             </View>
-
+  
             <View style={styles.section}>
               <Text style={styles.sectionLabel}>Account Settings</Text>
               <TouchableOpacity style={styles.settingItem}>
@@ -161,8 +367,8 @@ const EditProfileScreen = ({ navigation }) => {
                 </View>
               </TouchableOpacity>
             </View>
-          </View>
-
+          </View> */}
+  
           {/* Action Buttons */}
           <View style={styles.actions}>
             <TouchableOpacity
@@ -171,17 +377,20 @@ const EditProfileScreen = ({ navigation }) => {
             >
               <Text style={styles.cancelText}>Cancel</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.saveButton}>
-              <Icon name="checkmark" size={20} color="#fff" />
+            <TouchableOpacity style={styles.saveButton} onPress={handleSaveChanges}>
+                
               <Text style={styles.saveText}>Save Changes</Text>
             </TouchableOpacity>
           </View>
-
+  
           <Text style={styles.notice}>
             Changes apply to all dashboards and alerts.{'\n'}
             Text size respects your system accessibility settings.
           </Text>
         </View>
+          
+        {/* Loader */}
+        <CommonLoader visible={isUpdating} message="Updating Profile..." />
       </ScrollView>
     </SafeAreaView>
   );
@@ -261,6 +470,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#e5e7eb',
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 12,
+  },
+  avatarImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     marginBottom: 12,
   },
   avatarText: {
@@ -416,6 +631,23 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 16,
     lineHeight: 18,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  retryText: {
+    color: '#52a64a',
+    fontWeight: '600',
+    marginTop: 10,
   },
 });
 

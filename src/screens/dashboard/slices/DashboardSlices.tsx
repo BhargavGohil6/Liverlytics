@@ -81,6 +81,11 @@ export interface DashboardData {
   diet?: DietData;
   exercise?: ExerciseData;
   medications?: MedicationData;
+  ai_insights?: {
+    status: string;
+    summary?: string;
+    ai_insights?: string[] | string;
+  };
 }
 
 export interface DashboardState {
@@ -114,12 +119,12 @@ export const fetchDashboardData = createAsyncThunk<
 
     // Check if response has message object
     if (data.message) {
-      Toast.show({
-        type: 'success',
-        text1: 'Dashboard Loaded',
-        text2: 'Your health data has been updated',
-        visibilityTime: 2000,
-      });
+      // Toast.show({
+      //   type: 'success',
+      //   text1: 'Dashboard Loaded',
+      //   text2: 'Your health data has been updated',
+      //   visibilityTime: 2000,
+      // });
       return data.message;
     }
 

@@ -40,6 +40,10 @@ import {
 } from 'lucide-react-native';
 import responsive from '../../theme/responsive'; 
 import {colors,font} from '../../theme/index';
+import { useEffect } from 'react';
+import api from '../../services/api';
+import { ActivityIndicator } from 'react-native';
+import { useSelector } from 'react-redux';
 
 interface AlertItem {
   id: string;
@@ -62,188 +66,27 @@ interface ReminderItem {
   enabled: boolean;
 }
 
-const alertsData: AlertItem[] = [
-  {
-    id: '1',
-    icon: 'water',
-    iconType: 'MaterialCommunityIcons',
-    iconColor: '#3B82F6',
-    iconBg: '#EFF6FF',
-    title: 'Weight rising faster than usual — possible fluid retention',
-    description: 'Avg ∆ 0.9 kg/day over last 2 days vs usual avg • Today • 07:30',
-    source: 'Source: Vitals',
-    badge: 'Medium',
-    badgeColor: '#F59E0B',
-  },
-  {
-    id: '2',
-    icon: 'trending-up',
-    iconType: 'MaterialCommunityIcons',
-    iconColor: '#EF4444',
-    iconBg: '#FEF2F2',
-    title: 'Rapid weight gain detected over 48 hrs',
-    description: '+ 2 kg in 2 days: baseline 68 kg → 70 kg • Last 2 days • 06:45',
-    source: 'Source: Vitals',
-    badge: 'High',
-    badgeColor: '#EF4444',
-  },
-  {
-    id: '3',
-    icon: 'food-apple',
-    iconType: 'MaterialCommunityIcons',
-    iconColor: '#F97316',
-    iconBg: '#FFF7ED',
-    title: 'Daily sodium target exceeded',
-    description: '3,200 mg logged vs 2,300 mg max threshold • Yesterday • 22:10',
-    source: 'Source: Diet',
-    badge: 'Medium',
-    badgeColor: '#F59E0B',
-  },
-  {
-    id: '4',
-    icon: 'heart-pulse',
-    iconType: 'MaterialCommunityIcons',
-    iconColor: '#EF4444',
-    iconBg: '#FEF2F2',
-    title: 'Elevated resting heart rate compared to baseline',
-    description: 'Resting HR 80 bpm vs baseline 68 bpm • Today • 08:15',
-    source: 'Source: Vitals',
-    badge: 'Medium',
-    badgeColor: '#F59E0B',
-  },
-  {
-    id: '5',
-    icon: 'pill',
-    iconType: 'MaterialCommunityIcons',
-    iconColor: '#8B5CF6',
-    iconBg: '#F5F3FF',
-    title: 'MELD increased by 3 points since last entry',
-    description: 'MELD now 15 • 3 days ago: +30',
-    source: 'Source: Labs / MELD',
-    badge: 'Medium',
-    badgeColor: '#F59E0B',
-  },
-  {
-    id: '6',
-    icon: 'alert-circle',
-    iconType: 'MaterialCommunityIcons',
-    iconColor: '#EF4444',
-    iconBg: '#FEF2F2',
-    title: 'MELD increased by 5 points — review labs',
-    description: 'MELD jumped from 12 → 17 over last 1 week • Last 3 days max 3',
-    source: 'Source: Labs / MELD',
-    badge: 'High',
-    badgeColor: '#EF4444',
-  },
-  {
-    id: '7',
-    icon: 'clock-alert',
-    iconType: 'MaterialCommunityIcons',
-    iconColor: '#F59E0B',
-    iconBg: '#FEF3C7',
-    title: 'Missed dose window passed',
-    description: 'Furosemide missed, no adherence • Yesterday • 21:30',
-    source: 'Source: Medications',
-    badge: 'Medium',
-    badgeColor: '#F59E0B',
-  },
-  {
-    id: '8',
-    icon: 'water-percent',
-    iconType: 'MaterialCommunityIcons',
-    iconColor: '#3B82F6',
-    iconBg: '#EFF6FF',
-    title: 'Low SpO₂ detected compared to prior baseline',
-    description: 'Average SpO₂ 92% vs 96% last week • Ongoing over 3 days',
-    source: 'Source: Vitals (A8)',
-    badge: '',
-    badgeColor: '',
-  },
-  {
-    id: '9',
-    icon: 'heart-pulse',
-    iconType: 'MaterialCommunityIcons',
-    iconColor: '#EF4444',
-    iconBg: '#FEF2F2',
-    title: 'Sustained + elevated HR pattern — check fatigue',
-    description: 'HR sustained 15+ bpm vs baseline • Last 3 days max',
-    source: 'Source: Vitals (A8)',
-    badge: '',
-    badgeColor: '',
-  },
-  {
-    id: '10',
-    icon: 'walk',
-    iconType: 'MaterialCommunityIcons',
-    iconColor: '#10B981',
-    iconBg: '#ECFDF5',
-    title: 'Steps significantly lower than usual',
-    description: 'Average 2,100 steps vs 5,400 typical • Last 3 days',
-    source: 'Source: Exercise (A8)',
-    badge: '',
-    badgeColor: '',
-  },
-  {
-    id: '11',
-    icon: 'chart-line',
-    iconType: 'MaterialCommunityIcons',
-    iconColor: '#6366F1',
-    iconBg: '#EEF2FF',
-    title: 'Weight trend unusual relative to typical pattern',
-    description: 'AI detected mismatch between weight, sleep, and activity • Last 4 days',
-    source: 'Source: Vitals & Exercise (A8)',
-    badge: '',
-    badgeColor: '',
-  },
-  {
-    id: '12',
-    icon: 'scale',
-    iconType: 'MaterialCommunityIcons',
-    iconColor: '#8B5CF6',
-    iconBg: '#F5F3FF',
-    title: 'INR higher than last report',
-    description: 'From 1.3 → 1.9 1 inked to last All spended lab • 4 days ago',
-    source: 'Source: Labs (A8)',
-    badge: '',
-    badgeColor: '',
-  },
-  {
-    id: '13',
-    icon: 'alert',
-    iconType: 'MaterialCommunityIcons',
-    iconColor: '#F59E0B',
-    iconBg: '#FEF3C7',
-    title: 'ALT/AST ratio trending abnormally',
-    description: 'Ratio climbed to 2.1 over past expose • 7 days ago',
-    source: 'Source: Labs (A8)',
-    badge: '',
-    badgeColor: '',
-  },
-  {
-    id: '14',
-    icon: 'water-minus',
-    iconType: 'MaterialCommunityIcons',
-    iconColor: '#3B82F6',
-    iconBg: '#EFF6FF',
-    title: 'Sodium lower than previous range',
-    description: 'Na 130 mmol/L today: 132-138 mmol/L • Last 60 days range',
-    source: 'Source: Labs (A8)',
-    badge: '',
-    badgeColor: '',
-  },
-  {
-    id: '15',
-    icon: 'beaker',
-    iconType: 'MaterialCommunityIcons',
-    iconColor: '#EF4444',
-    iconBg: '#FEF2F2',
-    title: 'Platelet count unusually reduced',
-    description: 'At 95 vs typical 130-160 over last year typical • Last 3 reports',
-    source: 'Source: Labs (A8)',
-    badge: '',
-    badgeColor: '',
-  },
-];
+interface WebAlert {
+  type: string;
+  status: string;
+  message: string;
+  alert_flag?: number;
+  threshold?: number;
+  flag?: number;
+  weight_gain?: number;
+  continuous_rise?: boolean;
+  source?: string;
+  from_score?: number;
+  to_score?: number;
+  meld_na?: number;
+  difference?: number;
+  days_ago?: string;
+  time?: string;
+  severity?: string;
+  alert?: any;
+}
+
+// Static data removed after API implementation
 
 const remindersData: ReminderItem[] = [
   {
@@ -281,18 +124,152 @@ const remindersData: ReminderItem[] = [
     badge: '',
     enabled: true,
   },
-  {
-    id: '6',
-    title: 'Medication dose reminders',
-    description: '08:00 20:00 • Tied to Medications module',
-    badge: '',
-    enabled: true,
-  },
+  // {
+  //   id: '6',
+  //   title: 'Medication dose reminders',
+  //   description: '08:00 20:00 • Tied to Medications module',
+  //   badge: '',
+  //   enabled: true,
+  // },
 ];
 
 const RemindersAlert = () => {
   const [reminders, setReminders] = useState(remindersData);
+  const [alerts, setAlerts] = useState<AlertItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const navigation = useNavigation();
+  
+  // Get logged-in user's email from Redux store
+  const { user } = useSelector((state: any) => state.auth);
+
+  useEffect(() => {
+    fetchAlerts();
+  }, [user]);
+
+  const fetchAlerts = async () => {
+    try {
+      setLoading(true);
+      // Use the logged-in user's email instead of hardcoded email
+      const userEmail = user?.email || ''; // Fallback to default email if user data not available
+      const response = await api.get(`cirrhosis_custom.notification_alert.get_all_health_alerts?user=${userEmail}`);
+      
+      if (response.data?.message?.status === 'success') {
+        const webAlerts: WebAlert[] = response.data.message.alerts;
+        const mappedAlerts: AlertItem[] = webAlerts.map((alert, index) => {
+          const config = getAlertIconConfig(alert.type);
+          return {
+            id: index.toString(),
+            icon: config.icon,
+            iconType: config.iconType,
+            iconColor: config.iconColor,
+            iconBg: config.iconBg,
+            title: alert.type,
+            description: alert.message,
+            source: alert.source || 'N/A',
+            badge: alert.severity || (alert.alert_flag === 1 ? 'High' : ''),
+            badgeColor: getSeverityColor(alert.severity || (alert.alert_flag === 1 ? 'High' : '')),
+          };
+        });
+        setAlerts(mappedAlerts);
+      }
+    } catch (error) {
+      console.error('Error fetching alerts:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getAlertIconConfig = (type: string) => {
+    switch (type) {
+      case 'Weight':
+        return {
+          icon: 'scale',
+          iconType: 'MaterialCommunityIcons' as const,
+          iconColor: '#3B82F6',
+          iconBg: '#EFF6FF',
+        };
+      case 'Resting HR':
+        return {
+          icon: 'heart-pulse',
+          iconType: 'MaterialCommunityIcons' as const,
+          iconColor: '#EF4444',
+          iconBg: '#FEF2F2',
+        };
+      case 'Sodium':
+        return {
+          icon: 'food-apple',
+          iconType: 'MaterialCommunityIcons' as const,
+          iconColor: '#F97316',
+          iconBg: '#FFF7ED',
+        };
+      case 'MELD Latest':
+      case 'MELD Alert':
+        return {
+          icon: 'trending-up',
+          iconType: 'MaterialCommunityIcons' as const,
+          iconColor: '#8B5CF6',
+          iconBg: '#F5F3FF',
+        };
+      case 'Medication':
+        return {
+          icon: 'pill',
+          iconType: 'MaterialCommunityIcons' as const,
+          iconColor: '#10B981',
+          iconBg: '#ECFDF5',
+        };
+      default:
+        return {
+          icon: 'alert-circle',
+          iconType: 'MaterialCommunityIcons' as const,
+          iconColor: '#6B7280',
+          iconBg: '#F3F4F6',
+        };
+    }
+  };
+
+  const getSeverityColor = (severity: string) => {
+    switch (severity?.toLowerCase()) {
+      case 'high':
+        return '#EF4444';
+      case 'medium':
+        return '#F59E0B';
+      case 'normal':
+        return '#3B82F6';
+      default:
+        return '#F59E0B';
+    }
+  };
+
+  const handleAlertPress = (alert: AlertItem) => {
+    // Navigate based on alert type
+    switch (alert.title) {
+      case 'Weight':
+        // Navigate to weight tracking/vitals
+        (navigation as any).navigate('Vitals', { screen: 'WeightChartScreen' });
+        break;
+      case 'Resting HR':
+        // Navigate to heart rate monitoring
+        (navigation as any).navigate('Vitals', { screen: 'RHRChartScreen' });
+        break;
+      case 'Sodium':
+        // Navigate to diet and fluids
+        (navigation as any).navigate('DietFluidsScreen');
+        break;
+      case 'MELD Latest':
+      case 'MELD Alert':
+        // Navigate to MELD calculator or reports
+        (navigation as any).navigate('ReportsScreen');
+        break;
+      case 'Medication':
+        // Navigate to medications list
+        (navigation as any).navigate('MedicationsListScreen');
+        break;
+      default:
+        // Default to dashboard for unknown alert types
+        (navigation as any).navigate('Dashboard');
+        break;
+    }
+  };
 
   const toggleReminder = (id: string) => {
     setReminders(prev =>
@@ -334,9 +311,9 @@ const RemindersAlert = () => {
         contentContainerStyle={styles.scrollContent}>
         {/* Active Alerts Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Active Alerts & Flags</Text>
+          <Text style={styles.sectionTitle}>Active Alerts & Flags </Text>
           <Text style={styles.sectionSubtitle}>
-            AI detections on vitals, ranges, diet, sleep, and medication events
+            AI detections on vitals, ranges, diet, sleep events
           </Text>
 
           {/* Flags Section - styled like Your Reminders */}
@@ -348,7 +325,7 @@ const RemindersAlert = () => {
             Important alerts requiring your attention.
           </Text> */}
 
-          <View style={styles.reminderCard}>
+          {/* <View style={styles.reminderCard}>
             <View style={styles.reminderContent}>
               <View style={styles.reminderTextContainer}>
                 <View style={styles.alertHeader}>
@@ -366,9 +343,12 @@ const RemindersAlert = () => {
                 
               </View>
             </View>
-          </View>
+          </View> */}
           
-          <View style={styles.reminderCard}>
+          <TouchableOpacity 
+            style={styles.reminderCard}
+            onPress={() => (navigation as any).navigate('Vitals', { screen: 'BPChartScreen' })}
+          >
             <View style={styles.reminderContent}>
               <View style={styles.reminderTextContainer}>
                 <View style={styles.alertHeader}>
@@ -386,41 +366,53 @@ const RemindersAlert = () => {
                 
               </View>
             </View>
-          </View>
+          </TouchableOpacity>
 
           {/* Alert Cards */}
-          {alertsData.map(alert => (
-            <View key={alert.id} style={styles.alertCard}>
-              <View style={styles.alertHeader}>
-                <View
-                  style={[styles.alertIconContainer, {backgroundColor: alert.iconBg}]}>
-                  {alert.iconType === 'MaterialCommunityIcons' ? (
-                    <Icon name={alert.icon} size={18} color={alert.iconColor} />
-                  ) : (
-                    <MaterialIcons
-                      name={alert.icon}
-                      size={18}
-                      color={alert.iconColor}
-                    />
-                  )}
-                </View>
-                <Text style={styles.alertTitle}>{alert.title}</Text>
-              </View>
-              <Text style={styles.alertDescription}>{alert.description}</Text>
-              <View style={styles.alertFooter}>
-                <Text style={styles.alertSource}>{alert.source}</Text>
-                {alert.badge !== '' && (
+          {loading ? (
+            <ActivityIndicator size="large" color="#52ab3c" style={{ marginVertical: 20 }} />
+          ) : alerts.length > 0 ? (
+            alerts.map(alert => (
+              <TouchableOpacity 
+                key={alert.id} 
+                style={styles.alertCard}
+                onPress={() => handleAlertPress(alert)}
+              >
+                <View style={styles.alertHeader}>
                   <View
-                    style={[
-                      styles.badge,
-                      {backgroundColor: alert.badgeColor},
-                    ]}>
-                    <Text style={styles.badgeText}>{alert.badge}</Text>
+                    style={[styles.alertIconContainer, {backgroundColor: alert.iconBg}]}>
+                    {alert.iconType === 'MaterialCommunityIcons' ? (
+                      <Icon name={alert.icon} size={18} color={alert.iconColor} />
+                    ) : (
+                      <MaterialIcons
+                        name={alert.icon}
+                        size={18}
+                        color={alert.iconColor}
+                      />
+                    )}
                   </View>
-                )}
-              </View>
-            </View>
-          ))}
+                  <View style={{flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start'}}>
+                    <Text style={styles.alertTitle}>{alert.title}</Text>
+                    {alert.badge !== '' && (
+                      <View
+                        style={[
+                          styles.badge,
+                          {backgroundColor: alert.badgeColor, marginLeft: 8},
+                        ]}>
+                        <Text style={styles.badgeText}>{alert.badge}</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+                <Text style={styles.alertDescription}>{alert.description}</Text>
+                <View style={styles.alertFooter}>
+                  <Text style={styles.alertSource}>Source: {alert.source}</Text>
+                </View>
+              </TouchableOpacity>
+            ))
+          ) : (
+            <Text style={{ textAlign: 'center', color: '#6B7280', marginVertical: 20 }}>No active alerts</Text>
+          )}
         </View>
 
         {/* Disclaimer */}

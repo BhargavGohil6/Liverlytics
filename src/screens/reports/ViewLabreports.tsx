@@ -1,5 +1,5 @@
 // ViewLabReports.tsx
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,11 +7,15 @@ import {
   ScrollView,
   TouchableOpacity,
   StatusBar,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState, AppDispatch } from '../../redux/store';
+import { fetchUserDocuments } from './slices/reportSlice';
 // import { Shadow } from 'react-native-shadow-2';
 // import {
 //   widthPercentageToDP as wp,
@@ -28,33 +32,25 @@ interface ReportItem {
 }
 
 const ViewLabReports: React.FC = () => {
-    const navigation = useNavigation();
-  const reports: ReportItem[] = [
-    {
-      id: '1',
-      date: 'May 11, 2025',
-      time: '09:15',
-      source: 'PDF',
-      accuracy: 93,
-      iconName: 'description',
-    },
-    {
-      id: '2',
-      date: 'Apr 28, 2025',
-      time: '14:02',
-      source: 'Image',
-      accuracy: 88,
-      iconName: 'image',
-    },
-    {
-      id: '3',
-      date: 'Apr 10, 2025',
-      time: '08:41',
-      source: 'CSV',
-      accuracy: 96,
-      iconName: 'description',
-    },
-  ];
+    const navigation = useNavigation<any>();
+    const dispatch = useDispatch<AppDispatch>();
+    const { userDocuments, loading } = useSelector((state: RootState) => state.reports);
+
+    useEffect(() => {
+        dispatch(fetchUserDocuments());
+    }, [dispatch]);
+
+    const formattedReports: ReportItem[] = userDocuments.map((doc) => {
+        const dateObj = new Date(doc.date);
+        return {
+            id: doc.name,
+            date: dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+            time: dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
+            source: doc.source,
+            accuracy: Math.round(doc.accurate),
+            iconName: doc.source.toLowerCase().includes('pdf') ? 'description' : 'image',
+        };
+    });
 
   const [activeTab, setActiveTab] = React.useState<string>('Reports');
 
@@ -122,9 +118,27 @@ const ViewLabReports: React.FC = () => {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.sectionTitle}>Uploaded Lab Reports</Text>
+        <View style={styles.headerRow}>
+          <Text style={styles.sectionTitle}>Uploaded Lab Reports</Text>
+          <TouchableOpacity 
+            style={styles.compareButton}
+            onPress={() => navigation.navigate('CompareReports')}
+          >
+            <Text style={styles.compareButtonText}>Compare</Text>
+          </TouchableOpacity>
+        </View>
 
-        {reports.map((report) => renderReportCard(report))}
+        {loading ? (
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#333333" />
+            </View>
+        ) : formattedReports.length > 0 ? (
+            formattedReports.map((report) => renderReportCard(report))
+        ) : (
+            <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>No reports found</Text>
+            </View>
+        )}
       </ScrollView>
 
      
@@ -201,7 +215,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#1F1F1F',
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: '2%',
+  },
+  compareButton: {
+    backgroundColor: '#333333',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  compareButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
   shadowWrapper: {
     width: '100%',
@@ -282,6 +312,21 @@ const styles = StyleSheet.create({
   navTextActive: {
     color: '#333333',
     fontWeight: '600',
+  },
+  loadingContainer: {
+    paddingVertical: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyContainer: {
+    paddingVertical: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#666666',
+    fontWeight: '500',
   },
 });
 

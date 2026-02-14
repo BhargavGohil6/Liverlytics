@@ -12,16 +12,30 @@ export interface DietEntry {
   user?: string;
 }
 
+export interface DailyLimits {
+  daily_sodium_limit: number;
+  daily_fluid_limit: number;
+}
+
+export interface OverallTotals {
+  sodium: number;
+  fluid_ml: number;
+}
+
 export interface DietApiResponse {
   status: string;
   message?: string;
   diet_and_fluids_id?: string;
   count?: number;
+  daily_limits?: DailyLimits;
+  overall_totals?: OverallTotals;
   data: DietEntry[] | DietEntry;
 }
 
 export interface DietState {
   data: DietEntry[] | null;
+  daily_limits: DailyLimits | null;
+  overall_totals: OverallTotals | null;
   loading: boolean;
   error: string | null;
   success: boolean;
@@ -30,6 +44,8 @@ export interface DietState {
 // Initial state
 const initialState: DietState = {
   data: null,
+  daily_limits: null,
+  overall_totals: null,
   loading: false,
   error: null,
   success: false,
@@ -66,6 +82,39 @@ export const fetchDietEntryById = createAsyncThunk<
       error.response?.data?.message ||
       error.message ||
       'Failed to fetch diet entry';
+    return rejectWithValue(msg);
+  }
+});
+
+// Fetch Today's Diet
+export const fetchTodayDiet = createAsyncThunk<
+  DietApiResponse,
+  void,
+  { rejectValue: string }
+>('diet/fetchTodayDiet', async (_, { getState, rejectWithValue }) => {
+  try {
+    const state: any = getState();
+    const userEmail = state.auth?.user?.email;
+    
+    if (!userEmail) {
+      return rejectWithValue('User email not found in auth state');
+    }
+    
+    const payload = {
+      user: userEmail,
+    };
+    
+    const response = await api.post(
+      '/cirrhosis_custom.cirrhosis_diet_fluids.get_today_diet',
+      payload
+    );
+    return response.data.message || response.data;
+  } catch (error: any) {
+    const msg =
+      error.response?.data?.message?.message ||
+      error.response?.data?.message ||
+      error.message ||
+      'Failed to fetch today\'s diet';
     return rejectWithValue(msg);
   }
 });
@@ -323,6 +372,21 @@ const dietSlice = createSlice({
         state.loading = false;
         state.error = action.payload || 'Failed to update diet entry';
         state.success = false;
+      })
+      // Fetch Today's Diet
+      .addCase(fetchTodayDiet.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchTodayDiet.fulfilled, (state, action: PayloadAction<DietApiResponse>) => {
+        state.loading = false;
+        state.data = Array.isArray(action.payload.data) ? action.payload.data : [action.payload.data];
+        state.daily_limits = action.payload.daily_limits || null;
+        state.overall_totals = action.payload.overall_totals || null;
+      })
+      .addCase(fetchTodayDiet.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to fetch today\'s diet';
       })
       // Delete Diet Entry
       .addCase(deleteDietEntry.pending, (state) => {

@@ -34,13 +34,13 @@ const FlagsTimelineScreen = ({ navigation }) => {
       description: 'Daily sodium average exceeded target by 18% across the last 7 days.',
       source: 'Diet',
     },
-    {
-      icon: 'medkit-outline',
-      title: 'Missed evening dose',
-      time: 'May 09 • 21:15',
-      description: 'Medication adherence below 80% this week due to missed 20:00 dose.',
-      source: 'Medications',
-    },
+    // {
+    //   icon: 'medkit-outline',
+    //   title: 'Missed evening dose',
+    //   time: 'May 09 • 21:15',
+    //   description: 'Medication adherence below 80% this week due to missed 20:00 dose.',
+    //   source: 'Medications',
+    // },
   ];
 
   return (

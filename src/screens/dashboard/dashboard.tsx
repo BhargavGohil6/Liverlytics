@@ -28,16 +28,21 @@ import {
   Bell,
   User,
   History,
-  ChevronRight
+  ChevronRight,
+  ArrowDownRight,
+  ArrowUpRight,
+  Info,
+  Minus
 } from 'lucide-react-native';
 import responsive from '../../theme/responsive';  
 import { Navigation } from 'lucide-react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../redux/store';
 import { fetchDashboardData } from './slices/DashboardSlices';
 import {colors,font} from '../../theme/index';
 import CommonButton from '../../components/CommonButton';
+import { formatRelativeTime } from '../../utils/timeUtils';
 
 export default function Dashboard() {
   const navigation = useNavigation<any>();
@@ -55,14 +60,13 @@ export default function Dashboard() {
   const { data, loading, error } = useSelector((state: RootState) => state.dashboard);
   const { user } = useSelector((state: RootState) => state.auth);
 
-  // Fetch dashboard data on mount
-  useEffect(() => {
-    if (user?.email) {
-      dispatch(fetchDashboardData({ email: user.email }));
-    } else {
-      dispatch(fetchDashboardData({ email: 'pareshwaghela18mukesoft@gmail.com' }));
-    }
-  }, [dispatch, user]);
+  useFocusEffect(
+    React.useCallback(() => {
+      if (user?.email) {
+        dispatch(fetchDashboardData({ email: user.email }));
+      }
+    }, [dispatch, user?.email])
+  );
 
   // Loading state
   if (loading) {
@@ -84,7 +88,7 @@ export default function Dashboard() {
           <Text style={styles.errorText}>Error: {error}</Text>
           <CommonButton
             title="Retry"
-            onPress={() => dispatch(fetchDashboardData({ email: user?.email || 'pareshwaghela18mukesoft@gmail.com' }))}
+            onPress={() => dispatch(fetchDashboardData({ email: user?.email || '' }))}
             bgColor={colors.primary}
             textColor={colors.white}
             paddingVertical={responsive.padding(10)}
@@ -112,16 +116,16 @@ export default function Dashboard() {
         <View style={styles.headerRight}>
           <TouchableOpacity style={styles.bellIcon} onPress={() => navigation.navigate('Reminders')}>
             <Bell size={20} color="#333" />
-            <Text style={styles.reminderText}>Reminders</Text>
+            {/* <Text style={styles.reminderText}>Reminders</Text> */}
           </TouchableOpacity>
-          <TouchableOpacity style={styles.avatar}>
+          {/* <TouchableOpacity style={styles.avatar}> */}
             {/* <Image
               source={{ uri: user?.avatar || 'https://via.placeholder.com/40' }}
               style={styles.avatarImage}
             /> */}
-            <User size={25} color="#666" />
+            {/* <User size={25} color="#666" />
 
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
       </View>
 
@@ -158,14 +162,16 @@ export default function Dashboard() {
         {/* Vitals Section */}
         <TouchableOpacity 
           style={styles.sectionCard}
-          onPress={() => navigation.navigate('Vitals')}
+          onPress={() => {
+            navigation.navigate('Vitals', { screen: 'VitalsOverview' });
+          }}
         >
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleRow}>
               <Activity size={20} color="#333" />
               <Text style={styles.sectionTitle}>Vitals</Text>
             </View>
-            <Text style={styles.sectionTime}>Today</Text>
+            <Text style={styles.sectionTime}>{formatRelativeTime(data?.vital?.date || '')}</Text>
           </View>
 
           <View style={styles.vitalsList}>
@@ -207,7 +213,7 @@ export default function Dashboard() {
             <Text style={styles.meldScore}>Latest: {data?.meld?.inr || '12'}</Text>
           </View>
 
-          <Text style={styles.updateText}>Last updated {data?.meld?.creation ? new Date(data.meld.creation).toLocaleDateString() : '2d ago'}</Text>
+          <Text style={styles.updateText}>Last updated {formatRelativeTime(data?.meld?.creation || '')}</Text>
 
           <View style={styles.meldTags}>
             <View style={styles.meldTag}>
@@ -248,7 +254,7 @@ export default function Dashboard() {
               <Droplet size={20} color="#333" />
               <Text style={styles.sectionTitle}>Diet & Fluids</Text>
             </View>
-            <Text style={styles.sectionTime}>Today</Text>
+            <Text style={styles.sectionTime}>{formatRelativeTime(data?.diet?.creation || '')}</Text>
           </View>
 
           <View style={styles.dietRow}>
@@ -271,7 +277,7 @@ export default function Dashboard() {
               <Activity size={20} color="#333" />
               <Text style={styles.sectionTitle}>Exercise</Text>
             </View>
-            <Text style={styles.sectionTime}>Today</Text>
+            <Text style={styles.sectionTime}>{formatRelativeTime(data?.exercise?.date || '')}</Text>
           </View>
 
           <View style={styles.exerciseList}>
@@ -304,21 +310,50 @@ export default function Dashboard() {
         </TouchableOpacity>
 
         {/* AI Insights Section */}
-        <View style={styles.aiInsightsCard}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleRow}>
-              <Sparkles size={20} color="#333" />
-              <Text style={styles.sectionTitle}>AI Insights</Text>
+        {data?.ai_insights && (
+          <View style={styles.newAiInsightsCard}>
+            <View style={styles.insightsHeader}>
+              <View style={styles.sectionTitleRow}>
+                <Sparkles size={20} color="#1A1A1A" />
+                <Text style={styles.newInsightsTitle}>AI Insights</Text>
+              </View>
+              <View style={styles.infoBadge}>
+                <Text style={styles.infoBadgeText}>{formatRelativeTime(data?.date || '')}</Text>
+              </View>
             </View>
-            <Text style={styles.sectionTime}>Updated today</Text>
-          </View>
 
-          <View style={styles.insightBox}>
-            <Text style={styles.insightText}>
-              Your BP is trending slightly high this week. Consider a light walk after dinner and reduce sodium intake.
-            </Text>
+            <View style={styles.newInsightBox}>
+              {/* Sodium Insight */}
+              <View style={[styles.insightItem, { backgroundColor: '#FFF8E1' }]}>
+                <ArrowUpRight size={22} color="#FBC02D" style={styles.insightIcon} />
+                <View style={styles.insightContent}>
+                  <Text style={[styles.insightItemText, { color: '#FBC02D' }]}>Sodium {data?.diet?.sodium ? `${data.diet.sodium} g` : '1.7 g'}</Text>
+                  <Text style={styles.insightItemSubText}>Slightly high compared to your daily limit.</Text>
+                </View>
+              </View>
+
+              {/* BP Insight */}
+              <View style={[styles.insightItem, { backgroundColor: '#E8F5E9' }]}>              
+                <Minus size={22} color="#43A047" style={styles.insightIcon} />
+                <View style={styles.insightContent}>
+                  <Text style={[styles.insightItemText, { color: '#43A047' }]}>BP {data?.vital?.blood_pressure || '120/80'}</Text>
+                  <Text style={styles.insightItemSubText}>Your blood pressure is within the normal range.</Text>
+                </View>
+              </View>
+
+              {/* Heart Rate Insight */}
+              <View style={[styles.insightItem, { backgroundColor: '#FEECEE' }]}>
+                <ArrowDownRight size={22} color="#D32F2F" style={styles.insightIcon} />
+                <View style={styles.insightContent}>
+                  <Text style={[styles.insightItemText, { color: '#D32F2F' }]}>Heart Rate {data?.exercise?.resting_hr || '62'} bpm</Text>
+                  <Text style={styles.insightItemSubText}>Your resting heart rate is slightly lower than usual.</Text>
+                </View>
+              </View>
+
+              <Text style={styles.disclaimerText}>These insights are informational only and not a diagnosis.</Text>
+            </View>
           </View>
-        </View>
+        )}
 
         {/* Bottom Spacing */}
         <View style={styles.bottomSpacing} />
@@ -347,7 +382,8 @@ const styles = StyleSheet.create({
   },
   logo: {
     width: responsive.width(120),
-    height: responsive.height(42),
+    height: responsive.height(35),
+    // marginTop:responsive.margin(25),
   },
   headerRight: {
     flexDirection: 'row',
@@ -590,26 +626,76 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
   },
-  aiInsightsCard: {
+  newAiInsightsCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: responsive.borderRadius(12),
-    padding: responsive.padding(16),
+    borderRadius: responsive.borderRadius(20),
+    padding: responsive.padding(18),
     marginBottom: responsive.margin(16),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 4,
+    shadowRadius: 8,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
   },
-  insightBox: {
-    backgroundColor: '#00796B',
-    borderRadius: responsive.borderRadius(8),
-    padding: responsive.padding(16),
+  insightsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: responsive.margin(16),
   },
-  insightText: {
-    fontSize: responsive.fontSize(14),
-    color: '#FFFFFF',
-    lineHeight: responsive.height(20),
+  newInsightsTitle: {
+    fontSize: responsive.fontSize(18),
+    fontWeight: '700',
+    color: '#1A1A1A',
+  },
+  infoBadge: {
+    backgroundColor: '#E1F5FE',
+    paddingHorizontal: responsive.padding(10),
+    paddingVertical: responsive.padding(4),
+    borderRadius: responsive.borderRadius(12),
+  },
+  infoBadgeText: {
+    fontSize: responsive.fontSize(12),
+    fontWeight: '600',
+    color: '#0288D1',
+  },
+  newInsightBox: {
+    backgroundColor: 'transparent',
+  },
+  insightItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: responsive.padding(16),
+    paddingVertical: responsive.padding(14),
+    borderRadius: responsive.borderRadius(16),
+    marginBottom: responsive.margin(10),
+  },
+  insightIcon: {
+    marginRight: responsive.margin(12),
+  },
+  insightContent: {
+    flex: 1,
+  },
+  insightItemText: {
+    fontSize: responsive.fontSize(16),
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  insightItemSubText: {
+    fontSize: responsive.fontSize(13),
+    color: '#666',
+    opacity: 0.8,
+    lineHeight: responsive.height(18),
+    fontWeight: '500',
+  },
+  disclaimerText: {
+    fontSize: responsive.fontSize(12),
+    color: '#9E9E9E',
+    marginTop: responsive.margin(8),
+    textAlign: 'left',
+    lineHeight: responsive.height(18),
   },
   bottomSpacing: {
     height: responsive.height(20),

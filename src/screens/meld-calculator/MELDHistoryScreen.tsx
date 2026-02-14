@@ -32,7 +32,7 @@ const MELDHistoryScreen = ({ navigation }: { navigation: MELDHistoryScreenNaviga
   const historyLoading = useSelector(selectMeldHistoryLoading);
   const historyError = useSelector(selectMeldHistoryError);
   
-  const [selectedFilter, setSelectedFilter] = useState('All Time');
+  const [selectedTimeRange, setSelectedTimeRange] = useState('All Time');
   const [selectedSourceType, setSelectedSourceType] = useState('All');
   const [selectedMeldType, setSelectedMeldType] = useState('MELD3');
 
@@ -86,42 +86,48 @@ const MELDHistoryScreen = ({ navigation }: { navigation: MELDHistoryScreenNaviga
 
           {/* Filters */}
           <View style={styles.filterCard}>
-            <CommonDropdown
-              label="Time Range"
-              placeholder="Select Time Range"
-              value={selectedFilter}
-              options={[
-                { label: "All Time", value: "All Time" },
-                { label: "Last 1 Month", value: "Last 1 Month" },
-                { label: "Last 3 Months", value: "Last 3 Months" },
-                { label: "Last 6 Months", value: "Last 6 Months" },
-                { label: "Last 12 Months", value: "Last 12 Months" },
-                { label: "Custom Range", value: "Custom Range" },
-              ]}
-              onValueChange={setSelectedFilter}
-            />
-
-            <View style={styles.typeRow}>
-              <CommonDropdown
-                label="Type"
-                placeholder="Select Type"
-                value={selectedSourceType}
-                options={[
-                  { label: 'All', value: 'All' },
-                  { label: 'Manual', value: 'Manual' },
-                  { label: 'AI Report', value: 'AI Report' },
-                ]}
-                onValueChange={setSelectedSourceType}
-              />
+            {/* Time Range Selector */}
+            <View style={styles.periodSelector}>
+              {['All Time', 'Last 1 Month', 'Last 3 Months', 'Last 6 Months', 'Last 12 Months'].map((range) => (
+                <TouchableOpacity
+                  key={range}
+                  style={[styles.periodButton, selectedTimeRange === range && styles.periodButtonActive]}
+                  onPress={() => setSelectedTimeRange(range)}
+                >
+                  <Text style={[styles.periodText, selectedTimeRange === range && styles.periodTextActive]}>
+                    {range}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
 
-            <Text style={styles.sortText}>Sort: Newest → Oldest</Text>
+
+
+            {/* <Text style={styles.sortText}>Sort: Newest → Oldest</Text> */}
           </View>
 
           {/* Chart */}
           <View style={styles.chartCard}>
-            <Text style={styles.chartTitle}>MELD Trend Over Time</Text>
-            <Text style={styles.chartSubtitle}>Tap any point to see detailed values</Text>
+            <View style={styles.chartHeaderRow}>
+              <View style={styles.chartTitleContainer}>
+                <Text style={styles.chartTitle}>MELD Trend Over Time</Text>
+                <Text style={styles.chartSubtitle}>Tap any point to see detailed values</Text>
+              </View>
+              <View style={styles.dropdownContainer}>
+                <CommonDropdown
+                  label="Type"
+                  placeholder="Select Type"
+                  value={selectedSourceType}
+                  options={[
+                    { label: 'All', value: 'All' },
+                    { label: 'Manual', value: 'Manual' },
+                    { label: 'AI Report', value: 'AI Report' },
+                  ]}
+                  onValueChange={setSelectedSourceType}
+                  style={styles.smallDropdown}
+                />
+              </View>
+            </View>
             
             {historyLoading ? (
               <Text style={styles.loadingText}>Loading chart data...</Text>
@@ -191,42 +197,90 @@ const MELDHistoryScreen = ({ navigation }: { navigation: MELDHistoryScreenNaviga
           </View>
 
            {/* Insights */}
-          <View style={styles.insightsCard}>
-            <Text style={styles.insightsTitle}>Insights from Your History</Text>
-            {meldHistory && meldHistory.ai_insights?.ai_insights && meldHistory.ai_insights.ai_insights.length > 0 ? (
-              meldHistory.ai_insights.ai_insights.map((insight, index) => (
-                <View key={index} style={styles.insightItem}>
-                  <Text style={styles.insightBullet}>•</Text>
-                  <Text style={styles.insightText}>
-                    {insight}
-                  </Text>
-                </View>
-              ))
-            ) : (
-              <>
-                <View style={styles.insightItem}>
-                  <Text style={styles.insightBullet}>•</Text>
-                  <Text style={styles.insightText}>
-                    Your MELD-Na has been rising gradually over the last 6 weeks.
-                  </Text>
-                </View>
-                <View style={styles.insightItem}>
-                  <Text style={styles.insightBullet}>•</Text>
-                  <Text style={styles.insightText}>
-                    Creatinine fluctuations contributed to recent MELD increases.
-                  </Text>
-                </View>
-                <View style={styles.insightItem}>
-                  <Text style={styles.insightBullet}>•</Text>
-                  <Text style={styles.insightText}>
-                    Latest MELD-Na is slightly above your 3-month average.
-                  </Text>
-                </View>
-              </>
-            )}
-            <Text style={styles.disclaimer}>
-              These insights are informational and not a diagnosis.
-            </Text>
+          <View style={styles.newAiInsightsCard}>
+            <View style={styles.insightsHeader}>
+              <View style={styles.sectionTitleRow}>
+                <Icon name="sparkles" size={20} color="#1A1A1A" />
+                <Text style={styles.newInsightsTitle}>AI Insights</Text>
+              </View>
+              <View style={styles.infoBadge}>
+                <Text style={styles.infoBadgeText}>Today</Text>
+              </View>
+            </View>
+
+            <View style={styles.newInsightBox}>
+              {meldHistory && meldHistory.ai_insights?.ai_insights && meldHistory.ai_insights.ai_insights.length > 0 && (
+                meldHistory.ai_insights.ai_insights.map((insight, index) => {
+                  // Determine icon and color based on insight content
+                  let iconName = "trending-up";
+                  let iconColor = "#FBC02D";
+                  let bgColor = "#FFF8E1";
+                  
+                  if (insight.toLowerCase().includes('rising') || insight.toLowerCase().includes('increase')) {
+                    iconName = "trending-up";
+                    iconColor = "#FBC02D";
+                    bgColor = "#FFF8E1";
+                  } else if (insight.toLowerCase().includes('stable') || insight.toLowerCase().includes('normal')) {
+                    iconName = "minus";
+                    iconColor = "#43A047";
+                    bgColor = "#E8F5E9";
+                  } else if (insight.toLowerCase().includes('decreasing') || insight.toLowerCase().includes('lower')) {
+                    iconName = "trending-down";
+                    iconColor = "#43A047";
+                    bgColor = "#E8F5E9";
+                  } else {
+                    iconName = "alert-circle";
+                    iconColor = "#757575";
+                    bgColor = "#F5F5F5";
+                  }
+                  
+                  return (
+                    <View key={index} style={[styles.insightItem, { backgroundColor: bgColor }]}>              
+                      <Icon name={iconName} size={22} color={iconColor} style={styles.insightIcon} />
+                      <View style={styles.insightContent}>
+                        {/* <Text style={[styles.insightItemText, { color: iconColor }]}>
+                          Key Finding
+                        </Text> */}
+                        <Text style={styles.insightItemSubText}>{insight}</Text>
+                      </View>
+                    </View>
+                  );
+                })
+              ) 
+              // : (
+              //   <>
+              //     {/* Default insights when no AI data */}
+              //     <View style={[styles.insightItem, { backgroundColor: '#FFF8E1' }]}>              
+              //       <Icon name="trending-up" size={22} color="#FBC02D" style={styles.insightIcon} />
+              //       <View style={styles.insightContent}>
+              //         <Text style={[styles.insightItemText, { color: '#FBC02D' }]}>Trend Analysis</Text>
+              //         <Text style={styles.insightItemSubText}>Your MELD-Na has been rising gradually over the last 6 weeks.</Text>
+              //       </View>
+              //     </View>
+                  
+              //     <View style={[styles.insightItem, { backgroundColor: '#F5F5F5' }]}>              
+              //       <Icon name="alert-circle" size={22} color="#757575" style={styles.insightIcon} />
+              //       <View style={styles.insightContent}>
+              //         <Text style={[styles.insightItemText, { color: '#757575' }]}>Risk Factor</Text>
+              //         <Text style={styles.insightItemSubText}>Creatinine fluctuations contributed to recent MELD increases.</Text>
+              //       </View>
+              //     </View>
+                  
+              //     <View style={[styles.insightItem, { backgroundColor: '#E8F5E9' }]}>              
+              //       <Icon name="minus" size={22} color="#43A047" style={styles.insightIcon} />
+              //       <View style={styles.insightContent}>
+              //         <Text style={[styles.insightItemText, { color: '#43A047' }]}>Current Status</Text>
+              //         <Text style={styles.insightItemSubText}>Latest MELD-Na is slightly above your 3-month average.</Text>
+              //       </View>
+              //     </View>
+              //   </>
+              // )
+              }
+              
+              <Text style={styles.disclaimerText}>
+                These insights are informational only and not a diagnosis.
+              </Text>
+            </View>
           </View>
 
           {/* Entries */}
@@ -251,10 +305,10 @@ const MELDHistoryScreen = ({ navigation }: { navigation: MELDHistoryScreenNaviga
               <View key={index} style={styles.entryCard}>
                 <View style={styles.entryHeader}>
                   <Text style={styles.entryDate}>{entry.date}</Text>
-                  <TouchableOpacity style={styles.viewInputsButton}>
+                  {/* <TouchableOpacity style={styles.viewInputsButton}>
                     <Icon name="list-outline" size={responsive.fontSize(16)} color={colors.primary} />
                     <Text style={styles.viewInputsText}>View Inputs</Text>
-                  </TouchableOpacity>
+                  </TouchableOpacity> */}
                 </View>
                 <View style={styles.entryScores}>
                   {selectedMeldType === 'MELD3' ? (
@@ -319,6 +373,32 @@ const styles = StyleSheet.create({
     marginBottom: responsive.margin(16),
     borderWidth: 1,
     borderColor: colors.gray200,
+  },
+  periodSelector: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    backgroundColor: colors.white,
+    // marginBottom: responsive.margin(1),
+  },
+  periodButton: {
+    paddingVertical: responsive.padding(10),
+    paddingHorizontal: responsive.padding(12),
+    marginRight: responsive.margin(8),
+    marginBottom: responsive.margin(8),
+    borderRadius: responsive.borderRadius(8),
+    backgroundColor: colors.gray100,
+    alignItems: 'center',
+  },
+  periodButtonActive: {
+    backgroundColor: colors.darkGray,
+  },
+  periodText: {
+    fontSize: responsive.fontSize(12),
+    color: colors.gray,
+    fontWeight: '500',
+  },
+  periodTextActive: {
+    color: colors.white,
   },
   dropdown: {
     flexDirection: 'row',
@@ -404,6 +484,22 @@ const styles = StyleSheet.create({
     fontSize: responsive.fontSize(13),
     color: colors.coolGray,
     marginBottom: responsive.margin(16),
+  },
+  chartHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: responsive.margin(16),
+  },
+  chartTitleContainer: {
+    flex: 1,
+  },
+  dropdownContainer: {
+    minWidth: responsive.width(100),
+    marginLeft: responsive.margin(16),
+  },
+  smallDropdown: {
+    paddingVertical: responsive.padding(6),
   },
   chart: {
     marginVertical: responsive.margin(8),
@@ -494,39 +590,7 @@ const styles = StyleSheet.create({
     fontSize: responsive.fontSize(13),
     color: colors.coolGray,
   },
-  insightsCard: {
-    backgroundColor: colors.tealGreen,
-    padding: responsive.padding(16),
-    borderRadius: responsive.borderRadius(12),
-    marginBottom: responsive.margin(16),
-  },
-  insightsTitle: {
-    fontSize: responsive.fontSize(16),
-    fontWeight: '600',
-    color: colors.white,
-    marginBottom: responsive.margin(12),
-  },
-  insightItem: {
-    flexDirection: 'row',
-    marginBottom: responsive.margin(8),
-  },
-  insightBullet: {
-    fontSize: responsive.fontSize(16),
-    color: colors.white,
-    marginRight: responsive.margin(8),
-  },
-  insightText: {
-    fontSize: responsive.fontSize(14),
-    color: colors.white,
-    flex: 1,
-    lineHeight: responsive.fontSize(20),
-  },
-  disclaimer: {
-    fontSize: responsive.fontSize(12),
-    color: colors.mintMist,
-    marginTop: responsive.margin(8),
-    fontStyle: 'italic',
-  },
+
   downloadButton: {
     flexDirection: 'row',
     backgroundColor: colors.primary,
@@ -555,6 +619,78 @@ const styles = StyleSheet.create({
     padding: responsive.padding(20),
     fontSize: responsive.fontSize(16),
     color: colors.coolGray,
+  },
+  // New AI Insights Styles (matching dashboard design)
+  newAiInsightsCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: responsive.borderRadius(20),
+    padding: responsive.padding(18),
+    marginBottom: responsive.margin(16),
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
+  },
+  insightsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: responsive.margin(16),
+  },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: responsive.width(8),
+  },
+  newInsightsTitle: {
+    fontSize: responsive.fontSize(18),
+    fontWeight: '700',
+    color: '#1A1A1A',
+  },
+  infoBadge: {
+    backgroundColor: '#E1F5FE',
+    paddingHorizontal: responsive.padding(10),
+    paddingVertical: responsive.padding(4),
+    borderRadius: responsive.borderRadius(12),
+  },
+  infoBadgeText: {
+    fontSize: responsive.fontSize(12),
+    fontWeight: '600',
+    color: '#0288D1',
+  },
+  newInsightBox: {
+    backgroundColor: 'transparent',
+  },
+  insightItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: responsive.padding(16),
+    paddingVertical: responsive.padding(14),
+    borderRadius: responsive.borderRadius(16),
+    marginBottom: responsive.margin(10),
+  },
+  insightIcon: {
+    marginRight: responsive.margin(12),
+  },
+  insightContent: {
+    flex: 1,
+  },
+  insightItemText: {
+    fontSize: responsive.fontSize(16),
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  insightItemSubText: {
+    fontSize: responsive.fontSize(13),
+    color: '#666',
+    opacity: 0.8,
+    lineHeight: responsive.height(18),
+    fontWeight: '500',
+  },
+  disclaimerText: {
+    fontSize: responsive.fontSize(12),
+    color: '#9E9E9E',
+    marginTop: responsive.margin(8),
+    textAlign: 'left',
+    lineHeight: responsive.height(18),
   },
 });
 

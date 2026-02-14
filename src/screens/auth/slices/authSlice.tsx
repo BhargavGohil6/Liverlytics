@@ -14,6 +14,9 @@ export interface User {
   email: string;
   full_name: string;
   gender_custom?: string;
+  age?: string;
+  country_code?: string;
+  weight?: string;
 }
 
 export interface AuthState {
@@ -49,6 +52,12 @@ export const loginUser = createAsyncThunk<
     const data = response.data;
     const msg = data.message;
     console.log('Login Response:', data);
+    
+    // Check if the response indicates failure - some APIs return 200 even for failures
+    if (data.status === 'fail' || (msg && msg.status === 'fail')) {
+      const errorMsg = (msg && msg.message) || data.message || 'Login failed';
+      return rejectWithValue(errorMsg);
+    }
     
     // Store user session data
     if (msg?.sid) {
@@ -90,6 +99,12 @@ export const registerUser = createAsyncThunk<
     console.log('Register Response:', data);
 
     const msg = data.message;
+
+    // Check if the response indicates failure
+    if (data.status === 'fail' || (msg && msg.status === 'fail')) {
+      const errorMsg = (msg && msg.message) || data.message || 'Registration failed';
+      return rejectWithValue(errorMsg);
+    }
 
     // Registration successful → sid milta hai → store kar do (same as login)
     if (msg?.sid) {
@@ -133,6 +148,7 @@ const authSlice = createSlice({
       state.user = null;
       state.sid = null;
       state.error = null;
+      state.login = false;
       EncryptedStorage.removeItem('user_sid');
     },
 
@@ -162,30 +178,27 @@ const authSlice = createSlice({
 
       .addCase(loginUser.fulfilled, (state, action: PayloadAction<any>) => {
         state.loading = false;
-        const msg = action.payload.message;
-
-        // Check if the response indicates failure
-        if (msg?.status === 'fail') {
-          state.error = msg.message || 'Login failed';
-          return;
-        }
-
-        // Extract user information from response
-        const userData = msg?.user_data || {};
+        const response = action.payload;
+        
+        // Handle the case where response data is at the top level of the response
+        const responseData = response.message || response;
         
         state.user = {
-          email: userData.email || msg.user || '',
-          full_name: userData.full_name || userData.first_name || 'User',
-          gender_custom: msg.gender_custom,
+          email: responseData.user || '',
+          full_name: responseData.full_name || 'User',
+          gender_custom: responseData.gender_custom,
+          age: responseData.age?.toString(),
+          country_code: responseData.country_code,
+          weight: responseData.weight?.toString(),
         };
 
-        state.gender_custom = msg.gender_custom;
-        state.sid = msg.sid;
+        state.gender_custom = responseData.gender_custom;
+        state.sid = responseData.sid;
         // Extract token from response, fallback to hardcoded if not provided
-        state.token = msg.token || `token ${msg.api_key || '72b96de8ae8c469'}:${msg.api_secret || msg.sid}`;
+        state.token = responseData.token || `token ${responseData.api_key || '72b96de8ae8c469'}:${responseData.api_secret || responseData.sid || '96b6b5699febb74'}`;
         // Extract API key and secret from response, fallback to defaults if not provided
-        state.apiKey = msg.api_key || '72b96de8ae8c469';
-        state.apiSecret = msg.api_secret || msg.sid;
+        state.apiKey = responseData.api_key || '72b96de8ae8c469';
+        state.apiSecret = responseData.api_secret || responseData.sid || '96b6b5699febb74';
         state.login = true;
       })
 
@@ -200,26 +213,26 @@ const authSlice = createSlice({
       })
       .addCase(registerUser.fulfilled, (state, action: PayloadAction<any>) => {
         state.loading = false;
-        const msg = action.payload.message;
-
-        // Check if the response indicates failure
-        if (msg?.status === 'fail') {
-          state.error = msg.message || 'Registration failed';
-          return;
-        }
-
+        const response = action.payload;
+        
+        // Handle the case where response data is at the top level of the response
+        const responseData = response.message || response;
+        
         state.user = {
-          email: msg.user || msg.email, // ya jo bhi backend bhejta ho
-          full_name: action.payload.full_name || 'User',
-          gender_custom: msg.gender_custom,
+          email: responseData.user || '',
+          full_name: responseData.full_name || 'User',
+          gender_custom: responseData.gender_custom,
+          age: responseData.age?.toString(),
+          country_code: responseData.country_code,
+          weight: responseData.weight?.toString(),
         };
-        state.gender_custom = msg.gender_custom;
-        state.sid = msg.sid;
+        state.gender_custom = responseData.gender_custom;
+        state.sid = responseData.sid;
         // Extract token from response, fallback to hardcoded if not provided
-        state.token = msg.token || `token ${msg.api_key || '72b96de8ae8c469'}:${msg.api_secret || msg.sid}`;
+        state.token = responseData.token || `token ${responseData.api_key || '72b96de8ae8c469'}:${responseData.api_secret || responseData.sid || '96b6b5699febb74'}`;
         // Extract API key and secret from response, fallback to defaults if not provided
-        state.apiKey = msg.api_key || '72b96de8ae8c469';
-        state.apiSecret = msg.api_secret || msg.sid;
+        state.apiKey = responseData.api_key || '72b96de8ae8c469';
+        state.apiSecret = responseData.api_secret || responseData.sid || '96b6b5699febb74';
         state.login = true;
       })
       .addCase(registerUser.rejected, (state, action) => {

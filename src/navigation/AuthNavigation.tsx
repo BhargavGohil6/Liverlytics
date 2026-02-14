@@ -13,9 +13,9 @@ export default function AuthNavigation() {
         <Stack.Navigator>
             <Stack.Screen name="Login" component={Login} options={{headerShown:false}}/>
             <Stack.Screen name="SinUp" component={SinUp} options={{headerShown:false}}/>
-            {/* <Stack.Screen name="OnboardingSteps" component={OnboardingSteps} options={{headerShown:false}}/>
+            <Stack.Screen name="OnboardingSteps" component={OnboardingSteps} options={{headerShown:false}}/>
             <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicy} options={{headerShown:false}}/>
-            <Stack.Screen name="TermsofUse" component={TermsofUse} options={{headerShown:false}}/> */}
+            <Stack.Screen name="TermsofUse" component={TermsofUse} options={{headerShown:false}}/>
         </Stack.Navigator>
     );
 }

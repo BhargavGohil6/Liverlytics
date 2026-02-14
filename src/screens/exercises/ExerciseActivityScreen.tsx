@@ -19,9 +19,13 @@ import { AppDispatch } from '../../redux/store';
 
 const ExerciseActivityScreen = ({ navigation }: { navigation: any }) => {
   const [syncing, setSyncing] = useState(false);
-  const [steps, setSteps] = useState('4500');
-  const [rhr, setRhr] = useState('62');
-  const [sleep, setSleep] = useState('420');
+  const [steps, setSteps] = useState('');
+  const [rhr, setRhr] = useState('');
+  const [ahr, setAhr] = useState('');
+  const [oxygen, setOxygen] = useState('');
+  const [calories, setCalories] = useState('');
+  const [bp, setBp] = useState('');
+  const [sleep, setSleep] = useState('');
   
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
@@ -31,7 +35,7 @@ const ExerciseActivityScreen = ({ navigation }: { navigation: any }) => {
     setSyncing(true);
     setTimeout(() => {
       setSyncing(false);
-      navigation.navigate('ExerciseSaved');
+      navigation.navigate('Dashboard');
     }, 2000);
   };
 
@@ -48,7 +52,7 @@ const ExerciseActivityScreen = ({ navigation }: { navigation: any }) => {
           <View style={styles.content}>
             <Text style={styles.title}>Exercise & Activity</Text>
             <Text style={styles.subtitle}>
-              Log steps, resting HR and sleep. Sync or enter manually.
+              Log exercise metrics including heart rate, oxygen, calories, and blood pressure.
             </Text>
 
             {/* Health Sync Card */}
@@ -115,6 +119,93 @@ const ExerciseActivityScreen = ({ navigation }: { navigation: any }) => {
               <Text style={styles.inputHint}>Prefilled when synced; editable anytime.</Text>
             </View>
 
+            {/* Active Heart Rate Input */}
+            <View style={styles.card}>
+              <View style={styles.inputHeader}>
+                <Icon name="fitness-outline" size={20} color="#1f2937" />
+                <Text style={styles.inputLabel}>Active Heart Rate (bpm)</Text>
+              </View>
+              <View style={styles.inputContainerWithoutBorder}>
+                <CommonTextInput
+                  value={ahr}
+                  onChangeText={setAhr}
+                  placeholder="e.g., 120"
+                  keyboardType="numeric"
+                  suffixText="bpm"
+                  style={styles.commonInputStyle}
+                  borderColor="transparent"
+                  radius={8}
+                  padding={12}
+                />
+              </View>
+              <Text style={styles.inputHint}>Enter your active heart rate during exercise.</Text>
+            </View>
+
+            {/* Oxygen Saturation Input */}
+            <View style={styles.card}>
+              <View style={styles.inputHeader}>
+                <Icon name="water-outline" size={20} color="#1f2937" />
+                <Text style={styles.inputLabel}>Oxygen Saturation (%)</Text>
+              </View>
+              <View style={styles.inputContainerWithoutBorder}>
+                <CommonTextInput
+                  value={oxygen}
+                  onChangeText={setOxygen}
+                  placeholder="e.g., 98"
+                  keyboardType="numeric"
+                  suffixText="%"
+                  style={styles.commonInputStyle}
+                  borderColor="transparent"
+                  radius={8}
+                  padding={12}
+                />
+              </View>
+              <Text style={styles.inputHint}>Blood oxygen level during activity.</Text>
+            </View>
+
+            {/* Calories Burned Input */}
+            <View style={styles.card}>
+              <View style={styles.inputHeader}>
+                <Icon name="flame-outline" size={20} color="#1f2937" />
+                <Text style={styles.inputLabel}>Calories Burned</Text>
+              </View>
+              <View style={styles.inputContainerWithoutBorder}>
+                <CommonTextInput
+                  value={calories}
+                  onChangeText={setCalories}
+                  placeholder="e.g., 350"
+                  keyboardType="numeric"
+                  suffixText="kcal"
+                  style={styles.commonInputStyle}
+                  borderColor="transparent"
+                  radius={8}
+                  padding={12}
+                />
+              </View>
+              <Text style={styles.inputHint}>Total calories burned during exercise.</Text>
+            </View>
+
+            {/* Blood Pressure Input */}
+            <View style={styles.card}>
+              <View style={styles.inputHeader}>
+                <Icon name="pulse-outline" size={20} color="#1f2937" />
+                <Text style={styles.inputLabel}>Blood Pressure</Text>
+              </View>
+              <View style={styles.inputContainerWithoutBorder}>
+                <CommonTextInput
+                  value={bp}
+                  onChangeText={setBp}
+                  placeholder="e.g., 120/80"
+                  keyboardType="default"
+                  style={styles.commonInputStyle}
+                  borderColor="transparent"
+                  radius={8}
+                  padding={12}
+                />
+              </View>
+              <Text style={styles.inputHint}>Enter systolic/diastolic (e.g., 120/80).</Text>
+            </View>
+
             {/* Sleep Input */}
             <View style={styles.card}>
               <View style={styles.inputHeader}>
@@ -148,6 +239,10 @@ const ExerciseActivityScreen = ({ navigation }: { navigation: any }) => {
                   // Prepare the exercise data to send
                   const exerciseData = {
                     resting_hr: rhr,
+                    active_hr: ahr,
+                    oxygen_saturation: oxygen,
+                    calories_burned: calories,
+                    blood_pressure: bp,
                     sleep_minutes: sleep,
                     steps: steps,
                     user: user?.email || '', // Fallback to default email
@@ -159,7 +254,7 @@ const ExerciseActivityScreen = ({ navigation }: { navigation: any }) => {
                       if (result.meta.requestStatus === 'fulfilled') {
                         // Navigate to saved screen on success
                         setTimeout(() => {
-                          navigation.navigate('ExerciseSaved');
+                          navigation.navigate('Dashboard');
                         }, 1000);
                       }
                     });

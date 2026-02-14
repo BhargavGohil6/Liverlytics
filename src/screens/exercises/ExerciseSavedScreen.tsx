@@ -26,7 +26,7 @@ const ExerciseSavedScreen = ({ navigation }) => {
 
         <TouchableOpacity
           style={styles.button}
-          onPress={() => navigation.navigate('ExerciseHistory')}
+          onPress={() => navigation.navigate('ExerciseHistoryScreen')}
         >
           <Text style={styles.buttonText}>Back to Exercise</Text>
         </TouchableOpacity>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import CountryPicker, { Country } from 'react-native-country-picker-modal';
+import responsive from '../theme/responsive';
 
 interface CountryPickerProps {
   label: string;
@@ -28,8 +29,6 @@ const CountryPickerComponent = ({
   const getCountryName = (code: string) => {
     if (!code) return placeholder;
     
-    // This is a simplified approach - in a real app you might want to use the library's built-in method
-    // or fetch from a mapping
     const countryMap: Record<string, string> = {
       'IN': 'India (IND)',
       'US': 'United States (USA)',
@@ -109,7 +108,7 @@ const CountryPickerComponent = ({
         withFilter
         withFlag
         withCountryNameButton
-        withAlphaFilter
+        // withAlphaFilter
         withCallingCode
         containerButtonStyle={styles.pickerButton}
       />
@@ -119,33 +118,33 @@ const CountryPickerComponent = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 15,
+    marginBottom: responsive.height(15),
     width: '100%',
   },
   label: {
-    marginBottom: 5,
-    fontSize: 14,
-    color: '#333',
-    fontWeight: '500',
+    marginBottom: responsive.height(6),
+    fontSize: responsive.fontSize(14),
+    color: '#4A5568',
+    fontWeight: '600',
   },
   pickerContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 12,
+    borderColor: '#E2E8F0',
+    borderRadius: responsive.borderRadius(12),
+    paddingHorizontal: responsive.padding(14),
+    height: responsive.height(52),
     backgroundColor: '#fff',
   },
   selectedText: {
-    fontSize: 16,
-    color: '#000',
+    fontSize: responsive.fontSize(16),
+    color: '#2D3748',
   },
   dropdownIcon: {
-    fontSize: 18,
-    color: '#555',
+    fontSize: responsive.fontSize(14),
+    color: '#718096',
   },
   pickerButton: {
     display: 'none',
