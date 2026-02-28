@@ -25,6 +25,7 @@ interface OnboardingState {
     age: string;
     country: string;
     weight: string;
+    weightUnit: string;
   };
   submitting: boolean;
   submitError: string | null;
@@ -50,6 +51,7 @@ const initialState: OnboardingState = {
     age: '',
     country: '',
     weight: '',
+    weightUnit: 'kg',
   },
   submitting: false,
   submitError: null,
@@ -82,6 +84,7 @@ console.log('userEmail',userEmail);
       age: basicDetails.age,
       country: basicDetails.country,
       user_weight: basicDetails.weight,
+      user_weight_unit: basicDetails.weightUnit,
       all_conditions: {
         i_agree_to_the_privacy_policy: privacyAccepted ? 1 : 0,
         i_agree_to_the_terms_of_use: termsAccepted ? 1 : 0,

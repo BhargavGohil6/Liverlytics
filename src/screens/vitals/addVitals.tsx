@@ -15,7 +15,7 @@ import {
 // Note: Install react-native-vector-icons or use expo icons
 // npm install react-native-vector-icons
 import Icon from 'react-native-vector-icons/Feather';
-import { useNavigation, useFocusEffect, useIsFocused } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, useIsFocused, useRoute } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 import { addVitals, updateVitals, VitalsData, clearVitalsState, resetVitalsSuccess, fetchTodaysVitalsForUser, fetchTodayVitalsById, VitalsApiResponse, VitalRecord } from './slices/vitalsSlice';
 import { RootState, AppDispatch } from '../../redux/store';
@@ -29,6 +29,7 @@ interface UserData {
 
 export default function AddVitalsScreen() {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
   const dispatch: AppDispatch = useDispatch();
   const isFocused = useIsFocused();
   
@@ -136,37 +137,56 @@ export default function AddVitalsScreen() {
     return unsubscribe;
   }, [navigation, dispatch]);
   
-  // Populate form fields when todayData is available
+  // Check route params on mount to determine if we're updating or adding
+  useEffect(() => {
+    // Check if we're updating an existing vital record
+    const vitalIdFromParams = route.params?.vitalId;
+    if (vitalIdFromParams) {
+      setVitalId(vitalIdFromParams);
+      // Fetch the specific vital record to update
+      dispatch(fetchTodayVitalsById(vitalIdFromParams));
+    } else {
+      // We're adding a new vital, so clear any existing form data
+      setHeartRate('');
+      setRestingHR('');
+      setGlucose('');
+      setSleepMinutes('');
+      setSpo2('');
+      setWeight('');
+      setSystolic('');
+      setDiastolic('');
+      setVitalId(null);
+    }
+  }, [route.params, user?.email, dispatch]);
+  
+  // Populate form fields when todayData is available and we're updating (not adding new)
   useEffect(() => {
     // Check if component is still mounted
     let isMounted = true;
     
-    if (todayData && todayData.data && isMounted) {
+    // Only populate if we have a vitalId (meaning we're updating an existing record)
+    if (vitalId && todayData && todayData.data && isMounted) {
+      console.log('Updating existing vital, populating form fields');
       console.log('Today Data:', todayData);
       console.log('Current User:', user);
+      console.log('Vital ID:', vitalId);
+      
       // Check if todayData.data is an array (multiple records)
       if (Array.isArray(todayData.data)) {
         console.log('Multiple records found:', todayData.data);
-        // Find the record that belongs to the current user
-        const currentUserEmail = user?.email || '';
-        let userRecord = todayData.data.find(record => record.user === currentUserEmail);
+        // Find the record that matches the vitalId we're updating
+        const recordToUpdate = todayData.data.find(record => record.name === vitalId);
         
-        // If no record found for current user, use the first record
-        if (!userRecord && todayData.data.length > 0) {
-          userRecord = todayData.data[0];
-          console.log('Using first record as fallback:', userRecord);
-        }
-        
-        if (userRecord && isMounted) {
-          console.log('User record found:', userRecord);
-          populateFormFields(userRecord);
+        if (recordToUpdate && isMounted) {
+          console.log('Record to update found:', recordToUpdate);
+          populateFormFields(recordToUpdate);
         } else {
-          console.log('No record found for user:', currentUserEmail);
+          console.log('No record found for vitalId:', vitalId);
         }
       } else {
         // Single record
         console.log('Single record found:', todayData.data);
-        if (isMounted) {
+        if (isMounted && (todayData.data as VitalRecord).name === vitalId) {
           populateFormFields(todayData.data as VitalRecord);
         }
       }
@@ -176,7 +196,7 @@ export default function AddVitalsScreen() {
     return () => {
       isMounted = false;
     };
-  }, [todayData, user]);
+  }, [todayData, user, vitalId]);
   
   const populateFormFields = (record: VitalRecord) => {
     console.log('Populating form fields with record:', record);

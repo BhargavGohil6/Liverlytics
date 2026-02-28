@@ -17,6 +17,7 @@ import colors from '../../theme/color';
 import responsive from '../../theme/responsive';
 import font from '../../theme/fonts';
 import CommonLoader from '../../components/CommonLoader';
+import { getDailyHealthTargets } from '../../screens/profile/slices/profileSlice';
 
 const { width } = Dimensions.get('window');
 
@@ -27,10 +28,12 @@ interface SleepChartScreenProps {
 export default function SleepChartScreen({ navigation }: SleepChartScreenProps) {
   const dispatch = useDispatch<AppDispatch>();
   const { todayData, loading, error } = useSelector((state: any) => state.vitals);
+  const { dailyHealthTargets } = useSelector((state: any) => state.profile);
   
   const [sleepData, setSleepData] = useState<number[]>([]);
   const [sleepLabels, setSleepLabels] = useState<string[]>([]);
   const [last7DaysData, setLast7DaysData] = useState<any[]>([]);
+  const [sleepGoal, setSleepGoal] = useState<number>(0);
 
   // Get user email from auth state
   const userEmail = useSelector((state: any) => state.auth?.user?.email);
@@ -38,6 +41,7 @@ export default function SleepChartScreen({ navigation }: SleepChartScreenProps) 
   useEffect(() => {
     if (userEmail) {
       dispatch(fetchAllVitalsForUser(userEmail) as any);
+      dispatch(getDailyHealthTargets(userEmail) as any);
     }
   }, [dispatch, userEmail]);
 
@@ -62,6 +66,7 @@ export default function SleepChartScreen({ navigation }: SleepChartScreenProps) 
       last7Days.forEach((record: any) => {
         // Handle sleep in minutes
         const sleepMinutes = record.sleep || record.sleep_minutes || 0;
+        // Store minutes for display conversion
         sleepValues.push(Number(sleepMinutes) || 0);
         
         // Format date for display
@@ -78,22 +83,33 @@ export default function SleepChartScreen({ navigation }: SleepChartScreenProps) 
   }, [todayData]);
 
   // Calculate statistics
-  const avgSleepMinutes = sleepData.length > 0 
-    ? (sleepData.reduce((sum, value) => sum + value, 0) / sleepData.length)
-    : 0;
+  const avgSleepHours = sleepData.length > 0 
+    ? (sleepData.reduce((sum, value) => sum + value, 0) / sleepData.length).toFixed(1)
+    : '0';
   
-  const avgSleepHours = (avgSleepMinutes / 60).toFixed(1);
   const minSleep = sleepData.length > 0 ? Math.min(...sleepData) : 0;
   const maxSleep = sleepData.length > 0 ? Math.max(...sleepData) : 0;
 
-  // Convert minutes to hours for display
-  const sleepDataHours = sleepData.map(minutes => minutes / 60);
+  // Get sleep goal from profile
+  useEffect(() => {
+    if (dailyHealthTargets && dailyHealthTargets.length > 0) {
+      const goal = parseFloat(dailyHealthTargets[0].sleep_goal) || 0;
+      setSleepGoal(goal);
+    }
+  }, [dailyHealthTargets]);
+
+  // Convert minutes to hours and minutes for display
+  const sleepDataHoursMinutes = sleepData.map(minutes => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return { hours, minutes: mins };
+  });
 
   const chartData = {
     labels: sleepLabels,
     datasets: [
       {
-        data: sleepDataHours,
+        data: sleepData.map(minutes => minutes / 60), // Convert to hours for chart
         strokeWidth: 3,
         color: (opacity = 1) => `rgba(156, 39, 176, ${opacity})`, // Purple color
       },
@@ -104,7 +120,7 @@ export default function SleepChartScreen({ navigation }: SleepChartScreenProps) 
     backgroundColor: colors.white,
     backgroundGradientFrom: colors.white,
     backgroundGradientTo: colors.white,
-    decimalPlaces: 1,
+    decimalPlaces: 1, // Show 1 decimal place for hours
     color: (opacity = 1) => `rgba(51, 51, 51, ${opacity})`,
     labelColor: (opacity = 1) => `rgba(102, 102, 102, ${opacity})`,
     style: {
@@ -142,7 +158,7 @@ export default function SleepChartScreen({ navigation }: SleepChartScreenProps) 
         <View style={styles.chartCard}>
           <View style={styles.chartHeader}>
             <Text style={styles.chartTitle}>7-Day Trend</Text>
-            <Text style={styles.chartSubtitle}>Sleep Duration (hours)</Text>
+            <Text style={styles.chartSubtitle}>Sleep Duration (hr & min)</Text>
           </View>
           
           {error ? (
@@ -193,17 +209,23 @@ export default function SleepChartScreen({ navigation }: SleepChartScreenProps) 
             
             <View style={styles.statsGrid}>
               <View style={styles.statItem}>
-                <Text style={styles.statValue}>{avgSleepHours}h</Text>
+                <Text style={styles.statValue}>
+                  {Math.floor(parseFloat(avgSleepHours))}h {Math.round((parseFloat(avgSleepHours) % 1) * 60)}m
+                </Text>
                 <Text style={styles.statLabel}>Average</Text>
               </View>
               
               <View style={styles.statItem}>
-                <Text style={styles.statValue}>{(minSleep / 60).toFixed(1)}h</Text>
+                <Text style={styles.statValue}>
+                  {Math.floor(minSleep)}h {Math.round((minSleep % 1) * 60)}m
+                </Text>
                 <Text style={styles.statLabel}>Minimum</Text>
               </View>
               
               <View style={styles.statItem}>
-                <Text style={styles.statValue}>{(maxSleep / 60).toFixed(1)}h</Text>
+                <Text style={styles.statValue}>
+                  {Math.floor(maxSleep)}h {Math.round((maxSleep % 1) * 60)}m
+                </Text>
                 <Text style={styles.statLabel}>Maximum</Text>
               </View>
             </View>
@@ -219,7 +241,7 @@ export default function SleepChartScreen({ navigation }: SleepChartScreenProps) 
               const sleepMinutes = record.sleep || record.sleep_minutes || 0;
               const hours = Math.floor(sleepMinutes / 60);
               const minutes = sleepMinutes % 60;
-              const sleepDisplay = `${hours}h ${minutes}m`;
+              const sleepDisplay = `${hours} hr and ${minutes} min`;
               
               const date = new Date(record.date || '');
               const formattedDate = date.toLocaleDateString('en-US', {
@@ -243,10 +265,13 @@ export default function SleepChartScreen({ navigation }: SleepChartScreenProps) 
                   </View>
                   <View style={styles.readingRight}>
                     <Text style={styles.readingValue}>{sleepDisplay}</Text>
+                    <Text style={styles.readingStatus}>
+                      {sleepMinutes / 60 < sleepGoal ? 'Less' : ''}
+                    </Text>
                     <View style={[
                       styles.statusIndicator,
-                      sleepMinutes < 360 ? styles.statusLow : // < 6 hours
-                      sleepMinutes > 540 ? styles.statusHigh : // > 9 hours
+                      sleepMinutes / 60 < sleepGoal ? styles.statusLow : // Less than goal
+                      sleepMinutes / 60 > (sleepGoal + 3) ? styles.statusHigh : // Significantly more than goal
                       styles.statusNormal
                     ]} />
                   </View>
@@ -308,26 +333,26 @@ const styles = StyleSheet.create({
   },
   chartCard: {
     backgroundColor: colors.white,
-    borderRadius: responsive.borderRadius(16),
-    padding: responsive.padding(20),
-    marginBottom: responsive.margin(16),
+    borderRadius: responsive.borderRadius(12),
+    padding: responsive.padding(16),
+    marginBottom: responsive.margin(12),
     shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
   },
   chartHeader: {
     marginBottom: responsive.margin(16),
   },
   chartTitle: {
-    fontSize: font.xl,
+    fontSize: font.lg,
     fontWeight: '700',
     color: colors.darkGray,
-    marginBottom: responsive.margin(4),
+    marginBottom: responsive.margin(2),
   },
   chartSubtitle: {
-    fontSize: font.sm,
+    fontSize: font.xs,
     color: colors.gray666,
   },
   chartContainer: {
@@ -395,14 +420,14 @@ const styles = StyleSheet.create({
   },
   statsCard: {
     backgroundColor: colors.white,
-    borderRadius: responsive.borderRadius(16),
-    padding: responsive.padding(20),
-    marginBottom: responsive.margin(16),
+    borderRadius: responsive.borderRadius(12),
+    padding: responsive.padding(16),
+    marginBottom: responsive.margin(12),
     shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
   },
   statsTitle: {
     fontSize: font.lg,
@@ -418,25 +443,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statValue: {
-    fontSize: font.h4,
+    fontSize: font.xl,
     fontWeight: '700',
     color: '#9C27B0',
-    marginBottom: responsive.margin(4),
+    marginBottom: responsive.margin(2),
   },
   statLabel: {
-    fontSize: font.sm,
+    fontSize: font.xs,
     color: colors.gray666,
   },
   readingsCard: {
     backgroundColor: colors.white,
-    borderRadius: responsive.borderRadius(16),
-    padding: responsive.padding(20),
-    marginBottom: responsive.margin(16),
+    borderRadius: responsive.borderRadius(12),
+    padding: responsive.padding(16),
+    marginBottom: responsive.margin(12),
     shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
   },
   readingsTitle: {
     fontSize: font.lg,
@@ -448,32 +473,37 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: responsive.padding(12),
-    borderBottomWidth: 1,
+    paddingVertical: responsive.padding(8),
+    borderBottomWidth: 0.5,
     borderBottomColor: colors.gray200,
   },
   readingLeft: {
     flex: 1,
   },
   readingDate: {
-    fontSize: font.base,
+    fontSize: font.sm,
     fontWeight: '600',
     color: colors.darkGray,
-    marginBottom: responsive.margin(2),
+    marginBottom: responsive.margin(1),
   },
   readingTime: {
-    fontSize: font.sm,
+    fontSize: font.xs,
     color: colors.gray666,
   },
   readingRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: responsive.padding(8),
+    gap: responsive.padding(6),
   },
   readingValue: {
-    fontSize: font.base,
+    fontSize: font.sm,
     fontWeight: '600',
     color: colors.darkGray,
+  },
+  readingStatus: {
+    fontSize: font.xs,
+    color: colors.orange,
+    fontWeight: '600',
   },
   statusIndicator: {
     width: 12,
@@ -491,13 +521,13 @@ const styles = StyleSheet.create({
   },
   infoCard: {
     backgroundColor: colors.white,
-    borderRadius: responsive.borderRadius(16),
-    padding: responsive.padding(20),
+    borderRadius: responsive.borderRadius(12),
+    padding: responsive.padding(16),
     shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
   },
   infoHeader: {
     flexDirection: 'row',

@@ -1,5 +1,5 @@
 // src/screens/ExerciseHistoryScreen.tsx
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
@@ -12,7 +12,6 @@ import {
   StyleProp,
   ViewStyle,
   TextStyle,
-  ScrollViewComponent,
   Modal,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -65,6 +64,12 @@ const ExerciseHistoryScreen = ({ navigation }: ExerciseHistoryScreenProps) => {
   const [pageSize] = useState<number>(5); // Initial page size is 5 records
   const [paginatedLogs, setPaginatedLogs] = useState<LogEntry[]>([]);
   const [hasMoreLogs, setHasMoreLogs] = useState<boolean>(false);
+
+  // Refs and state for chart tabs scrolling
+  const scrollViewRef = useRef<ScrollView>(null);
+  const [scrollViewOffset, setScrollViewOffset] = useState<number>(0);
+  const [showLeftArrow, setShowLeftArrow] = useState<boolean>(false);
+  const [showRightArrow, setShowRightArrow] = useState<boolean>(true);
 
   const convertMinutesToHours = (minutes: number): string => {
     const hours = Math.floor(minutes / 60);
@@ -464,7 +469,36 @@ const ExerciseHistoryScreen = ({ navigation }: ExerciseHistoryScreenProps) => {
             </Text>
           </View>
           <View style={styles.chartTabsContainer}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chartTabs}>
+            {showLeftArrow && (
+              <TouchableOpacity 
+                style={styles.arrowButton} 
+                onPress={() => {
+                  const newOffset = Math.max(0, scrollViewOffset - 100);
+                  scrollViewRef.current?.scrollTo({ x: newOffset, y: 0, animated: true });
+                }}
+                accessibilityLabel="Scroll left"
+              >
+                <Icon name="chevron-back" size={20} color={colors.darkGray} />
+              </TouchableOpacity>
+            )}
+            <ScrollView 
+              ref={scrollViewRef}
+              horizontal 
+              showsHorizontalScrollIndicator={false} 
+              contentContainerStyle={styles.chartTabs}
+              onScroll={(event) => {
+                setScrollViewOffset(event.nativeEvent.contentOffset.x);
+                // Update arrow visibility based on scroll position
+                const offsetX = event.nativeEvent.contentOffset.x;
+                setShowLeftArrow(offsetX > 10); // Show left arrow if scrolled more than 10px
+                
+                // For right arrow visibility, we need to calculate if there's more content
+                const { width } = event.nativeEvent.layoutMeasurement;
+                const contentWidth = event.nativeEvent.contentSize.width;
+                setShowRightArrow(width + offsetX < contentWidth - 10);
+              }}
+              scrollEventThrottle={16}
+            >
               {['Steps', 'Sleep', 'Resting HR', 'Active HR', 'Oxygen', 'Calories'].map((tab) => (
                 <TouchableOpacity 
                   accessibilityRole="button" 
@@ -476,6 +510,18 @@ const ExerciseHistoryScreen = ({ navigation }: ExerciseHistoryScreenProps) => {
                 </TouchableOpacity>
               ))}
             </ScrollView>
+            {showRightArrow && (
+              <TouchableOpacity 
+                style={styles.arrowButton} 
+                onPress={() => {
+                  const newOffset = scrollViewOffset + 100;
+                  scrollViewRef.current?.scrollTo({ x: newOffset, y: 0, animated: true });
+                }}
+                accessibilityLabel="Scroll right"
+              >
+                <Icon name="chevron-forward" size={20} color={colors.darkGray} />
+              </TouchableOpacity>
+            )}
           </View>
           <View style={styles.chartLegend}>
             <View style={styles.legendItem}>
@@ -1005,10 +1051,16 @@ const styles = StyleSheet.create({
     marginTop: responsive.margin(4),
   },
   chartTabsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: responsive.margin(12),
+    paddingRight: responsive.padding(8),
+    justifyContent: 'flex-start',
   },
   chartTabs: {
     flexDirection: 'row',
+    alignItems: 'center',
+    paddingRight: responsive.padding(30),
   },
   chartTab: {
     paddingVertical: responsive.padding(6),
@@ -1026,6 +1078,11 @@ const styles = StyleSheet.create({
   },
   chartTabTextActive: {
     color: colors.white,
+  },
+  arrowButton: {
+    paddingHorizontal: responsive.padding(4),
+    paddingVertical: responsive.padding(8),
+    justifyContent: 'center',
   },
   chartLegend: {
     flexDirection: 'row',

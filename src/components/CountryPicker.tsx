@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import CountryPicker, { Country } from 'react-native-country-picker-modal';
-import responsive from '../theme/responsive';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 interface CountryPickerProps {
   label: string;
@@ -9,6 +9,7 @@ interface CountryPickerProps {
   value: string;
   onValueChange: (value: string) => void;
   style?: any;
+  containerButtonStyle?: any;
 }
 
 const CountryPickerComponent = ({
@@ -17,6 +18,7 @@ const CountryPickerComponent = ({
   value,
   onValueChange,
   style,
+  containerButtonStyle,
 }: CountryPickerProps) => {
   const [showPicker, setShowPicker] = useState(false);
 
@@ -93,11 +95,11 @@ const CountryPickerComponent = ({
     <View style={[styles.container, style]}>
       {label ? <Text style={styles.label}>{label}</Text> : null}
 
-      <TouchableOpacity style={styles.pickerContainer} onPress={() => setShowPicker(true)}>
+      <TouchableOpacity style={containerButtonStyle || styles.pickerContainer} onPress={() => setShowPicker(true)}>
         <Text style={styles.selectedText}>
           {value ? getCountryName(value) : placeholder}
         </Text>
-        <Text style={styles.dropdownIcon}>▼</Text>
+        <Icon name="chevron-down" size={20} color="#9ca3af" />
       </TouchableOpacity>
 
       <CountryPicker
@@ -118,12 +120,11 @@ const CountryPickerComponent = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: responsive.height(15),
     width: '100%',
   },
   label: {
-    marginBottom: responsive.height(6),
-    fontSize: responsive.fontSize(14),
+    marginBottom: 6,
+    fontSize: 14,
     color: '#4A5568',
     fontWeight: '600',
   },
@@ -131,21 +132,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: responsive.borderRadius(12),
-    paddingHorizontal: responsive.padding(14),
-    height: responsive.height(52),
-    backgroundColor: '#fff',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
   },
   selectedText: {
-    fontSize: responsive.fontSize(16),
-    color: '#2D3748',
+    fontSize: 15,
+    color: '#1f2937',
   },
-  dropdownIcon: {
-    fontSize: responsive.fontSize(14),
-    color: '#718096',
-  },
+
   pickerButton: {
     display: 'none',
   },

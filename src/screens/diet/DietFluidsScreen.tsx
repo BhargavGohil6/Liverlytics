@@ -30,6 +30,7 @@ const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
   const [itemName, setItemName] = useState('');
   const [sodium, setSodium] = useState('');
   const [fluid, setFluid] = useState('');
+  const [protein, setProtein] = useState('');
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [selectedTime, setSelectedTime] = useState(new Date());
   const [showTimePicker, setShowTimePicker] = useState(false);
@@ -46,7 +47,7 @@ const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
   const { user } = useSelector((state: RootState) => state.auth);
 
   const handleAddEntry = () => {
-    if (!itemName || !sodium || !fluid) {
+    if (!itemName || !sodium || !fluid || !protein) {
       Toast.show({
         type: 'error',
         text1: 'Error',
@@ -62,6 +63,7 @@ const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
       item_name: itemName,
       sodium: sodium,
       fluid_ml: fluid,
+      protein: protein,
       user: userEmail,
     };
     
@@ -78,6 +80,7 @@ const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
         setItemName('');
         setSodium('');
         setFluid('');
+        setProtein('');
         setSelectedTime(new Date()); // Reset to current time
         // Refresh today's diet to get updated totals and limits
         dispatch(fetchTodayDiet());
@@ -86,7 +89,7 @@ const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
   };
 
   const handleUpdateEntry = () => {
-    if (!itemName || !sodium || !fluid || !editingEntryId) {
+    if (!itemName || !sodium || !fluid || !protein || !editingEntryId) {
       Toast.show({
         type: 'error',
         text1: 'Error',
@@ -103,6 +106,7 @@ const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
       item_name: itemName,
       sodium: sodium,
       fluid_ml: fluid,
+      protein: protein,
       user: userEmail,
     };
     
@@ -119,6 +123,7 @@ const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
         setItemName('');
         setSodium('');
         setFluid('');
+        setProtein('');
         setEditingEntryId(null);
         setSelectedTime(new Date()); // Reset to current time
         // Refresh today's diet to get updated totals and limits
@@ -145,6 +150,7 @@ const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
           setItemName('');
           setSodium('');
           setFluid('');
+          setProtein('');
           setEditingEntryId(null);
         }
       }
@@ -157,6 +163,7 @@ const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
       setItemName(entry.item_name || '');
       setSodium(entry.sodium || '');
       setFluid(entry.fluid_ml || '');
+      setProtein(entry.protein || '');
       setEditingEntryId(entry.name);
       
       // Set the time if it exists in customTimes or use creation time
@@ -173,6 +180,7 @@ const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
     setItemName('');
     setSodium('');
     setFluid('');
+    setProtein('');
     setEditingEntryId(null);
   };
 
@@ -213,11 +221,12 @@ const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
     if (overall_totals) {
       return {
         totalSodium: overall_totals.sodium || 0,
-        totalFluid: overall_totals.fluid_ml || 0
+        totalFluid: overall_totals.fluid_ml || 0,
+        totalProtein: (overall_totals as any).protein || 0
       };
     }
     
-    if (!entries) return { totalSodium: 0, totalFluid: 0 };
+    if (!entries) return { totalSodium: 0, totalFluid: 0, totalProtein: 0 };
     
     // Get today's date for comparison
     const today = new Date();
@@ -236,12 +245,13 @@ const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
     return todayEntries.reduce((totals, entry) => {
       return {
         totalSodium: totals.totalSodium + (parseInt(entry.sodium) || 0),
-        totalFluid: totals.totalFluid + (parseInt(entry.fluid_ml) || 0)
+        totalFluid: totals.totalFluid + (parseInt(entry.fluid_ml) || 0),
+        totalProtein: totals.totalProtein + (parseInt((entry as any).protein) || 0)
       };
-    }, { totalSodium: 0, totalFluid: 0 });
+    }, { totalSodium: 0, totalFluid: 0, totalProtein: 0 });
   };
 
-  const { totalSodium, totalFluid } = calculateTotals();
+  const { totalSodium, totalFluid, totalProtein } = calculateTotals();
 
   // Orientation handling for responsive layout
   const { width, height } = useWindowDimensions();
@@ -252,24 +262,29 @@ const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
     // Default targets
     const defaultSodiumTarget = 2000; // mg
     const defaultFluidTarget = 1800; // mL
+    const defaultProteinTarget = 50; // g
     
     // Use limits from API if available
     const sodiumTarget = daily_limits?.daily_sodium_limit || defaultSodiumTarget;
     const fluidTarget = daily_limits?.daily_fluid_limit || defaultFluidTarget;
+    const proteinTarget = (daily_limits as any)?.daily_protein_limit || defaultProteinTarget;
     
     // Check if current totals exceed targets
     const isSodiumExceeded = totalSodium > sodiumTarget;
     const isFluidExceeded = totalFluid > fluidTarget;
+    const isProteinExceeded = totalProtein > proteinTarget;
     
     return {
       isSodiumExceeded,
       isFluidExceeded,
+      isProteinExceeded,
       sodiumTarget,
-      fluidTarget
+      fluidTarget,
+      proteinTarget
     };
   };
   
-  const { isSodiumExceeded, isFluidExceeded, sodiumTarget, fluidTarget } = checkIfTargetsExceeded();
+  const { isSodiumExceeded, isFluidExceeded, isProteinExceeded, sodiumTarget, fluidTarget, proteinTarget } = checkIfTargetsExceeded();
   
   // Determine alert text based on exceeded targets
   const getAlertText = () => {
@@ -281,6 +296,10 @@ const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
     
     if (isFluidExceeded) {
       exceededItems.push(`Fluid (${totalFluid.toLocaleString()}mL > ${fluidTarget}mL)`);
+    }
+    
+    if (isProteinExceeded) {
+      exceededItems.push(`Protein (${totalProtein.toLocaleString()}g > ${proteinTarget}g)`);
     }
     
     if (exceededItems.length > 0) {
@@ -307,16 +326,20 @@ const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
           <View style={styles.totalsCard}>
             <Text style={styles.totalsTitle}>Today's Totals</Text>
             <View style={styles.totalsRow}>
-              <View style={[styles.totalItem, { width: isLandscape ? '48%' : '100%', marginBottom: isLandscape ? 0 : responsive.margin(8) }] }>
+              <View style={[styles.totalItem, { flex: 1, marginRight: responsive.margin(8), marginBottom: responsive.margin(8) }] }>
                 <Text style={styles.totalLabel}>Total Sodium Today</Text>
                 <Text style={styles.totalValue}>{totalSodium.toLocaleString()} mg</Text>
               </View>
-              <View style={[styles.totalItem, { width: isLandscape ? '48%' : '100%' }] }>
+              <View style={[styles.totalItem, { flex: 1, marginRight: responsive.margin(8), marginBottom: responsive.margin(8) }] }>
                 <Text style={styles.totalLabel}>Total Fluid Today</Text>
                 <Text style={styles.totalValue}>{totalFluid.toLocaleString()} mL</Text>
               </View>
+              <View style={[styles.totalItem, { flex: 1 }] }>
+                <Text style={styles.totalLabel}>Total Protein Today</Text>
+                <Text style={styles.totalValue}>{totalProtein.toLocaleString()} g</Text>
+              </View>
             </View>
-            <Text style={[styles.timestamp, (isSodiumExceeded || isFluidExceeded) ? styles.alertText : null]}>
+            <Text style={[styles.timestamp, (isSodiumExceeded || isFluidExceeded || isProteinExceeded) ? styles.alertText : null]}>
               {getAlertText()}
             </Text>
           </View>
@@ -351,13 +374,25 @@ const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
             <Text style={styles.inputLabel}>Fluid (mL)</Text>
             <View style={[styles.inputContainer, { flexDirection: isLandscape ? 'row' : 'row' }] }>
               <TextInput
-                style={[styles.input, { flex: 1 }]}
+                style={[styles.input, { flex: 1 }]} 
                 value={fluid}
                 onChangeText={setFluid}
                 placeholder="e.g., 240"
                 keyboardType="numeric"
               />
               <Icon name="water-outline" size={responsive.fontSize(20)} color={colors.coolGray} />
+            </View>
+            
+            <Text style={styles.inputLabel}>Protein (g)</Text>
+            <View style={[styles.inputContainer, { flexDirection: isLandscape ? 'row' : 'row' }] }>
+              <TextInput
+                style={[styles.input, { flex: 1 }]} 
+                value={protein}
+                onChangeText={setProtein}
+                placeholder="e.g., 25"
+                keyboardType="numeric"
+              />
+              <Icon name="nutrition-outline" size={responsive.fontSize(20)} color={colors.coolGray} />
             </View>
 
             <View style={styles.timestampRow}>
@@ -440,7 +475,7 @@ const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
                     >
                       <Text style={styles.entryName}>{entry.item_name}</Text>
                       <Text style={styles.entryDetails}>
-                        Sodium: {entry.sodium} mg • Fluid: {entry.fluid_ml} mL
+                        Sodium: {entry.sodium} mg • Fluid: {entry.fluid_ml} mL{entry && (entry as any).protein ? ` • Protein: ${(entry as any).protein} g` : ''}
                       </Text>
                       <Text style={styles.entryTime}>
                         • {entry.name && customTimes[entry.name] 
@@ -591,43 +626,61 @@ const styles = StyleSheet.create({
   },
   totalsCard: {
     backgroundColor: colors.white,
-    padding: responsive.padding(16),
-    borderRadius: responsive.borderRadius(12),
+    padding: responsive.padding(20),
+    borderRadius: responsive.borderRadius(16),
     marginBottom: responsive.margin(16),
     borderWidth: 1,
     borderColor: colors.gray200,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   totalsTitle: {
-    fontSize: responsive.fontSize(16),
-    fontWeight: '600',
+    fontSize: responsive.fontSize(18),
+    fontWeight: '700',
     color: colors.darkGray,
     marginBottom: responsive.margin(16),
+    textAlign: 'center',
   },
   totalsRow: {
     flexDirection: 'row',
-    gap: responsive.margin(12),
+    gap: responsive.margin(8),
     marginBottom: responsive.margin(8),
     flexWrap: 'wrap',
   },
   totalItem: {
     flex: 1,
-    backgroundColor: colors.gray100,
-    padding: responsive.padding(12),
-    borderRadius: responsive.borderRadius(8),
+    backgroundColor: colors.white,
+    padding: responsive.padding(16),
+    borderRadius: responsive.borderRadius(12),
+    borderWidth: 1,
+    borderColor: colors.gray200,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   totalLabel: {
     fontSize: responsive.fontSize(12),
     color: colors.coolGray,
-    marginBottom: responsive.margin(6),
+    marginBottom: responsive.margin(4),
+    textAlign: 'center',
   },
   totalValue: {
-    fontSize: responsive.fontSize(20),
+    fontSize: responsive.fontSize(22),
     fontWeight: '700',
-    color: colors.darkGray,
+    color: colors.primary,
+    textAlign: 'center',
   },
   timestamp: {
-    fontSize: responsive.fontSize(12),
-    color: colors.gray,
+    fontSize: responsive.fontSize(13),
+    color: colors.coolGray,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
   alertText: {
     color: colors.alertRed,

@@ -32,6 +32,9 @@ const BasicDetailsScreen = () => {
     if (!basicDetails.weight && user?.weight) {
       updates.weight = user.weight.toString();
     }
+    if (!basicDetails.weightUnit && user?.weight_unit) {
+      updates.weightUnit = user.weight_unit;
+    }
     
     if (Object.keys(updates).length > 0) {
       dispatch(updateBasicDetails(updates));
@@ -42,6 +45,11 @@ const BasicDetailsScreen = () => {
     { label: 'Male', value: 'Male' },
     { label: 'Female', value: 'Female' },
     { label: 'Other', value: 'Other' },
+  ];
+
+  const weightUnitOptions = [
+    { label: 'kg', value: 'kg' },
+    { label: 'lbs', value: 'lbs' },
   ];
 
   return (
@@ -97,15 +105,26 @@ const BasicDetailsScreen = () => {
           />
         </View>
 
-        <View style={styles.inputGap}>
-          <CommonTextInput
-            label="Current weight"
-            placeholder="e.g., 72"
-            value={basicDetails.weight}
-            keyboardType="numeric"
-            onChangeText={(text) => dispatch(updateBasicDetails({ weight: text }))}
-            suffixText="kg"
-          />
+        <View style={[styles.row, styles.inputGap]}>
+          <View style={styles.halfInputContainer}>
+            <CommonTextInput
+              label="Current weight"
+              placeholder="e.g., 72"
+              value={basicDetails.weight}
+              keyboardType="numeric"
+              onChangeText={(text) => dispatch(updateBasicDetails({ weight: text }))}
+            />
+          </View>
+          <View style={styles.halfInputContainer}>
+            <CommonDropdown
+              label="Weight unit"
+              placeholder="Select"
+              value={basicDetails.weightUnit}
+              options={weightUnitOptions}
+              onValueChange={(value) => dispatch(updateBasicDetails({ weightUnit: value }))}
+              style={styles.dropdownStyle}
+            />
+          </View>
         </View>
       </View>
 
