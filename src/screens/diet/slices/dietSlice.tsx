@@ -8,6 +8,7 @@ export interface DietEntry {
   item_name: string;
   sodium: string;
   fluid_ml: string;
+  protein: string;
   creation?: string;
   user?: string;
 }
@@ -15,11 +16,13 @@ export interface DietEntry {
 export interface DailyLimits {
   daily_sodium_limit: number;
   daily_fluid_limit: number;
+  daily_protein_limit: number;
 }
 
 export interface OverallTotals {
   sodium: number;
   fluid_ml: number;
+  protein: number;
 }
 
 export interface DietApiResponse {
@@ -163,6 +166,7 @@ export const addDietEntry = createAsyncThunk<
       item_name: dietData.item_name,
       sodium: dietData.sodium,
       fluid_ml: dietData.fluid_ml,
+      protein: dietData.protein,
       user: dietData.user,
     };
 
@@ -207,8 +211,9 @@ export const updateDietEntry = createAsyncThunk<
     const payload = {
       diet_and_fluids_id: dietData.diet_and_fluids_id,
       item_name: dietData.item_name,
-      sodium: dietData.sodium, // Add missing sodium field
+      sodium: dietData.sodium,
       fluid_ml: dietData.fluid_ml,
+      protein: dietData.protein,
       user: dietData.user,
     };
 

@@ -250,6 +250,13 @@ const VitalsHistoryScreen: React.FC<VitalsHistoryScreenProps> = ({ navigation })
             <Text style={styles.title}>Vitals History</Text>
             <Text style={styles.subtitle}>Track changes in your health over time</Text>
           </View>
+          {/* Add Entry Button */}
+          <View style={styles.topRightButtonContainer}>
+            <TouchableOpacity style={styles.addButton} onPress={() => navigation.navigate('AddVitalsScreen' as never)}>
+              <Icon name="add" size={responsive.fontSize(16)} color="#fff" />
+              <Text style={styles.addButtonTextSmall}>Add</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Time Period Selector */}
@@ -438,13 +445,7 @@ const VitalsHistoryScreen: React.FC<VitalsHistoryScreenProps> = ({ navigation })
           )}
         </View>
 
-        {/* Add Entry Button */}
-        {/* <View style={styles.addButtonContainer}>
-          <TouchableOpacity style={styles.addButton} onPress={()=>navigation.navigate('AddVitalsScreen')}>
-            <Icon name="add" size={responsive.fontSize(20)} color="#fff" />
-            <Text style={styles.addButtonText}>Add Entry</Text>
-          </TouchableOpacity>
-        </View> */}
+
       </ScrollView>
       
       {/* Calendar Modal */}
@@ -590,6 +591,11 @@ const styles = StyleSheet.create({
   titleTextContainer: {
     marginLeft: responsive.margin(16),
     flex: 1,
+  },
+  topRightButtonContainer: {
+    position: 'absolute',
+    right: responsive.margin(16),
+    top: responsive.margin(20),
   },
   title: {
     fontSize: responsive.fontSize(24),
@@ -820,9 +826,9 @@ const styles = StyleSheet.create({
   addButton: {
     flexDirection: 'row',
     backgroundColor: '#52a64a',
-    paddingVertical: responsive.padding(12),
-    paddingHorizontal: responsive.padding(24),
-    borderRadius: responsive.borderRadius(8),
+    paddingVertical: responsive.padding(8),
+    paddingHorizontal: responsive.padding(12),
+    borderRadius: responsive.borderRadius(20),
     alignItems: 'center',
   },
   addButtonText: {
@@ -830,6 +836,12 @@ const styles = StyleSheet.create({
     fontSize: responsive.fontSize(16),
     fontWeight: '600',
     marginLeft: responsive.margin(8),
+  },
+  addButtonTextSmall: {
+    color: '#fff',
+    fontSize: responsive.fontSize(12),
+    fontWeight: '600',
+    marginLeft: responsive.margin(4),
   },
 });
 

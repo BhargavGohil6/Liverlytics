@@ -1,5 +1,5 @@
 // src/screens/EditProfileScreen.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,9 +11,11 @@ import {
   SafeAreaView,
   Image,
   Platform,
+  Modal,
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import CommonLoader from '../../components/CommonLoader';
+import CountryPicker from '../../components/CountryPicker';
 import Icon from 'react-native-vector-icons/Ionicons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useDispatch, useSelector } from 'react-redux';
@@ -38,6 +40,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation }) => 
   const [gender, setGender] = useState('');
   const [dob, setDob] = useState('');
   const [address, setAddress] = useState('');
+  const [country, setCountry] = useState('');
   const [bio, setBio] = useState('');
   const [medicalCondition, setMedicalCondition] = useState('');
   const [emergencyContact, setEmergencyContact] = useState('');
@@ -55,6 +58,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation }) => 
   
   // Date picker state
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [isGenderModalVisible, setGenderModalVisible] = useState(false);
   
   // Get user email from auth state
   const { user } = useSelector((state: RootState) => state.auth);
@@ -68,6 +72,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation }) => 
       setGender(userProfile.gender_custom || '');
       setDob(userProfile.date_of_birth || '');
       setAddress(userProfile.address || '');
+      setCountry(userProfile.country_code || '');
       setBio(userProfile.bio || '');
       setMedicalCondition(userProfile.medical_condition || '');
       setEmergencyContact(userProfile.emergency_contact || '');
@@ -178,6 +183,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation }) => 
         gender_custom: gender,
         date_of_birth: dob,
         address: address,
+        country_code: country,
         bio: bio,
       };
       
@@ -325,12 +331,45 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation }) => 
                 <Icon name="male-female-outline" size={20} color="#6b7280" />
                 <View style={styles.inputContent}>
                   <Text style={styles.inputLabel}>Gender</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={gender}
-                    onChangeText={setGender}
-                    placeholder="Enter gender"
-                  />
+                  <TouchableOpacity style={styles.selectInput} onPress={() => setGenderModalVisible(true)}>
+                    <Text style={styles.selectText}>{gender || 'Select gender'}</Text>
+                    <Icon name="chevron-down" size={20} color="#9ca3af" />
+                  </TouchableOpacity>
+
+                  {/* Gender Selection Modal */}
+                  <Modal
+                    visible={isGenderModalVisible}
+                    transparent={true}
+                    animationType="fade"
+                    onRequestClose={() => setGenderModalVisible(false)}
+                  >
+                    <TouchableOpacity
+                      style={styles.modalOverlay}
+                      activeOpacity={1}
+                      onPress={() => setGenderModalVisible(false)}
+                    >
+                      <View style={styles.genderModalContent}>
+                        <TouchableOpacity
+                          style={[styles.genderOption, styles.lastGenderOption]}
+                          onPress={() => {
+                            setGender('Male');
+                            setGenderModalVisible(false);
+                          }}
+                        >
+                          <Text style={styles.optionText}>Male</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.genderOption}
+                          onPress={() => {
+                            setGender('Female');
+                            setGenderModalVisible(false);
+                          }}
+                        >
+                          <Text style={styles.optionText}>Female</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </TouchableOpacity>
+                  </Modal>
                 </View>
               </View>
               
@@ -382,6 +421,20 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation }) => 
               <View style={styles.inputRow}>
                 <Icon name="location-outline" size={20} color="#6b7280" />
                 <View style={styles.inputContent}>
+                  <Text style={styles.inputLabel}>Country</Text>
+                  <CountryPicker
+                    label=""
+                    placeholder="Select country"
+                    value={country}
+                    onValueChange={setCountry}
+                    containerButtonStyle={styles.selectInput}
+                  />
+                </View>
+              </View>
+              
+              {/* <View style={styles.inputRow}>
+                <Icon name="home-outline" size={20} color="#6b7280" />
+                <View style={styles.inputContent}>
                   <Text style={styles.inputLabel}>Address</Text>
                   <TextInput
                     style={styles.input}
@@ -390,7 +443,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation }) => 
                     placeholder="Enter address"
                   />
                 </View>
-              </View>
+              </View> */}
               
               {/* <View style={styles.inputRow}>
                 <Icon name="document-text-outline" size={20} color="#6b7280" />
@@ -606,6 +659,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#1f2937',
   },
+
   preferenceRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -708,6 +762,41 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 16,
     lineHeight: 18,
+  },
+  
+  // Custom styles for gender dropdown
+  genderOption: {
+    paddingVertical: 10, // Reduced from default
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F7FAFC',
+  },
+  
+  lastGenderOption: {
+    borderBottomWidth: 0,
+  },
+  
+  // Styles for gender modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  genderModalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    width: '85%',
+    paddingVertical: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 5,
+  },
+  optionText: {
+    fontSize: 16,
+    color: '#2D3748',
   },
   loadingContainer: {
     flex: 1,

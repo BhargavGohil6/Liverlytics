@@ -120,10 +120,10 @@ export default function VitalsOverviewScreen() {
             {/* <Text style={styles.backText}>Back</Text> */}
           </TouchableOpacity>
           
-          {/* <TouchableOpacity style={styles.addButton} onPress={() => navigation.navigate('AddVitalsScreen' as never)}>
-            <Icon name="plus" size={responsive.fontSize(18)} color="#333" />
+          <TouchableOpacity style={styles.addButton} onPress={() => navigation.navigate('AddVitalsScreen' as never)}>
+            <Icon name="plus" size={responsive.fontSize(18)} color={colors.white} />
             <Text style={styles.addText}>Add Vitals</Text>
-          </TouchableOpacity> */}
+          </TouchableOpacity>
         </View>
 
         {/* Title Section */}
@@ -437,14 +437,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: responsive.padding(6),
-    backgroundColor: colors.gray100,
-    paddingHorizontal: responsive.padding(14),
-    paddingVertical: responsive.padding(8),
+    backgroundColor: colors.primary,
+    paddingHorizontal: responsive.padding(12),
+    paddingVertical: responsive.padding(6),
     borderRadius: responsive.borderRadius(8),
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   addText: {
     fontSize: font.base,
-    color: colors.darkGray,
+    color: colors.white,
     fontWeight: '600',
   },
   titleSection: {

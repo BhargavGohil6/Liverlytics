@@ -208,10 +208,12 @@ export default function BPChartScreen({ navigation }: BPChartScreenProps) {
                 <View style={styles.legendItem}>
                   <View style={[styles.legendColor, { backgroundColor: '#FF9800' }]} />
                   <Text style={styles.legendText}>Systolic</Text>
+                  <Text style={styles.legendText}>(High)</Text>
                 </View>
                 <View style={styles.legendItem}>
                   <View style={[styles.legendColor, { backgroundColor: '#2196F3' }]} />
                   <Text style={styles.legendText}>Diastolic</Text>
+                  <Text style={styles.legendText}>(Low)</Text>
                 </View>
               </View>
             </View>
