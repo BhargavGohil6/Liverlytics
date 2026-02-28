@@ -1,5 +1,5 @@
 // src/screens/ExerciseHistoryScreen.tsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
@@ -60,6 +60,12 @@ const ExerciseHistoryScreen = ({ navigation }: ExerciseHistoryScreenProps) => {
     synced: boolean;
   }
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize] = useState<number>(5); // Initial page size is 5 records
+  const [paginatedLogs, setPaginatedLogs] = useState<LogEntry[]>([]);
+  const [hasMoreLogs, setHasMoreLogs] = useState<boolean>(false);
+
   const convertMinutesToHours = (minutes: number): string => {
     const hours = Math.floor(minutes / 60);
     const remainingMinutes = minutes % 60;
@@ -67,27 +73,29 @@ const ExerciseHistoryScreen = ({ navigation }: ExerciseHistoryScreenProps) => {
   };
 
   // Transform API data to match UI format and sort by date descending (newest first)
-  const logs: LogEntry[] = history && Array.isArray(history) ? history.map((item: any) => {
-    let dateObj = new Date();
-    if (item.creation) {
-      const dateStr = item.creation.replace(' ', 'T');
-      const d = new Date(dateStr);
-      if (!isNaN(d.getTime())) dateObj = d;
-    }
-    
-    return {
-      date: format(dateObj, 'dd MMM yyyy'),
-      timestamp: dateObj.getTime(),
-      steps: parseInt(item.steps) || 0,
-      sleep: convertMinutesToHours(parseInt(item.sleep_minutes) || 0),
-      rhr: parseInt(item.resting_hr) || 0,
-      ahr: parseInt(item.active_hr) || 0,
-      oxygen: parseFloat(item.oxygen_saturation) || 0,
-      calories: parseInt(item.calories_burned) || 0,
-      bp: item.blood_pressure || 'N/A',
-      synced: true,
-    };
-  }).sort((a, b) => b.timestamp - a.timestamp) : [];
+  const logs: LogEntry[] = useMemo(() => {
+    return history && Array.isArray(history) ? history.map((item: any) => {
+      let dateObj = new Date();
+      if (item.creation) {
+        const dateStr = item.creation.replace(' ', 'T');
+        const d = new Date(dateStr);
+        if (!isNaN(d.getTime())) dateObj = d;
+      }
+      
+      return {
+        date: format(dateObj, 'dd MMM yyyy'),
+        timestamp: dateObj.getTime(),
+        steps: parseInt(item.steps) || 0,
+        sleep: convertMinutesToHours(parseInt(item.sleep_minutes) || 0),
+        rhr: parseInt(item.resting_hr) || 0,
+        ahr: parseInt(item.active_hr) || 0,
+        oxygen: parseFloat(item.oxygen_saturation) || 0,
+        calories: parseInt(item.calories_burned) || 0,
+        bp: item.blood_pressure || 'N/A',
+        synced: true,
+      };
+    }).sort((a, b) => b.timestamp - a.timestamp) : [];
+  }, [history]);
 
   // Calculate chart data based on selected period and history data
   const calculateChartData = () => {
@@ -262,11 +270,44 @@ const ExerciseHistoryScreen = ({ navigation }: ExerciseHistoryScreenProps) => {
       }
     }, [dispatch, user])
   );
+
+  // Reset pagination when logs change
+  useEffect(() => {
+    if (logs && logs.length > 0) {
+      // Show first 5 records initially
+      const initialLogs = logs.slice(0, 5);
+      setPaginatedLogs(initialLogs);
+      // Check if there are more logs available
+      setHasMoreLogs(logs.length > 5);
+      // Reset to first page
+      setCurrentPage(1);
+    } else {
+      setPaginatedLogs([]);
+      setHasMoreLogs(false);
+      setCurrentPage(1);
+    }
+  }, [logs]);
+  
+  // Load more logs when button is pressed
+  const loadMoreLogs = useCallback(() => {
+    // For the first load (after initial 5), we load 10 more
+    // For subsequent loads, we load 10 more each time
+    const currentLength = paginatedLogs.length;
+    const nextBatchSize = 10; // Load 10 records at a time after the initial 5
+    const nextLogs = logs.slice(currentLength, currentLength + nextBatchSize);
+      
+    // Update the paginated logs with the new batch
+    setPaginatedLogs(prevLogs => [...prevLogs, ...nextLogs]);
+      
+    // Check if there are more logs available after loading
+    const remainingLogs = logs.length - (currentLength + nextBatchSize);
+    setHasMoreLogs(remainingLogs > 0);
+  }, [logs, paginatedLogs.length]);
   
   // Helper function to calculate trend percentage
   const calculateTrend = (data: LogEntry[], metric: keyof LogEntry) => {
     if (!data || data.length < 2) return '0';
-    
+      
     // Convert values to numbers, handling sleep string conversion
     const getNumericValue = (item: LogEntry, m: keyof LogEntry) => {
       if (m === 'sleep') {
@@ -278,17 +319,17 @@ const ExerciseHistoryScreen = ({ navigation }: ExerciseHistoryScreenProps) => {
       }
       return Number(item[m]);
     };
-    
+      
     const recentValues = data.slice(0, 3).map(item => getNumericValue(item, metric)); // Last 3 entries
     const earlierValues = data.slice(3, 6).map(item => getNumericValue(item, metric)); // Previous 3 entries
-    
+      
     if (recentValues.length === 0 || earlierValues.length === 0 || recentValues.every(val => isNaN(val)) || earlierValues.every(val => isNaN(val))) return '0';
-    
+      
     const recentAvg = recentValues.reduce((sum, val) => sum + val, 0) / recentValues.length;
     const earlierAvg = earlierValues.reduce((sum, val) => sum + val, 0) / earlierValues.length;
-    
+      
     if (earlierAvg === 0) return recentAvg > 0 ? '+100' : '0';
-    
+      
     const trend = ((recentAvg - earlierAvg) / earlierAvg) * 100;
     return trend >= 0 ? `+${Math.round(trend)}` : `${Math.round(trend)}`;
   };
@@ -710,7 +751,7 @@ const ExerciseHistoryScreen = ({ navigation }: ExerciseHistoryScreenProps) => {
             <Text style={styles.logsSubtitle}>Chronological • Most recent first</Text>
           </View>
 
-          {!historyLoading && logs && logs.length > 0 && logs.map((log, index) => (
+          {!historyLoading && paginatedLogs && paginatedLogs.length > 0 && paginatedLogs.map((log, index) => (
             <View key={index} style={styles.logCard}>
               <View style={styles.logHeader}>
                 <Text style={styles.logDate}>{log.date}</Text>
@@ -734,13 +775,26 @@ const ExerciseHistoryScreen = ({ navigation }: ExerciseHistoryScreenProps) => {
               </TouchableOpacity> */}
             </View>
           ))}
-          {!historyLoading && logs && logs.length === 0 && (
+          {!historyLoading && paginatedLogs && paginatedLogs.length === 0 && (
             <View style={styles.noDataContainer}>
               <Text style={styles.noDataText}>No exercise history found for selected period</Text>
             </View>
           )}
           {historyLoading && (
             <CommonLoader visible={true} message="Loading exercise history..." />
+          )}
+          
+          {/* Load More Button */}
+          {!historyLoading && hasMoreLogs && (
+            <View style={styles.loadMoreContainer}>
+              <CommonButton
+                title="Load More"
+                onPress={loadMoreLogs}
+                bgColor={colors.primary}
+                textColor={colors.white}
+                style={styles.loadMoreButton}
+              />
+            </View>
           )}
         </View>
 
@@ -1232,6 +1286,14 @@ const styles = StyleSheet.create({
   },
   editDateButton: {
     padding: 4,
+  },
+  loadMoreContainer: {
+    marginTop: responsive.margin(16),
+    paddingHorizontal: responsive.padding(16),
+    alignItems: 'center',
+  },
+  loadMoreButton: {
+    width: '100%',
   },
 });
 

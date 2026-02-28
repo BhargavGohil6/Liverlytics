@@ -32,11 +32,20 @@ export interface AuthState {
   gender_custom?: string;
 }
 
+export interface ChangePasswordPayload {
+  old_password: string;
+  new_password: string;
+  reenter_new_password: string;
+}
+
 // Using the shared API client instead of direct axios call
 import api from '../../../services/api';
 
 const API_URL =
   '/cirrhosis_custom.cirrhosis_auth.login';
+
+const CHANGE_PASSWORD_URL =
+  '/cirrhosis_custom.cirrhosis_auth.change_password';
 
 // Login Thunk
 export const loginUser = createAsyncThunk<
@@ -238,8 +247,55 @@ const authSlice = createSlice({
       .addCase(registerUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Registration failed';
+      })
+      .addCase(changePassword.pending, state => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(changePassword.fulfilled, (state, action: PayloadAction<any>) => {
+        state.loading = false;
+        // Password changed successfully - no state changes needed
+        // The success message will be handled in the component
+      })
+      .addCase(changePassword.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Password change failed';
       });
   },
+});
+
+// Change Password Thunk
+export const changePassword = createAsyncThunk<
+  any,
+  ChangePasswordPayload,
+  { rejectValue: string }
+>('auth/changePassword', async (payload, { rejectWithValue }) => {
+  try {
+    // Using the shared API client which handles authentication automatically
+    const response = await api.post(CHANGE_PASSWORD_URL, payload);
+    
+    const data = response.data;
+    const msg = data.message;
+    console.log('Change Password Response:', data);
+    
+    // Check if the response indicates failure
+    if (data.status === 'fail' || (msg && msg.status === 'fail')) {
+      const errorMsg = (msg && msg.message) || data.message || 'Password change failed';
+      return rejectWithValue(errorMsg);
+    }
+    
+    return data;
+  } catch (error: any) {
+    console.log('Change Password Error:', error);
+    console.log('Error response:', error.response);
+    const msg =
+      error.response?.data?.message?.message ||
+      error.response?.data?.message ||
+      error.message ||
+      'Password change failed';
+
+    return rejectWithValue(msg);
+  }
 });
 
 export const { logout, setOnboardingCompleted, hydrateFromStorage } =

@@ -15,7 +15,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { LineChart } from 'react-native-chart-kit';
 import { useDispatch, useSelector } from 'react-redux';
 import { Calendar, DateData } from 'react-native-calendars';
-import { fetchAllVitalsForUser } from './slices/vitalsSlice';
+import { fetchAllVitalsForUser, fetchVitalsWithDateFilter } from './slices/vitalsSlice';
 import { AppDispatch, RootState } from '../../redux/store';
 import responsive from '../../theme/responsive'; // Import responsive scaling functions
 import colors from '../../theme/color';
@@ -44,12 +44,55 @@ const VitalsHistoryScreen: React.FC<VitalsHistoryScreenProps> = ({ navigation })
   // Get user data from auth state to fetch their vitals
   const { user } = useSelector((state: RootState) => state.auth);
   
+  // Fetch initial data when component mounts
   useEffect(() => {
-    // Fetch all vitals for the current user when the component mounts
     if (user?.email) {
-      dispatch(fetchAllVitalsForUser(user.email));
+      // Fetch data for last 7 days by default
+      const endDate = new Date();
+      const startDateObj = new Date();
+      startDateObj.setDate(startDateObj.getDate() - 7);
+      
+      const startDateStr = startDateObj.toISOString().split('T')[0];
+      const endDateStr = endDate.toISOString().split('T')[0];
+      
+      dispatch(fetchVitalsWithDateFilter({
+        user: user.email,
+        date_from: startDateStr,
+        date_to: endDateStr
+      }));
     }
   }, [dispatch, user?.email]);
+  
+  useEffect(() => {
+    // Fetch vitals based on selected date range
+    if (user?.email) {
+      if (selectedDays === 'Custom' && startDate && endDate) {
+        // Custom date range selected
+        dispatch(fetchVitalsWithDateFilter({
+          user: user.email,
+          date_from: startDate,
+          date_to: endDate
+        }));
+      } else if (selectedDays !== 'Custom') {
+        // Predefined periods (7, 30, 90 days)
+        const endDate = new Date();
+        const startDateObj = new Date();
+        startDateObj.setDate(startDateObj.getDate() - parseInt(selectedDays));
+        
+        const startDateStr = startDateObj.toISOString().split('T')[0];
+        const endDateStr = endDate.toISOString().split('T')[0];
+        
+        dispatch(fetchVitalsWithDateFilter({
+          user: user.email,
+          date_from: startDateStr,
+          date_to: endDateStr
+        }));
+      } else {
+        // No date range selected - fetch all vitals
+        dispatch(fetchAllVitalsForUser(user.email));
+      }
+    }
+  }, [dispatch, user?.email, selectedDays, startDate, endDate]);
   
   // Process the fetched data when it's available
   useEffect(() => {
@@ -152,6 +195,15 @@ const VitalsHistoryScreen: React.FC<VitalsHistoryScreenProps> = ({ navigation })
       
       // Set a custom label for the selected range
       setSelectedDays('Custom');
+      
+      // Fetch data for the selected date range
+      if (user?.email) {
+        dispatch(fetchVitalsWithDateFilter({
+          user: user.email,
+          date_from: tempStartDate,
+          date_to: tempEndDate
+        }));
+      }
     }
   };
 
@@ -162,6 +214,21 @@ const VitalsHistoryScreen: React.FC<VitalsHistoryScreenProps> = ({ navigation })
     setEndDate('');
     setSelectedDays('7');
     setShowCalendar(false);
+    // Refetch data for 7 days
+    if (user?.email) {
+      const endDate = new Date();
+      const startDateObj = new Date();
+      startDateObj.setDate(startDateObj.getDate() - 7);
+      
+      const startDateStr = startDateObj.toISOString().split('T')[0];
+      const endDateStr = endDate.toISOString().split('T')[0];
+      
+      dispatch(fetchVitalsWithDateFilter({
+        user: user.email,
+        date_from: startDateStr,
+        date_to: endDateStr
+      }));
+    }
   };
 
   const getDateRangeLabel = () => {

@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -16,7 +16,7 @@ import {
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
 import { Navigation } from 'lucide-react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { 
   Activity, 
   Plus, 
@@ -40,7 +40,6 @@ import {
 } from 'lucide-react-native';
 import responsive from '../../theme/responsive'; 
 import {colors,font} from '../../theme/index';
-import { useEffect } from 'react';
 import api from '../../services/api';
 import { ActivityIndicator } from 'react-native';
 import { useSelector } from 'react-redux';
@@ -70,7 +69,7 @@ interface WebAlert {
   type: string;
   status: string;
   message: string;
-  alert_flag?: number;
+  alert_flag?: number | string;
   threshold?: number;
   flag?: number;
   weight_gain?: number;
@@ -142,9 +141,11 @@ const RemindersAlert = () => {
   // Get logged-in user's email from Redux store
   const { user } = useSelector((state: any) => state.auth);
 
-  useEffect(() => {
-    fetchAlerts();
-  }, [user]);
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchAlerts();
+    }, [user])
+  );
 
   const fetchAlerts = async () => {
     try {
@@ -166,8 +167,8 @@ const RemindersAlert = () => {
             title: alert.type,
             description: alert.message,
             source: alert.source || 'N/A',
-            badge: alert.severity || (alert.alert_flag === 1 ? 'High' : ''),
-            badgeColor: getSeverityColor(alert.severity || (alert.alert_flag === 1 ? 'High' : '')),
+            badge: alert.severity || (alert.alert_flag === 1 ? 'High' : alert.alert_flag === "Low" ? 'Low' : ''),
+            badgeColor: getSeverityColor(alert.severity || (alert.alert_flag === 1 ? 'High' : alert.alert_flag === "Low" ? 'Low' : '')),
           };
         });
         setAlerts(mappedAlerts);
@@ -231,6 +232,8 @@ const RemindersAlert = () => {
     switch (severity?.toLowerCase()) {
       case 'high':
         return '#EF4444';
+      case 'low':
+        return '#3B82F6';
       case 'medium':
         return '#F59E0B';
       case 'normal':
@@ -345,7 +348,7 @@ const RemindersAlert = () => {
             </View>
           </View> */}
           
-          <TouchableOpacity 
+          {/* <TouchableOpacity 
             style={styles.reminderCard}
             onPress={() => (navigation as any).navigate('Vitals', { screen: 'BPChartScreen' })}
           >
@@ -366,7 +369,7 @@ const RemindersAlert = () => {
                 
               </View>
             </View>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
           {/* Alert Cards */}
           {loading ? (
@@ -427,13 +430,13 @@ const RemindersAlert = () => {
 
         {/* Your Reminders Section */}
         <View style={styles.section}>
-          <Text style={styles.remindersSectionTitle}>Your Reminders</Text>
+          {/* <Text style={styles.remindersSectionTitle}>Your Reminders</Text>
           <Text style={styles.remindersSectionSubtitle}>
             Daily actions and dose reminders you control.
-          </Text>
+          </Text> */}
 
           {/* Reminder Items */}
-          {reminders.map(reminder => (
+          {/* {reminders.map(reminder => (
             <View key={reminder.id} style={styles.reminderCard}>
               <View style={styles.reminderContent}>
                 <View style={styles.reminderTextContainer}>
@@ -456,27 +459,27 @@ const RemindersAlert = () => {
                 />
               </View>
             </View>
-          ))}
+          ))} */}
 
           {/* Manage Reminders Button */}
-          <TouchableOpacity style={styles.manageButton}>
+          {/* <TouchableOpacity style={styles.manageButton}>
             <Icon name="cog" size={20} color="#FFFFFF" />
             <Text style={styles.manageButtonText}>Manage Reminders</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
           {/* Settings Link */}
-          <TouchableOpacity style={styles.settingsLink}>
+          {/* <TouchableOpacity style={styles.settingsLink}>
             <Icon name="cog-outline" size={18} color="#6B7280" />
             <Text style={styles.settingsLinkText}>
               Adjust Alert Thresholds in Settings
             </Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
           {/* Additional Info */}
-          <Text style={styles.additionalInfo}>
+          {/* <Text style={styles.additionalInfo}>
             Configure weight delta triggers, sodium targets, stacking HR
             patterns, data type reminders, max alerts per day, etc.
-          </Text>
+          </Text> */}
         </View>
       </ScrollView>
 

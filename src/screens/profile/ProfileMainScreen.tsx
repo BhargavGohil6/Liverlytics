@@ -15,7 +15,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../redux/store';
 import { logout } from '../auth/slices/authSlice';
-import { getUserProfile } from './slices/profileSlice';
+import { getUserProfile, getDailyHealthTargets } from './slices/profileSlice';
 import ProfileHeader from '../../components/profile/ProfileHeader';
 import ProfileSection from '../../components/profile/ProfileSection';
 
@@ -29,12 +29,13 @@ const ProfileMainScreen: React.FC<ProfileMainScreenProps> = ({ navigation }) => 
   
   // Get user data from Redux store
   const { user } = useSelector((state: RootState) => state.auth);
-  const { userProfile, loading, error } = useSelector((state: RootState) => state.profile);
+  const { userProfile, dailyHealthTargets, loading, error } = useSelector((state: RootState) => state.profile);
   
-  // Fetch user profile on component mount
+  // Fetch user profile and daily health targets on component mount
   useEffect(() => {
     if (user?.email) {
       dispatch(getUserProfile({ user: user.email }) as any);
+      dispatch(getDailyHealthTargets({ user: user.email }) as any);
     }
   }, [dispatch, user?.email]);
 
@@ -94,7 +95,10 @@ const ProfileMainScreen: React.FC<ProfileMainScreenProps> = ({ navigation }) => 
             title="Health & Permissions"
             subtitle="Control what data the app can access."
           >
-            <TouchableOpacity style={styles.menuItem}>
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => navigation.navigate('HealthDataAccessScreen')}
+            >
               <View style={styles.menuLeft}>
                 <Text style={styles.menuLabel}>Health Data Access</Text>
                 <Text style={styles.menuSubtext}>Status: Connected</Text>
@@ -102,7 +106,10 @@ const ProfileMainScreen: React.FC<ProfileMainScreenProps> = ({ navigation }) => 
               <Icon name="chevron-forward" size={20} color="#9ca3af" />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.menuItem}>
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => navigation.navigate('WearableSyncScreen')}
+            >
               <View style={styles.menuLeft}>
                 <Text style={styles.menuLabel}>Wearable Sync</Text>
                 <Text style={styles.menuSubtext}>Health Connect, Smartwatch</Text>
@@ -123,7 +130,10 @@ const ProfileMainScreen: React.FC<ProfileMainScreenProps> = ({ navigation }) => 
               />
             </View>
 
-            <TouchableOpacity style={styles.menuItem}>
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => navigation.navigate('NotificationRemindersScreen')}
+            >
               <View style={styles.menuLeft}>
                 <Text style={styles.menuLabel}>Notifications & Reminders</Text>
                 <Text style={styles.menuSubtext}>Manage push alerts and reminder schedules</Text>
@@ -131,13 +141,16 @@ const ProfileMainScreen: React.FC<ProfileMainScreenProps> = ({ navigation }) => 
               <Icon name="chevron-forward" size={20} color="#9ca3af" />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.menuItem}>
+            {/* <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => navigation.navigate('AlertThresholdsScreen')}
+            >
               <View style={styles.menuLeft}>
                 <Text style={styles.menuLabel}>Alert Thresholds</Text>
                 <Text style={styles.menuSubtext}>Sodium, weight, heart rate, MELD delta</Text>
               </View>
               <Icon name="chevron-forward" size={20} color="#9ca3af" />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </ProfileSection>
 
           {/* Your Targets Section */}
@@ -145,21 +158,51 @@ const ProfileMainScreen: React.FC<ProfileMainScreenProps> = ({ navigation }) => 
             title="Your Targets"
             subtitle="Goals used for alerts and daily guidance."
           >
-            {[
-              { label: 'Daily Sodium Target', value: '2,000 mg per day' },
-              { label: 'Daily Fluid Limit', value: '1,800 mL per day' },
-              { label: 'Weight Gain Alert Threshold', value: '+2.0 kg in 48 hours' },
-              { label: 'Resting HR Alert Threshold', value: '≥ 90 bpm sustained' },
-              { label: 'Sleep Goal', value: '7.5 hours per night' },
-            ].map((item, index) => (
-              <View key={index} style={styles.targetItem}>
-                <View style={styles.targetInfo}>
-                  <Text style={styles.targetLabel}>{item.label}</Text>
-                  <Text style={styles.targetValue}>{item.value}</Text>
-                </View>
-                <Icon name="create-outline" size={20} color="#9ca3af" />
-              </View>
-            ))}
+            {dailyHealthTargets && dailyHealthTargets.length > 0 ? (
+              // Display actual health targets from API
+              [
+                { label: 'Daily Sodium Target', value: `${dailyHealthTargets[0].daily_sodium_limit} mg per day` },
+                { label: 'Daily Fluid Limit', value: `${dailyHealthTargets[0].daily_fluid_limit} mL per day` },
+                { label: 'Daily Protein Limit', value: `${dailyHealthTargets[0].daily_protein_limit} g per day` },
+                { label: 'Weight Gain Alert Threshold', value: `+${dailyHealthTargets[0].weight_gain_alert_threshold} kg in 48 hours` },
+                { label: 'Resting HR Alert Threshold', value: `≥ ${dailyHealthTargets[0].resting_hr_alert_threshold} bpm sustained` },
+                { label: 'Sleep Goal', value: `${dailyHealthTargets[0].sleep_goal} hours per night` },
+              ].map((item, index) => (
+                <TouchableOpacity 
+                  key={index} 
+                  style={styles.targetItem}
+                  onPress={() => navigation.navigate('EditHealthTargetsScreen')}
+                >
+                  <View style={styles.targetInfo}>
+                    <Text style={styles.targetLabel}>{item.label}</Text>
+                    <Text style={styles.targetValue}>{item.value}</Text>
+                  </View>
+                  <Icon name="create-outline" size={20} color="#9ca3af" />
+                </TouchableOpacity>
+              ))
+            ) : (
+              // Show zero values if no targets are available
+              [
+                { label: 'Daily Sodium Target', value: '0 mg per day' },
+                { label: 'Daily Fluid Limit', value: '0 mL per day' },
+                { label: 'Daily Protein Limit', value: '0 g per day' },
+                { label: 'Weight Gain Alert Threshold', value: '+0 kg in 48 hours' },
+                { label: 'Resting HR Alert Threshold', value: '≥ 0 bpm sustained' },
+                { label: 'Sleep Goal', value: '0 hours per night' },
+              ].map((item, index) => (
+                <TouchableOpacity 
+                  key={index} 
+                  style={styles.targetItem}
+                  onPress={() => navigation.navigate('EditHealthTargetsScreen')}
+                >
+                  <View style={styles.targetInfo}>
+                    <Text style={styles.targetLabel}>{item.label}</Text>
+                    <Text style={styles.targetValue}>{item.value}</Text>
+                  </View>
+                  <Icon name="create-outline" size={20} color="#9ca3af" />
+                </TouchableOpacity>
+              ))
+            )}
           </ProfileSection>
           
           {/* App & Medical Information Section */}
@@ -168,13 +211,37 @@ const ProfileMainScreen: React.FC<ProfileMainScreenProps> = ({ navigation }) => 
             subtitle="Learn how this companion supports your care."
           >
             {[
-              { label: 'Medical Disclaimer', subtitle: 'This app does not replace professional care.' },
-              { label: 'Privacy Policy', subtitle: 'How your data is collected and stored.' },
-              { label: 'Terms & Conditions', subtitle: 'Legal terms for using Cirrhosis Companion.' },
-              { label: 'Data Usage & Security', subtitle: 'Encryption, retention, and access controls.' },
-              { label: 'AI Transparency Statement', subtitle: 'What AI analyzes on-device and how it is used.' },
+              { 
+                label: 'Medical Disclaimer', 
+                subtitle: 'This app does not replace professional care.',
+                screen: 'MedicalDisclaimerScreen'
+              },
+              { 
+                label: 'Privacy Policy', 
+                subtitle: 'How your data is collected and stored.',
+                screen: 'PrivacyPolicy'
+              },
+              { 
+                label: 'Terms & Conditions', 
+                subtitle: 'Legal terms for using Cirrhosis Companion.',
+                screen: 'TermsofUse'
+              },
+              { 
+                label: 'Data Usage & Security', 
+                subtitle: 'Encryption, retention, and access controls.',
+                screen: 'DataUsageSecurityScreen'
+              },
+              { 
+                label: 'AI Transparency Statement', 
+                subtitle: 'What AI analyzes on-device and how it is used.',
+                screen: 'AITransparencyScreen'
+              },
             ].map((item, index) => (
-              <TouchableOpacity key={index} style={styles.infoItem}>
+              <TouchableOpacity 
+                key={index} 
+                style={styles.infoItem}
+                onPress={() => navigation.navigate(item.screen)}
+              >
                 <View style={styles.infoLeft}>
                   <Text style={styles.infoLabel}>{item.label}</Text>
                   <Text style={styles.infoSubtitle}>{item.subtitle}</Text>
@@ -187,25 +254,25 @@ const ProfileMainScreen: React.FC<ProfileMainScreenProps> = ({ navigation }) => 
           {/* Manage Account Section */}
           <ProfileSection
             title="Manage Account"
-            subtitle="Security, backups, and account actions."
+            // subtitle="Security, backups, and account actions."
           >
             <TouchableOpacity
               style={styles.accountItem}
-              onPress={() => navigation.navigate('ResetPassword')}
+              onPress={() => navigation.navigate('ChangePassword')}
             >
               <Icon name="key-outline" size={20} color="#374151" />
               <Text style={styles.accountLabel}>Change Password</Text>
             </TouchableOpacity>
           
-            <TouchableOpacity style={styles.accountItem}>
+            {/* <TouchableOpacity style={styles.accountItem}>
               <Icon name="cloud-upload-outline" size={20} color="#374151" />
               <Text style={styles.accountLabel}>Backup & Export Data</Text>
             </TouchableOpacity>
-          
-            <TouchableOpacity style={styles.accountItem}>
+           */}
+            {/* <TouchableOpacity style={styles.accountItem}>
               <Icon name="trash-outline" size={20} color="#374151" />
               <Text style={styles.accountLabel}>Clear Local Data</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           
             <TouchableOpacity 
               style={[styles.accountItem, { borderBottomWidth: 0 }]}

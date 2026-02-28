@@ -10,10 +10,12 @@ import {
   Switch,
   SafeAreaView,
   Image,
+  Platform,
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import CommonLoader from '../../components/CommonLoader';
 import Icon from 'react-native-vector-icons/Ionicons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useDispatch, useSelector } from 'react-redux';
 import { getUserProfile } from './slices/profileSlice';
 import { RootState } from '../../redux/store';
@@ -51,6 +53,9 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation }) => 
   // Loader state
   const [isUpdating, setIsUpdating] = useState(false);
   
+  // Date picker state
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  
   // Get user email from auth state
   const { user } = useSelector((state: RootState) => state.auth);
   
@@ -59,7 +64,10 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation }) => 
     if (userProfile) {
       setFullName(userProfile.full_name || '');
       setEmail(userProfile.email || '');
+      setMobileNumber(userProfile.mobile_no || '');
       setGender(userProfile.gender_custom || '');
+      setDob(userProfile.date_of_birth || '');
+      setAddress(userProfile.address || '');
       setBio(userProfile.bio || '');
       setMedicalCondition(userProfile.medical_condition || '');
       setEmergencyContact(userProfile.emergency_contact || '');
@@ -87,6 +95,22 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation }) => 
     console.log('Image selection options should appear here');
   };
 
+  // Handle date selection from date picker
+  const handleDateChange = (event: any, selectedDate?: Date) => {
+    setShowDatePicker(Platform.OS === 'ios'); // Keep picker open on iOS, close on Android
+    
+    if (selectedDate) {
+      // Format the date as YYYY-MM-DD
+      const formattedDate = selectedDate.toISOString().split('T')[0];
+      setDob(formattedDate);
+    }
+  };
+
+  // Show date picker
+  const showDatepicker = () => {
+    setShowDatePicker(true);
+  };
+
   // Validate form
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -99,6 +123,10 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation }) => 
       newErrors.email = 'Email is required';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       newErrors.email = 'Please enter a valid email address';
+    }
+    
+    if (mobileNumber && !/^[+]?[0-9]{10,15}$/.test(mobileNumber.replace(/\s/g, ''))) {
+      newErrors.mobileNumber = 'Please enter a valid mobile number';
     }
     
     if (emergencyContact && !/^[+]?[0-9]{10,15}$/.test(emergencyContact.replace(/\s/g, ''))) {
@@ -145,16 +173,20 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation }) => 
         full_name: fullName,
         first_name: firstName,
         last_name: lastName,
+        email: email,
+        mobile_no: mobileNumber,
+        gender_custom: gender,
+        date_of_birth: dob,
+        address: address,
+        bio: bio,
       };
       
       const result = await dispatch(updateUserProfile(updatedProfile));
       if (updateUserProfile.fulfilled.match(result)) {
-        // Note: Currently only name fields are updated via API
-        // Other profile fields may require different endpoints
         Toast.show({
           type: 'success',
           text1: 'Success',
-          text2: 'Name updated successfully.\nNote: Other profile fields may require additional API endpoints.',
+          text2: 'Profile updated successfully!',
           visibilityTime: 3000,
         });
         navigation.goBack();
@@ -239,12 +271,12 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation }) => 
                   </View>
                 )}
               </TouchableOpacity>
-              <TouchableOpacity style={styles.changePhotoButton} onPress={handleProfilePictureSelect}>
+              {/* <TouchableOpacity style={styles.changePhotoButton} onPress={handleProfilePictureSelect}>
                 <Icon name="camera-outline" size={16} color="#52a64a" />
                 <Text style={styles.changePhotoText}>
                   {profilePicture ? 'Change Photo' : 'Add Photo'}
                 </Text>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
             </View>
   
             <View style={styles.inputGroup}>
@@ -288,34 +320,65 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation }) => 
                   />
                 </View>
               </View>
-  
+              
               <View style={styles.inputRow}>
                 <Icon name="male-female-outline" size={20} color="#6b7280" />
                 <View style={styles.inputContent}>
                   <Text style={styles.inputLabel}>Gender</Text>
-                  <TouchableOpacity style={styles.selectInput}>
-                    <Text style={styles.selectText}>{gender || 'Select Gender'}</Text>
-                    <Icon name="chevron-down" size={20} color="#9ca3af" />
-                  </TouchableOpacity>
+                  <TextInput
+                    style={styles.input}
+                    value={gender}
+                    onChangeText={setGender}
+                    placeholder="Enter gender"
+                  />
                 </View>
               </View>
-  
+              
               <View style={styles.inputRow}>
                 <Icon name="calendar-outline" size={20} color="#6b7280" />
                 <View style={styles.inputContent}>
                   <Text style={styles.inputLabel}>Date of Birth</Text>
-                  <TouchableOpacity style={styles.selectInput}
-                    onPress={() => {
-                      // TODO: Implement date picker
-                      // For now, we can use a modal or native date picker
-                    }}
-                  >
+                  <TouchableOpacity style={styles.selectInput} onPress={showDatepicker}>
                     <Text style={styles.selectText}>{dob || 'Select Date'}</Text>
                     <Icon name="chevron-down" size={20} color="#9ca3af" />
                   </TouchableOpacity>
                 </View>
               </View>
-  
+              
+              {/* Date Picker Modal for Android */}
+              {showDatePicker && Platform.OS === 'android' && (
+                <DateTimePicker
+                  testID="dateTimePicker"
+                  value={dob ? new Date(dob) : new Date()}
+                  mode="date"
+                  is24Hour={true}
+                  display="default"
+                  onChange={handleDateChange}
+                />
+              )}
+              
+              {/* Date Picker Modal for iOS */}
+              {showDatePicker && Platform.OS === 'ios' && (
+                <View style={styles.dateTimePickerContainer}>
+                  <View style={styles.dateTimePickerHeader}>
+                    <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                      <Text style={styles.dateTimePickerCancel}>Cancel</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                      <Text style={styles.dateTimePickerDone}>Done</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <DateTimePicker
+                    testID="dateTimePicker"
+                    value={dob ? new Date(dob) : new Date()}
+                    mode="date"
+                    is24Hour={true}
+                    display="spinner"
+                    onChange={handleDateChange}
+                  />
+                </View>
+              )}
+              
               <View style={styles.inputRow}>
                 <Icon name="location-outline" size={20} color="#6b7280" />
                 <View style={styles.inputContent}>
@@ -328,6 +391,20 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation }) => 
                   />
                 </View>
               </View>
+              
+              {/* <View style={styles.inputRow}>
+                <Icon name="document-text-outline" size={20} color="#6b7280" />
+                <View style={styles.inputContent}>
+                  <Text style={styles.inputLabel}>Bio</Text>
+                  <TextInput
+                    style={[styles.input, { minHeight: 60, textAlignVertical: 'top' }]}
+                    value={bio}
+                    onChangeText={setBio}
+                    placeholder="Tell us about yourself"
+                    multiline
+                  />
+                </View>
+              </View> */}
             </View>
           </View>
   
@@ -648,6 +725,30 @@ const styles = StyleSheet.create({
     color: '#52a64a',
     fontWeight: '600',
     marginTop: 10,
+  },
+  
+  dateTimePickerContainer: {
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+  },
+  dateTimePickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  dateTimePickerCancel: {
+    color: '#9ca3af',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  dateTimePickerDone: {
+    color: '#52a64a',
+    fontSize: 16,
+    fontWeight: '500',
   },
 });
 

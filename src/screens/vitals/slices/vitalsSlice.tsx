@@ -180,6 +180,33 @@ export const fetchAllVitalsForUser = createAsyncThunk<
   }
 });
 
+// Fetch Vitals with Date Range Filter
+export const fetchVitalsWithDateFilter = createAsyncThunk<
+  VitalsApiResponse,
+  { user: string; date_from?: string; date_to?: string },
+  { rejectValue: string }
+>('vitals/fetchVitalsWithDateFilter', async (params, { rejectWithValue }) => {
+  try {
+    // Make API call to fetch vitals with date filtering
+    const response = await api.post(
+      '/cirrhosis_custom.cirrhosis_vital.get_vital',
+      params
+    );
+    
+    console.log('Fetch Vitals With Date Filter Response:', response.data);
+    return response.data.message || response.data;
+  } catch (error: any) {
+    console.log('Fetch Vitals With Date Filter Error:', error);
+    const msg =
+      error.response?.data?.message?.message ||
+      error.response?.data?.message ||
+      error.message ||
+      'Failed to fetch vitals with date filter';
+
+    return rejectWithValue(msg);
+  }
+});
+
 // Add Vitals Thunk
 export const addVitals = createAsyncThunk<
   any,
@@ -472,6 +499,18 @@ const vitalsSlice = createSlice({
       .addCase(fetchAllVitalsForUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Failed to fetch all vitals for user';
+      })
+      .addCase(fetchVitalsWithDateFilter.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchVitalsWithDateFilter.fulfilled, (state, action: PayloadAction<VitalsApiResponse>) => {
+        state.loading = false;
+        state.todayData = action.payload;
+      })
+      .addCase(fetchVitalsWithDateFilter.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to fetch vitals with date filter';
       });
   },
 });
