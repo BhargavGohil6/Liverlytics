@@ -171,7 +171,7 @@ export default function Dashboard() {
               <Activity size={20} color="#333" />
               <Text style={styles.sectionTitle}>Vitals</Text>
             </View>
-            <Text style={styles.sectionTime}>{formatRelativeTime(data?.vital?.date || '')}</Text>
+            <Text style={styles.sectionTime}>{formatRelativeTime(data?.vital?.duration || data?.vital?.date || '')}</Text>
           </View>
 
           <View style={styles.vitalsList}>
@@ -213,7 +213,7 @@ export default function Dashboard() {
             <Text style={styles.meldScore}>Latest: {data?.meld?.inr || '12'}</Text>
           </View>
 
-          <Text style={styles.updateText}>Last updated {formatRelativeTime(data?.meld?.creation || '')}</Text>
+          <Text style={styles.updateText}>Last updated {formatRelativeTime(data?.meld?.duration || data?.meld?.creation || '')}</Text>
 
           <View style={styles.meldTags}>
             <View style={styles.meldTag}>
@@ -254,7 +254,7 @@ export default function Dashboard() {
               <Droplet size={20} color="#333" />
               <Text style={styles.sectionTitle}>Diet & Fluids</Text>
             </View>
-            <Text style={styles.sectionTime}>{formatRelativeTime(data?.diet?.creation || '')}</Text>
+            <Text style={styles.sectionTime}>{formatRelativeTime(data?.diet?.duration || data?.diet?.creation || '')}</Text>
           </View>
 
           <View style={styles.dietRow}>
@@ -277,7 +277,7 @@ export default function Dashboard() {
               <Activity size={20} color="#333" />
               <Text style={styles.sectionTitle}>Exercise</Text>
             </View>
-            <Text style={styles.sectionTime}>{formatRelativeTime(data?.exercise?.date || '')}</Text>
+            <Text style={styles.sectionTime}>{formatRelativeTime(data?.exercise?.duration || data?.exercise?.date || '')}</Text>
           </View>
 
           <View style={styles.exerciseList}>
@@ -318,7 +318,7 @@ export default function Dashboard() {
                 <Text style={styles.newInsightsTitle}>AI Insights</Text>
               </View>
               <View style={styles.infoBadge}>
-                <Text style={styles.infoBadgeText}>{formatRelativeTime(data?.date || '')}</Text>
+                <Text style={styles.infoBadgeText}>{formatRelativeTime(data?.duration || data?.date || '')}</Text>
               </View>
             </View>
 

@@ -207,6 +207,7 @@ export const updateDietEntry = createAsyncThunk<
     const payload = {
       diet_and_fluids_id: dietData.diet_and_fluids_id,
       item_name: dietData.item_name,
+      sodium: dietData.sodium, // Add missing sodium field
       fluid_ml: dietData.fluid_ml,
       user: dietData.user,
     };

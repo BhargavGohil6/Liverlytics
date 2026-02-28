@@ -1,13 +1,18 @@
 /**
- * Convert timestamp to relative time format
- * @param timestamp - ISO timestamp string (e.g., "2026-01-31 18:35:20")
- * @returns Relative time string (e.g., "2 hours ago", "1 day ago")
+ * Convert timestamp to relative time format or parse duration string
+ * @param timestampOrDuration - Either ISO timestamp string (e.g., "2026-01-31 18:35:20") or duration string (e.g., "00:00:01" or "3 days")
+ * @returns Relative time string (e.g., "2 hours ago", "1 day ago", "3 days", etc.)
  */
-export const formatRelativeTime = (timestamp: string): string => {
-  if (!timestamp) return 'Just now';
+export const formatRelativeTime = (timestampOrDuration: string): string => {
+  if (!timestampOrDuration) return 'Just now';
+  
+  // Check if it's a duration in format like "00:00:01" or "3 days"
+  if (isDurationFormat(timestampOrDuration)) {
+    return parseDurationString(timestampOrDuration);
+  }
   
   // Parse the timestamp - handle both formats: "2026-01-31 18:35:20" and ISO format
-  const date = new Date(timestamp.replace(' ', 'T'));
+  const date = new Date(timestampOrDuration.replace(' ', 'T'));
   
   if (isNaN(date.getTime())) {
     return 'Just now';
@@ -70,6 +75,48 @@ export const formatRelativeTime = (timestamp: string): string => {
   // Handle years
   const years = Math.floor(diffInSeconds / intervals.year);
   return `${years} year${years > 1 ? 's' : ''} ago`;
+};
+
+/**
+ * Check if the input string is in duration format
+ * @param str - String to check
+ * @returns True if it matches duration format
+ */
+const isDurationFormat = (str: string): boolean => {
+  // Check for HH:MM:SS format
+  if (/^\d{2}:\d{2}:\d{2}$/.test(str)) {
+    return true;
+  }
+  
+  // Check for format like "X days", "X hours", etc.
+  if (/^\d+\s+(day|days|hour|hours|minute|minutes|second|seconds|week|weeks|month|months|year|years)$/i.test(str)) {
+    return true;
+  }
+  
+  return false;
+};
+
+/**
+ * Parse duration string and return human-readable format
+ * @param duration - Duration string in format like "00:00:01" or "3 days"
+ * @returns Human-readable duration string
+ */
+const parseDurationString = (duration: string): string => {
+  // Handle HH:MM:SS format
+  if (/^\d{2}:\d{2}:\d{2}$/.test(duration)) {
+    const [hours, minutes, seconds] = duration.split(':').map(Number);
+    
+    if (hours > 0) {
+      return `${hours} hr${hours > 1 ? 's' : ''}`;
+    } else if (minutes > 0) {
+      return `${minutes} min${minutes > 1 ? 's' : ''}`;
+    } else {
+      return `${seconds} sec${seconds > 1 ? 's' : ''}`;
+    }
+  }
+  
+  // Return the duration string as-is if it's in "X days" format
+  return duration;
 };
 
 /**

@@ -10,6 +10,7 @@ import {
   SafeAreaView,
   ActivityIndicator,
   useWindowDimensions,
+  Modal,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useDispatch, useSelector } from 'react-redux';
@@ -30,6 +31,9 @@ const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
   const [sodium, setSodium] = useState('');
   const [fluid, setFluid] = useState('');
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
+  const [selectedTime, setSelectedTime] = useState(new Date());
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [customTimes, setCustomTimes] = useState<Record<string, Date>>({}); // Store custom times by entry ID
   
   const dispatch = useDispatch<AppDispatch>();
   const { data: entries, daily_limits, overall_totals, loading, error } = useSelector((state: RootState) => state.diet);
@@ -54,17 +58,27 @@ const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
 
     const userEmail = user?.email || ''; // Use email from auth state
     
-    dispatch(addDietEntry({
+    const addData: any = {
       item_name: itemName,
       sodium: sodium,
       fluid_ml: fluid,
-      user: userEmail
-    })).then((result) => {
+      user: userEmail,
+    };
+    
+    dispatch(addDietEntry(addData)).then((result) => {
       if (addDietEntry.fulfilled.match(result)) {
+        // Store the custom time using the actual entry ID from response if available
+        const entryId = result.payload?.diet_and_fluids_id || `temp_${Date.now()}`;
+        setCustomTimes(prev => ({
+          ...prev,
+          [entryId]: new Date(selectedTime) // Store the selected time
+        }));
+        
         // Clear form fields
         setItemName('');
         setSodium('');
         setFluid('');
+        setSelectedTime(new Date()); // Reset to current time
         // Refresh today's diet to get updated totals and limits
         dispatch(fetchTodayDiet());
       }
@@ -84,19 +98,29 @@ const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
 
     const userEmail = user?.email || ''; // Use email from auth state
     
-    dispatch(updateDietEntry({
+    const updateData: any = {
       diet_and_fluids_id: editingEntryId,
       item_name: itemName,
       sodium: sodium,
       fluid_ml: fluid,
-      user: userEmail
-    })).then((result) => {
+      user: userEmail,
+    };
+    
+    // Only add time field if the backend supports it
+    // For now, we'll store it locally in customTimes
+    setCustomTimes(prev => ({
+      ...prev,
+      [editingEntryId]: new Date(selectedTime)
+    }));
+    
+    dispatch(updateDietEntry(updateData)).then((result) => {
       if (updateDietEntry.fulfilled.match(result)) {
         // Clear form fields and exit edit mode
         setItemName('');
         setSodium('');
         setFluid('');
         setEditingEntryId(null);
+        setSelectedTime(new Date()); // Reset to current time
         // Refresh today's diet to get updated totals and limits
         dispatch(fetchTodayDiet());
       }
@@ -134,6 +158,13 @@ const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
       setSodium(entry.sodium || '');
       setFluid(entry.fluid_ml || '');
       setEditingEntryId(entry.name);
+      
+      // Set the time if it exists in customTimes or use creation time
+      if (entry.name && customTimes[entry.name]) {
+        setSelectedTime(new Date(customTimes[entry.name]));
+      } else if (entry.creation) {
+        setSelectedTime(new Date(entry.creation));
+      }
     }
   };
 
@@ -143,6 +174,38 @@ const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
     setSodium('');
     setFluid('');
     setEditingEntryId(null);
+  };
+
+  // Time picker functions
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const handleTimeConfirm = () => {
+    setShowTimePicker(false);
+    // Time is already updated in state through selectHour and selectMinute
+  };
+
+  const handleTimeCancel = () => {
+    // Reset to current time
+    setSelectedTime(new Date());
+    setShowTimePicker(false);
+  };
+
+  const selectHour = (hour: number) => {
+    setSelectedTime(prevTime => {
+      const newTime = new Date(prevTime);
+      newTime.setHours(hour);
+      return newTime;
+    });
+  };
+
+  const selectMinute = (minute: number) => {
+    setSelectedTime(prevTime => {
+      const newTime = new Date(prevTime);
+      newTime.setMinutes(minute);
+      return newTime;
+    });
   };
 
   // Use totals from API if available, otherwise calculate
@@ -298,9 +361,14 @@ const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
             </View>
 
             <View style={styles.timestampRow}>
-              <Icon name="time-outline" size={responsive.fontSize(20)} color={colors.coolGray} />
-              <Text style={styles.timestampText}>Now</Text>
-              <Icon name="chevron-forward" size={responsive.fontSize(20)} color={colors.coolGray} />
+              <TouchableOpacity 
+                style={styles.timestampTouchable}
+                onPress={() => setShowTimePicker(true)}
+              >
+                <Icon name="time-outline" size={responsive.fontSize(20)} color={colors.coolGray} />
+                <Text style={styles.timestampText}>{formatTime(selectedTime)}</Text>
+                <Icon name="chevron-forward" size={responsive.fontSize(20)} color={colors.coolGray} />
+              </TouchableOpacity>
             </View>
 
             <View style={styles.buttonRow}>
@@ -375,7 +443,11 @@ const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
                         Sodium: {entry.sodium} mg • Fluid: {entry.fluid_ml} mL
                       </Text>
                       <Text style={styles.entryTime}>
-                        • {entry.creation ? new Date(entry.creation).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'N/A'}
+                        • {entry.name && customTimes[entry.name] 
+                          ? customTimes[entry.name].toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+                          : (entry.creation 
+                              ? new Date(entry.creation).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+                              : new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}))}
                       </Text>
                     </TouchableOpacity>
                     <TouchableOpacity 
@@ -404,6 +476,90 @@ const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
           </View> */}
         </View>
       </ScrollView>
+
+      {/* Time Picker Modal */}
+      <Modal
+        visible={showTimePicker}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowTimePicker(false)}
+      >
+        <View style={styles.timePickerOverlay}>
+          <View style={styles.timePickerContainer}>
+            <View style={styles.timePickerHeader}>
+              <Text style={styles.timePickerTitle}>Select Time</Text>
+              <TouchableOpacity onPress={() => setShowTimePicker(false)}>
+                <Icon name="close" size={responsive.fontSize(24)} color={colors.darkGray} />
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.timePickerContent}>
+              {/* Hours Column */}
+              <View style={styles.timeColumn}>
+                <Text style={styles.timeColumnLabel}>Hours</Text>
+                <ScrollView style={styles.timeScrollView}>
+                  {Array.from({ length: 24 }, (_, i) => i).map((hour) => (
+                    <TouchableOpacity
+                      key={hour}
+                      style={[
+                        styles.timeItem,
+                        selectedTime.getHours() === hour && styles.selectedTimeItem
+                      ]}
+                      onPress={() => selectHour(hour)}
+                    >
+                      <Text style={[
+                        styles.timeItemText,
+                        selectedTime.getHours() === hour && styles.selectedTimeItemText
+                      ]}>
+                        {hour.toString().padStart(2, '0')}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+              
+              {/* Minutes Column */}
+              <View style={styles.timeColumn}>
+                <Text style={styles.timeColumnLabel}>Minutes</Text>
+                <ScrollView style={styles.timeScrollView}>
+                  {Array.from({ length: 60 }, (_, i) => i).map((minute) => (
+                    <TouchableOpacity
+                      key={minute}
+                      style={[
+                        styles.timeItem,
+                        selectedTime.getMinutes() === minute && styles.selectedTimeItem
+                      ]}
+                      onPress={() => selectMinute(minute)}
+                    >
+                      <Text style={[
+                        styles.timeItemText,
+                        selectedTime.getMinutes() === minute && styles.selectedTimeItemText
+                      ]}>
+                        {minute.toString().padStart(2, '0')}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </View>
+            
+            <View style={styles.timePickerButtons}>
+              <TouchableOpacity 
+                style={[styles.timePickerButton, styles.timePickerCancelButton]}
+                onPress={handleTimeCancel}
+              >
+                <Text style={styles.timePickerCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.timePickerButton, styles.timePickerConfirmButton]}
+                onPress={handleTimeConfirm}
+              >
+                <Text style={styles.timePickerConfirmText}>Confirm</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -523,6 +679,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: responsive.padding(12),
     marginTop: responsive.margin(16),
     marginBottom: responsive.margin(8),
+  },
+  timestampTouchable: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
   },
   timestampText: {
     flex: 1,
@@ -652,6 +813,98 @@ const styles = StyleSheet.create({
     fontSize: responsive.fontSize(14),
     color: colors.coolGray,
     paddingVertical: responsive.padding(20),
+  },
+  // Time Picker Styles
+  timePickerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  timePickerContainer: {
+    backgroundColor: colors.white,
+    borderRadius: responsive.borderRadius(16),
+    width: '90%',
+    maxWidth: 350,
+    maxHeight: '80%',
+  },
+  timePickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: responsive.padding(20),
+    borderBottomWidth: 1,
+    borderBottomColor: colors.gray200,
+  },
+  timePickerTitle: {
+    fontSize: responsive.fontSize(18),
+    fontWeight: '600',
+    color: colors.darkGray,
+  },
+  timePickerContent: {
+    flexDirection: 'row',
+    padding: responsive.padding(20),
+    justifyContent: 'space-around',
+  },
+  timeColumn: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  timeColumnLabel: {
+    fontSize: responsive.fontSize(14),
+    fontWeight: '600',
+    color: colors.darkGray,
+    marginBottom: responsive.margin(12),
+  },
+  timeScrollView: {
+    maxHeight: 200,
+  },
+  timeItem: {
+    paddingVertical: responsive.padding(12),
+    paddingHorizontal: responsive.padding(20),
+    alignItems: 'center',
+  },
+  selectedTimeItem: {
+    backgroundColor: colors.primary + '20',
+    borderRadius: responsive.borderRadius(8),
+  },
+  timeItemText: {
+    fontSize: responsive.fontSize(16),
+    color: colors.darkGray,
+  },
+  selectedTimeItemText: {
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  timePickerButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: responsive.padding(20),
+    borderTopWidth: 1,
+    borderTopColor: colors.gray200,
+  },
+  timePickerButton: {
+    flex: 1,
+    paddingVertical: responsive.padding(14),
+    borderRadius: responsive.borderRadius(8),
+    alignItems: 'center',
+    marginHorizontal: responsive.margin(4),
+  },
+  timePickerCancelButton: {
+    backgroundColor: colors.gray100,
+  },
+  timePickerConfirmButton: {
+    backgroundColor: colors.primary,
+  },
+  timePickerCancelText: {
+    fontSize: responsive.fontSize(16),
+    fontWeight: '600',
+    color: colors.darkGray,
+  },
+  timePickerConfirmText: {
+    fontSize: responsive.fontSize(16),
+    fontWeight: '600',
+    color: colors.white,
   },
 });
 

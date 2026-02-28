@@ -13,6 +13,7 @@ export interface VitalData {
   spo2?: number;
   glucose?: number;
   date?: string;
+  duration?: string;
   user?: string;
   is_today?: boolean;
 }
@@ -26,6 +27,7 @@ export interface MeldData {
   albumin?: string;
   sex_at_birth?: string;
   creation?: string;
+  duration?: string;
   user?: string;
   is_today?: boolean;
 }
@@ -36,6 +38,7 @@ export interface DietData {
   sodium?: string;
   fluid_ml?: string;
   creation?: string;
+  duration?: string;
   user?: string;
   is_today?: boolean;
 }
@@ -48,6 +51,7 @@ export interface ExerciseData {
   exercise_name?: string;
   user?: string;
   creation?: string;
+  duration?: string;
   date?: string;
   is_today?: boolean;
 }
@@ -66,6 +70,7 @@ export interface MedicationData {
   with_food?: number;
   user?: string;
   creation?: string;
+  duration?: string;
   modified?: string;
   timings_count?: number;
   timings?: MedicationTiming[];

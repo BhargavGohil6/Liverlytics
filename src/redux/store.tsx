@@ -8,6 +8,7 @@ import reportReducer from '../screens/reports/slices/reportSlice';
 import meldReducer from '../screens/meld-calculator/slices/meldSlice';
 import exerciseReducer from '../screens/exercises/slices/exerciseSlice';
 import profileReducer from '../screens/profile/slices/profileSlice';
+import reminderReducer from '../screens/profile/slices/reminderSlice';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { persistReducer, persistStore } from 'redux-persist';
@@ -27,7 +28,8 @@ const rootReducer = combineReducers({
   reports: reportReducer,
   meld: meldReducer,
   exercise: exerciseReducer,
-    profile: profileReducer,
+  profile: profileReducer,
+  reminder: reminderReducer,
 });
 const persistedReducer = persistReducer(persistConfig, rootReducer);
 

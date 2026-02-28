@@ -40,6 +40,16 @@ import ProfileMainScreen from "../screens/profile/ProfileMainScreen";
 import EditProfileScreen from "../screens/profile/EditProfileScreen";
 import ProfilePictureScreen from "../screens/profile/ProfilePictureScreen";
 import PrivacySettingsScreen from "../screens/profile/PrivacySettingsScreen";
+import MedicalDisclaimerScreen from "../screens/profile/MedicalDisclaimerScreen";
+import DataUsageSecurityScreen from "../screens/profile/DataUsageSecurityScreen";
+import AITransparencyScreen from "../screens/profile/AITransparencyScreen";
+import HealthDataAccessScreen from "../screens/profile/HealthDataAccessScreen";
+import WearableSyncScreen from "../screens/profile/WearableSyncScreen";
+import NotificationRemindersScreen from "../screens/profile/NotificationRemindersScreen";
+import AlertThresholdsScreen from "../screens/profile/AlertThresholdsScreen";
+import ResetPasswordScreen from "../screens/reminders/ResetPasswordScreen";
+import ChangePasswordScreen from "../screens/profile/ChangePasswordScreen";
+import EditHealthTargetsScreen from "../screens/profile/EditHealthTargetsScreen";
 
 const Stack = createStackNavigator();
 
@@ -84,6 +94,16 @@ export default function AuthNavigation() {
         <Stack.Screen name="EditProfileScreen" component={EditProfileScreen} options={{headerShown:false}}/>
         <Stack.Screen name="ProfilePictureScreen" component={ProfilePictureScreen} options={{headerShown:false}}/>
         <Stack.Screen name="PrivacySettingsScreen" component={PrivacySettingsScreen} options={{headerShown:false}}/>
+        <Stack.Screen name="MedicalDisclaimerScreen" component={MedicalDisclaimerScreen} options={{headerShown:false}}/>
+        <Stack.Screen name="DataUsageSecurityScreen" component={DataUsageSecurityScreen} options={{headerShown:false}}/>
+        <Stack.Screen name="AITransparencyScreen" component={AITransparencyScreen} options={{headerShown:false}}/>
+        <Stack.Screen name="HealthDataAccessScreen" component={HealthDataAccessScreen} options={{headerShown:false}}/>
+        <Stack.Screen name="WearableSyncScreen" component={WearableSyncScreen} options={{headerShown:false}}/>
+        <Stack.Screen name="NotificationRemindersScreen" component={NotificationRemindersScreen} options={{headerShown:false}}/>
+        <Stack.Screen name="AlertThresholdsScreen" component={AlertThresholdsScreen} options={{headerShown:false}}/>
+        <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{headerShown:false}}/>
+        <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{headerShown:false}}/>
+        <Stack.Screen name="EditHealthTargetsScreen" component={EditHealthTargetsScreen} options={{headerShown:false}}/>
         </Stack.Navigator>
     );
 }
