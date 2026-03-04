@@ -7,6 +7,8 @@ import {
   ScrollView,
   TouchableOpacity,
   SafeAreaView,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import CommonTextInput from '../../components/CommonTextInput';
@@ -16,6 +18,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { addExercise } from './slices/exerciseSlice';
 import { RootState } from '../../redux/store';
 import { AppDispatch } from '../../redux/store';
+import { requestHealthPermissions, getHealthData } from '../../services/health/HealthService';
 
 const ExerciseActivityScreen = ({ navigation }: { navigation: any }) => {
   const [syncing, setSyncing] = useState(false);
@@ -31,12 +34,68 @@ const ExerciseActivityScreen = ({ navigation }: { navigation: any }) => {
   const { user } = useSelector((state: RootState) => state.auth);
   const { loading: exerciseLoading } = useSelector((state: RootState) => state.exercise);
 
-  const handleSync = () => {
+  const handleSync = async () => {
     setSyncing(true);
-    setTimeout(() => {
+    try {
+      // Request health permissions
+      const permissionResult = await requestHealthPermissions();
+      
+      if (permissionResult.granted) {
+        // Fetch health data
+        const healthData = await getHealthData();
+        
+        // Populate the form fields with fetched data
+        if (healthData.steps > 0) {
+          setSteps(healthData.steps.toString());
+        }
+        if (healthData.heartRate > 0) {
+          setRhr(healthData.heartRate.toString());
+        }
+        if (healthData.calories > 0) {
+          setCalories(healthData.calories.toString());
+        }
+        if (healthData.sleepHours > 0) {
+          // Convert hours to minutes for the sleep input
+          setSleep((healthData.sleepHours * 60).toString());
+        }
+        if (healthData.distance > 0) {
+          // You might want to use distance as a proxy for active heart rate or other metrics
+          // For now, we'll leave ahr empty as it's typically user-entered
+        }
+        if (healthData.systolic && healthData.diastolic) {
+          setBp(`${healthData.systolic}/${healthData.diastolic}`);
+        }
+        
+        // Show success message
+        Alert.alert(
+          'Success', 
+          'Health data synced successfully! Your exercise metrics have been updated.',
+          [{ text: 'OK' }]
+        );
+      } else {
+        // Show error message
+        Alert.alert(
+          'Permission Denied',
+          'Health data access was denied. Please enable permissions in your device settings to sync health data.',
+          [
+            { text: 'OK', style: 'cancel' },
+            { 
+              text: 'Retry', 
+              onPress: handleSync 
+            }
+          ]
+        );
+      }
+    } catch (error) {
+      console.error('Error syncing health data:', error);
+      Alert.alert(
+        'Sync Error',
+        'Failed to sync health data. Please try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
       setSyncing(false);
-      navigation.navigate('Dashboard');
-    }, 2000);
+    }
   };
 
   return (
@@ -65,12 +124,15 @@ const ExerciseActivityScreen = ({ navigation }: { navigation: any }) => {
               
               {syncing ? (
                 <View style={styles.syncingContainer}>
-                  <Icon name="sync-outline" size={20} color="#52ab3c" />
+                  <ActivityIndicator size="small" color="#52ab3c" />
                   <Text style={styles.syncingText}>Syncing health data...</Text>
                 </View>
               ) : (
                 <TouchableOpacity style={styles.syncButton} onPress={handleSync}>
-                  <Text style={styles.syncButtonText}>Sync from Health</Text>
+                  <View style={styles.syncButtonContent}>
+                    <Icon name="sync-outline" size={20} color="#374151" />
+                    <Text style={styles.syncButtonText}>Sync from Health</Text>
+                  </View>
                 </TouchableOpacity>
               )}
             </View>
@@ -324,15 +386,22 @@ const styles = StyleSheet.create({
   syncButton: {
     backgroundColor: '#fff',
     paddingVertical: responsive.padding(12),
+    paddingHorizontal: responsive.padding(16),
     borderRadius: responsive.borderRadius(8),
     alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1,
     borderColor: '#d1d5db',
+  },
+  syncButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   syncButtonText: {
     fontSize: responsive.fontSize(15),
     fontWeight: '600',
     color: '#374151',
+    marginLeft: responsive.margin(8),
   },
   syncingContainer: {
     flexDirection: 'row',

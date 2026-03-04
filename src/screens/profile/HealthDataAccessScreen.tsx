@@ -1,5 +1,5 @@
 // src/screens/profile/HealthDataAccessScreen.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,8 +8,12 @@ import {
   TouchableOpacity,
   Switch,
   SafeAreaView,
+  Alert,
+  ActivityIndicator,
+  Platform,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { requestHealthPermissions, getHealthData } from '../../services/health/HealthService';
 
 type HealthDataAccessScreenProps = {
   navigation: any;
@@ -17,14 +21,136 @@ type HealthDataAccessScreenProps = {
 
 const HealthDataAccessScreen: React.FC<HealthDataAccessScreenProps> = ({ navigation }) => {
   // State for various health data permissions
-  const [healthConnect, setHealthConnect] = useState(true);
+  const [healthConnect, setHealthConnect] = useState(false);
   const [appleHealth, setAppleHealth] = useState(false);
   const [googleFit, setGoogleFit] = useState(false);
-  const [wearables, setWearables] = useState(true);
+  const [wearables, setWearables] = useState(false);
   const [labResults, setLabResults] = useState(true);
   const [medicationTracking, setMedicationTracking] = useState(true);
   const [symptomTracking, setSymptomTracking] = useState(true);
   const [nutritionData, setNutritionData] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [checkingPermissions, setCheckingPermissions] = useState(true);
+
+  // Check current permission status when component mounts
+  useEffect(() => {
+    checkCurrentPermissions();
+  }, []);
+
+  const checkCurrentPermissions = async () => {
+    try {
+      setLoading(true);
+      const permissionResult = await requestHealthPermissions();
+      setCheckingPermissions(false);
+      
+      if (permissionResult.granted) {
+        // Update states based on granted permissions
+        setWearables(true);
+        
+        // Platform-specific permissions
+        if (Platform.OS === 'ios') {
+          setAppleHealth(true);
+        } else if (Platform.OS === 'android') {
+          setHealthConnect(true);
+        }
+      } else {
+        // Permissions not granted, keep states as false
+        setWearables(false);
+        setAppleHealth(false);
+        setHealthConnect(false);
+      }
+    } catch (error) {
+      console.error('Error checking permissions:', error);
+      setCheckingPermissions(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleHealthConnect = async (value: boolean) => {
+    if (value) {
+      setLoading(true);
+      try {
+        const result = await requestHealthPermissions();
+        if (result.granted) {
+          setHealthConnect(true);
+          setWearables(true); // Enable wearables when Health Connect is enabled
+          Alert.alert('Success', 'Health Connect access enabled');
+        } else {
+          Alert.alert('Permission Denied', 'Health Connect access was not granted');
+          setHealthConnect(false);
+        }
+      } catch (error) {
+        console.error('Error requesting Health Connect permissions:', error);
+        Alert.alert('Error', 'Failed to enable Health Connect access');
+        setHealthConnect(false);
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      setHealthConnect(false);
+      setWearables(false); // Disable wearables when Health Connect is disabled
+    }
+  };
+
+  const toggleAppleHealth = async (value: boolean) => {
+    if (value) {
+      setLoading(true);
+      try {
+        const result = await requestHealthPermissions();
+        if (result.granted) {
+          setAppleHealth(true);
+          setWearables(true); // Enable wearables when Apple Health is enabled
+          Alert.alert('Success', 'Apple Health access enabled');
+        } else {
+          Alert.alert('Permission Denied', 'Apple Health access was not granted');
+          setAppleHealth(false);
+        }
+      } catch (error) {
+        console.error('Error requesting Apple Health permissions:', error);
+        Alert.alert('Error', 'Failed to enable Apple Health access');
+        setAppleHealth(false);
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      setAppleHealth(false);
+      setWearables(false); // Disable wearables when Apple Health is disabled
+    }
+  };
+
+  const toggleWearables = async (value: boolean) => {
+    if (value) {
+      setLoading(true);
+      try {
+        const result = await requestHealthPermissions();
+        if (result.granted) {
+          setWearables(true);
+          // Also enable the appropriate platform-specific permission
+          if (Platform.OS === 'ios') {
+            setAppleHealth(true);
+          } else if (Platform.OS === 'android') {
+            setHealthConnect(true);
+          }
+          Alert.alert('Success', 'Wearable data access enabled');
+        } else {
+          Alert.alert('Permission Denied', 'Wearable data access was not granted');
+          setWearables(false);
+        }
+      } catch (error) {
+        console.error('Error requesting wearable permissions:', error);
+        Alert.alert('Error', 'Failed to enable wearable data access');
+        setWearables(false);
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      setWearables(false);
+      // Also disable the platform-specific permission
+      setAppleHealth(false);
+      setHealthConnect(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -41,6 +167,13 @@ const HealthDataAccessScreen: React.FC<HealthDataAccessScreenProps> = ({ navigat
             Control which health data sources the app can access. Your data stays secure and private.
           </Text>
 
+          {loading && (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color="#52ab3c" />
+              <Text style={styles.loadingText}>Processing permissions...</Text>
+            </View>
+          )}
+
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Connected Sources</Text>
             
@@ -54,7 +187,7 @@ const HealthDataAccessScreen: React.FC<HealthDataAccessScreenProps> = ({ navigat
               </View>
               <Switch
                 value={healthConnect}
-                onValueChange={setHealthConnect}
+                onValueChange={toggleHealthConnect}
                 trackColor={{ false: '#d1d5db', true: '#52ab3c' }}
                 thumbColor={healthConnect ? '#ffffff' : '#ffffff'}
                 ios_backgroundColor="#d1d5db"
@@ -71,7 +204,7 @@ const HealthDataAccessScreen: React.FC<HealthDataAccessScreenProps> = ({ navigat
               </View>
               <Switch
                 value={appleHealth}
-                onValueChange={setAppleHealth}
+                onValueChange={toggleAppleHealth}
                 trackColor={{ false: '#d1d5db', true: '#52ab3c' }}
                 thumbColor={appleHealth ? '#ffffff' : '#ffffff'}
                 ios_backgroundColor="#d1d5db"
@@ -109,7 +242,7 @@ const HealthDataAccessScreen: React.FC<HealthDataAccessScreenProps> = ({ navigat
               </View>
               <Switch
                 value={wearables}
-                onValueChange={setWearables}
+                onValueChange={toggleWearables}
                 trackColor={{ false: '#d1d5db', true: '#52ab3c' }}
                 thumbColor={wearables ? '#ffffff' : '#ffffff'}
                 ios_backgroundColor="#d1d5db"
@@ -287,6 +420,21 @@ const styles = StyleSheet.create({
     color: '#1e40af',
     flex: 1,
     lineHeight: 18,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    backgroundColor: '#f0fdf4',
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  loadingText: {
+    marginLeft: 12,
+    fontSize: 14,
+    color: '#16a34a',
+    fontWeight: '500',
   },
 });
 

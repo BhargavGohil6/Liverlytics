@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,9 @@ import {
   Switch,
   SafeAreaView,
   StatusBar,
+  Alert,
+  ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { Dimensions } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -17,11 +20,17 @@ import { useNavigation } from '@react-navigation/native';
 import {colors,font} from '../../theme/index';
 import responsive from '../../theme/responsive';
 import {widthPercentageToDP as wp, heightPercentageToDP as hp} from 'react-native-responsive-screen';
+import { requestHealthPermissions, getHealthData } from '../../services/health/HealthService';
 
+interface ToggleItemProps {
+  icon: string;
+  title: string;
+  subtitle: string;
+  value: boolean;
+  onToggle: () => void;
+}
 
-
-
-const ToggleItem = ({ icon, title, subtitle, value, onToggle }) => (
+const ToggleItem: React.FC<ToggleItemProps> = ({ icon, title, subtitle, value, onToggle }) => (
   <View style={styles.toggleItem}>
     <Icon name={icon} size={responsive.fontSize(24)} color={colors.gray666} />
     <View style={styles.toggleContent}>
@@ -37,7 +46,13 @@ const ToggleItem = ({ icon, title, subtitle, value, onToggle }) => (
   </View>
 );
 
-const ConsentItem = ({ color, title, description }) => (
+interface ConsentItemProps {
+  color: string;
+  title: string;
+  description: string;
+}
+
+const ConsentItem: React.FC<ConsentItemProps> = ({ color, title, description }) => (
   <View style={styles.consentItem}>
     <View style={[styles.consentDot, { backgroundColor: color }]} />
     <View style={styles.consentContent}>
@@ -48,7 +63,8 @@ const ConsentItem = ({ color, title, description }) => (
 );
 
 const HealthAccessScreen = () => {
-  const navigation = useNavigation();
+  const navigation: any = useNavigation();
+  
   interface HealthToggles {
     steps: boolean;
     restingHeartRate: boolean;
@@ -68,9 +84,55 @@ const HealthAccessScreen = () => {
     oxygen: true,
     bloodPressure: true,
   });
+  
+  const [loading, setLoading] = useState(false);
+  const [healthData, setHealthData] = useState<any>(null);
 
   const handleToggle = (key: keyof HealthToggles) => {
     setToggles(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const enableHealthSync = async () => {
+    setLoading(true);
+    try {
+      // Request health permissions
+      const permissionResult = await requestHealthPermissions();
+      
+      if (permissionResult.granted) {
+        // Fetch health data based on enabled toggles
+        const data = await getHealthData();
+        setHealthData(data);
+        
+        // Show success message with fetched data
+        let successMessage = 'Health sync enabled successfully!\n\n';
+        if (toggles.steps && data.steps > 0) {
+          successMessage += `Steps: ${data.steps}\n`;
+        }
+        if (toggles.sleepDuration && data.sleepHours > 0) {
+          successMessage += `Sleep: ${data.sleepHours} hours\n`;
+        }
+        if ((toggles.restingHeartRate || toggles.activeHeartRate) && data.heartRate > 0) {
+          successMessage += `Heart Rate: ${data.heartRate} bpm\n`;
+        }
+        if (toggles.calories && data.calories > 0) {
+          successMessage += `Calories: ${data.calories}\n`;
+        }
+        if (toggles.bloodPressure && data.systolic && data.diastolic) {
+          successMessage += `Blood Pressure: ${data.systolic}/${data.diastolic} mmHg\n`;
+        }
+        
+        Alert.alert('Success', successMessage);
+        navigation.navigate('SyncCompleteScreen');
+      } else {
+        // Navigate to error screen if permissions denied
+        navigation.navigate('HealthSyncErrorScreen');
+      }
+    } catch (error) {
+      console.error('Error enabling health sync:', error);
+      Alert.alert('Error', 'Failed to enable health sync. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -78,6 +140,13 @@ const HealthAccessScreen = () => {
       <StatusBar barStyle="dark-content" />
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} >
         
+        {/* Loading overlay */}
+        {loading && (
+          <View style={styles.loadingOverlay}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={styles.loadingText}>Enabling health sync...</Text>
+          </View>
+        )}
 
         {/* Main Title */}
         <Text style={styles.mainTitle}>Allow Health Data Access</Text>
@@ -206,32 +275,22 @@ const HealthAccessScreen = () => {
           </View>
         </View>
 
-        {/* Manual Tracking Option */}
-        {/* <View style={styles.manualSection}>
-          <View style={styles.manualHeader}>
-            <MaterialIcon name="edit" size={responsive.fontSize(20)} color={colors.gray666} />
-            <Text style={styles.manualTitle}>Prefer Manual Tracking?</Text>
-          </View>
-          <View style={styles.manualButtons}>
-            <TouchableOpacity style={styles.manualButton}>
-              <Text style={styles.manualButtonText}>Enter Steps Manually</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.skipButton}>
-              <Text style={styles.skipButtonText}>Skip Sync For Now</Text>
-            </TouchableOpacity>
-          </View>
-          <Text style={styles.manualNote}>
-            Either option enables the Continue button.
-          </Text>
-        </View> */}
-
         {/* Action Buttons */}
-        <TouchableOpacity style={styles.primaryButton} onPress={() => navigation.navigate('HealthSyncErrorScreen')}>
-          <Icon name="link" size={responsive.fontSize(18)} color={colors.white} />
-          <Text style={styles.primaryButtonText}>Enable Health Sync</Text>
+        <TouchableOpacity 
+          style={[styles.primaryButton, loading && styles.disabledButton]} 
+          onPress={enableHealthSync}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator size="small" color={colors.white} />
+          ) : (
+            <Icon name="link" size={responsive.fontSize(18)} color={colors.white} />
+          )}
+          <Text style={styles.primaryButtonText}>
+            {loading ? 'Enabling Health Sync...' : 'Enable Health Sync'}
+          </Text>
         </TouchableOpacity>
        
-        
       </ScrollView>
     </SafeAreaView>
   );
@@ -551,6 +610,26 @@ const styles = StyleSheet.create({
     fontSize: font.xs,
     color: colors.gray999,
     marginTop: responsive.margin(4),
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  loadingText: {
+    marginTop: responsive.margin(10),
+    fontSize: font.base,
+    color: colors.darkGray,
+    fontWeight: '500',
+  },
+  disabledButton: {
+    opacity: 0.7,
   },
 });
 
