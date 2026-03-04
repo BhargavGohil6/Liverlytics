@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -7,42 +7,102 @@ import {
   StyleSheet,
   SafeAreaView,
   StatusBar,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { Dimensions } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcon from 'react-native-vector-icons/MaterialCommunityIcons';
-import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import { useNavigation } from '@react-navigation/native';
-
+import { requestHealthPermissions, getHealthData } from '../../services/health/HealthService';
 
 const { width, height } = Dimensions.get('window');
 const BASE_WIDTH = 375;
 const BASE_HEIGHT = 812;
-const scaleSize = size => (width / BASE_WIDTH) * size;
-const verticalScaleSize = size => (height / BASE_HEIGHT) * size;
-const responsiveFontSize = size => {
+const scaleSize = (size: number) => (width / BASE_WIDTH) * size;
+const verticalScaleSize = (size: number) => (height / BASE_HEIGHT) * size;
+const responsiveFontSize = (size: number) => {
   const scaleFactor = Math.min(width / BASE_WIDTH, height / BASE_HEIGHT);
   return Math.round(size * scaleFactor);
 };
 
 const responsive = {
-  width: size => scaleSize(size),
-  height: size => verticalScaleSize(size),
-  fontSize: size => responsiveFontSize(size),
-  margin: size => scaleSize(size),
-  padding: size => scaleSize(size),
-  borderRadius: size => scaleSize(size),
+  width: (size: number) => scaleSize(size),
+  height: (size: number) => verticalScaleSize(size),
+  fontSize: (size: number) => responsiveFontSize(size),
+  margin: (size: number) => scaleSize(size),
+  padding: (size: number) => scaleSize(size),
+  borderRadius: (size: number) => scaleSize(size),
 };
 
 const HealthSyncErrorScreen = () => {
+    const navigation: any = useNavigation();
+    const [loading, setLoading] = useState(false);
 
-    const navigation = useNavigation();
+    const retryHealthSync = async () => {
+      setLoading(true);
+      try {
+        // Request health permissions again
+        const permissionResult = await requestHealthPermissions();
+        
+        if (permissionResult.granted) {
+          // Fetch health data
+          const data = await getHealthData();
+          
+          // Show success message with fetched data
+          let successMessage = 'Health sync successful!\n\n';
+          if (data.steps > 0) {
+            successMessage += `Steps: ${data.steps}\n`;
+          }
+          if (data.sleepHours > 0) {
+            successMessage += `Sleep: ${data.sleepHours} hours\n`;
+          }
+          if (data.heartRate > 0) {
+            successMessage += `Heart Rate: ${data.heartRate} bpm\n`;
+          }
+          if (data.calories > 0) {
+            successMessage += `Calories: ${data.calories}\n`;
+          }
+          if (data.distance > 0) {
+            successMessage += `Distance: ${Math.round(data.distance)} meters\n`;
+          }
+          if (data.systolic && data.diastolic) {
+            successMessage += `Blood Pressure: ${data.systolic}/${data.diastolic} mmHg\n`;
+          }
+          
+          Alert.alert('Success', successMessage);
+          navigation.navigate('SyncCompleteScreen');
+        } else {
+          Alert.alert(
+            'Permission Denied',
+            'Health sync permissions were denied. Please enable permissions in your device settings.',
+            [
+              { text: 'Try Again', onPress: retryHealthSync },
+              { text: 'Cancel', style: 'cancel' }
+            ]
+          );
+        }
+      } catch (error) {
+        console.error('Error retrying health sync:', error);
+        Alert.alert('Error', 'Failed to sync health data. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        {/* Loading overlay */}
+        {loading && (
+          <View style={styles.loadingOverlay}>
+            <ActivityIndicator size="large" color="#FFF" />
+            <Text style={styles.loadingText}>Syncing health data...</Text>
+          </View>
+        )}
+
         {/* Header */}
         {/* <View style={styles.header}>
           <View style={styles.logoContainer}>
@@ -55,7 +115,7 @@ const HealthSyncErrorScreen = () => {
 
         {/* Title Section */}
         <View style={styles.titleSection}>
-          <TouchableOpacity style={styles.backButton}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
             <Icon name="arrow-back" size={responsive.fontSize(24)} color="#333" />
             {/* <Text style={styles.backText}>Back</Text> */}
           </TouchableOpacity>
@@ -91,7 +151,7 @@ const HealthSyncErrorScreen = () => {
               Liverlytics does not have access to your Health data.
             </Text>
 
-            <Text style={styles.errorText} style={[styles.errorText, styles.marginTop]}>
+            <Text style={[styles.errorText, styles.marginTop]}>
               To sync steps, heart rate, and sleep, please enable Health permissions.
             </Text>
 
@@ -200,12 +260,25 @@ const HealthSyncErrorScreen = () => {
         </View>
 
         {/* Action Buttons */}
-        <TouchableOpacity style={styles.retryButton} onPress={()=>navigation.navigate('SyncCompleteScreen')}>
-          <Icon name="refresh" size={responsive.fontSize(20)} color="#FFF" />
-          <Text style={styles.retryButtonText}>Retry Health Sync</Text>
+        <TouchableOpacity 
+          style={[styles.retryButton, loading && styles.disabledButton]} 
+          onPress={retryHealthSync}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator size="small" color="#FFF" />
+          ) : (
+            <Icon name="refresh" size={responsive.fontSize(20)} color="#FFF" />
+          )}
+          <Text style={styles.retryButtonText}>
+            {loading ? 'Syncing...' : 'Retry Health Sync'}
+          </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.manualButton}>
+        <TouchableOpacity 
+          style={styles.manualButton}
+          onPress={() => navigation.navigate('HealthAccess')}
+        >
           <Text style={styles.manualButtonText}>Use Manual Tracking Instead</Text>
         </TouchableOpacity>
 
@@ -226,7 +299,6 @@ const HealthSyncErrorScreen = () => {
           </Text>
         </TouchableOpacity>
 
-      
       </ScrollView>
     </SafeAreaView>
   );
@@ -235,17 +307,17 @@ const HealthSyncErrorScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: '#FFF',
   },
   scrollView: {
     flex: 1,
+    padding: responsive.padding(20),
   },
   header: {
-    paddingHorizontal: responsive.padding(16),
-    paddingVertical: responsive.padding(16),
-    backgroundColor: '#FFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: responsive.margin(20),
   },
   logoContainer: {
     flexDirection: 'row',
@@ -254,244 +326,205 @@ const styles = StyleSheet.create({
   logo: {
     width: responsive.width(40),
     height: responsive.height(40),
-    borderRadius: responsive.borderRadius(10),
-    backgroundColor: '#52ab3c',
-    alignItems: 'center',
+    borderRadius: responsive.borderRadius(20),
+    backgroundColor: '#007AFF',
     justifyContent: 'center',
-    marginRight: responsive.margin(10),
+    alignItems: 'center',
   },
   brandName: {
-    fontSize: responsive.fontSize(22),
-    fontWeight: '700',
+    marginLeft: responsive.margin(10),
+    fontSize: responsive.fontSize(24),
+    fontWeight: 'bold',
     color: '#333',
   },
   titleSection: {
-    paddingHorizontal: responsive.padding(16),
-    paddingVertical: responsive.padding(20),
-    backgroundColor: '#FFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    marginBottom: responsive.margin(20),
   },
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: responsive.margin(12),
+    marginBottom: responsive.margin(10),
   },
   backText: {
+    marginLeft: responsive.margin(10),
     fontSize: responsive.fontSize(16),
-    color: '#333',
-    marginLeft: responsive.margin(8),
     fontWeight: '500',
+    color: '#333',
   },
   mainTitle: {
     fontSize: responsive.fontSize(24),
-    fontWeight: '700',
+    fontWeight: 'bold',
     color: '#333',
-    marginBottom: responsive.margin(8),
   },
   subtitle: {
-    fontSize: responsive.fontSize(14),
+    marginTop: responsive.margin(10),
+    fontSize: responsive.fontSize(16),
     color: '#666',
-    lineHeight: responsive.height(20),
   },
   errorCard: {
-    backgroundColor: '#E57373',
-    marginHorizontal: responsive.margin(16),
-    marginTop: responsive.margin(20),
-    borderRadius: responsive.borderRadius(12),
+    backgroundColor: '#FFD700',
+    borderRadius: responsive.borderRadius(10),
     padding: responsive.padding(20),
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    marginBottom: responsive.margin(20),
   },
   errorHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: responsive.margin(16),
+    marginBottom: responsive.margin(10),
   },
   errorTitle: {
+    marginLeft: responsive.margin(10),
     fontSize: responsive.fontSize(18),
-    fontWeight: '700',
-    color: '#FFF',
-    marginLeft: responsive.margin(8),
+    fontWeight: 'bold',
+    color: '#333',
   },
   tagContainer: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: responsive.width(8),
-    marginBottom: responsive.margin(12),
+    marginBottom: responsive.margin(10),
   },
   tag: {
-    backgroundColor: '#FFF',
-    paddingHorizontal: responsive.padding(12),
-    paddingVertical: responsive.padding(6),
-    borderRadius: responsive.borderRadius(16),
-  },
-  warningTag: {
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    marginBottom: responsive.margin(16),
-    alignSelf: 'flex-start',
+    backgroundColor: '#007AFF',
+    borderRadius: responsive.borderRadius(10),
+    padding: responsive.padding(5),
+    marginRight: responsive.margin(5),
   },
   tagText: {
-    fontSize: responsive.fontSize(12),
-    fontWeight: '600',
-    color: '#D32F2F',
+    fontSize: responsive.fontSize(14),
+    fontWeight: '500',
+    color: '#FFF',
+  },
+  warningTag: {
+    backgroundColor: '#FF0000',
   },
   errorContent: {
-    marginTop: responsive.margin(8),
+    marginBottom: responsive.margin(10),
   },
   errorSectionTitle: {
-    fontSize: responsive.fontSize(14),
-    fontWeight: '700',
-    color: '#FFF',
-    marginBottom: responsive.margin(4),
+    fontSize: responsive.fontSize(16),
+    fontWeight: 'bold',
+    color: '#333',
   },
   errorText: {
-    fontSize: responsive.fontSize(13),
-    color: '#FFF',
-    lineHeight: responsive.height(18),
+    marginTop: responsive.margin(5),
+    fontSize: responsive.fontSize(14),
+    color: '#333',
   },
   marginTop: {
-    marginTop: responsive.margin(12),
+    marginTop: responsive.margin(10),
   },
   fixSection: {
-    marginTop: responsive.margin(20),
-    paddingHorizontal: responsive.padding(16),
+    marginBottom: responsive.margin(20),
   },
   fixHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: responsive.margin(16),
+    marginBottom: responsive.margin(10),
   },
   fixTitle: {
+    marginLeft: responsive.margin(10),
     fontSize: responsive.fontSize(18),
-    fontWeight: '700',
+    fontWeight: 'bold',
     color: '#333',
-    marginLeft: responsive.margin(8),
   },
   instructionCard: {
-    backgroundColor: '#FFF',
-    borderRadius: responsive.borderRadius(12),
-    padding: responsive.padding(16),
-    marginBottom: responsive.margin(16),
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
+    backgroundColor: '#F0F0F0',
+    borderRadius: responsive.borderRadius(10),
+    padding: responsive.padding(20),
+    marginBottom: responsive.margin(10),
   },
   instructionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: responsive.margin(12),
+    marginBottom: responsive.margin(10),
   },
   instructionTitle: {
-    fontSize: responsive.fontSize(16),
-    fontWeight: '700',
-    color: '#333',
     marginLeft: responsive.margin(10),
+    fontSize: responsive.fontSize(16),
+    fontWeight: 'bold',
+    color: '#333',
   },
   stepsList: {
-    paddingLeft: responsive.padding(8),
+    marginLeft: responsive.margin(20),
   },
   stepItem: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     marginBottom: responsive.margin(10),
   },
   bulletDot: {
     width: responsive.width(6),
     height: responsive.height(6),
     borderRadius: responsive.borderRadius(3),
-    backgroundColor: '#666',
-    marginTop: responsive.margin(6),
+    backgroundColor: '#333',
     marginRight: responsive.margin(10),
   },
   stepText: {
-    flex: 1,
     fontSize: responsive.fontSize(14),
     color: '#333',
-    lineHeight: responsive.height(20),
   },
   retryButton: {
+    backgroundColor: '#007AFF',
+    borderRadius: responsive.borderRadius(10),
+    padding: responsive.padding(15),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#52ab3c',
-    marginHorizontal: responsive.margin(16),
-    marginTop: responsive.margin(24),
-    paddingVertical: responsive.padding(16),
-    borderRadius: responsive.borderRadius(10),
-    shadowColor: '#52ab3c',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
+    marginBottom: responsive.margin(10),
   },
   retryButtonText: {
+    marginLeft: responsive.margin(10),
     fontSize: responsive.fontSize(16),
-    fontWeight: '700',
+    fontWeight: '500',
     color: '#FFF',
-    marginLeft: responsive.margin(8),
   },
   manualButton: {
-    backgroundColor: '#FFF',
-    marginHorizontal: responsive.margin(16),
-    marginTop: responsive.margin(12),
-    paddingVertical: responsive.padding(16),
+    backgroundColor: '#FFD700',
     borderRadius: responsive.borderRadius(10),
+    padding: responsive.padding(15),
+    flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
+    justifyContent: 'center',
+    marginBottom: responsive.margin(10),
   },
   manualButtonText: {
     fontSize: responsive.fontSize(16),
-    fontWeight: '600',
+    fontWeight: '500',
     color: '#333',
   },
   footerInfo: {
-    marginHorizontal: responsive.margin(16),
-    marginTop: responsive.margin(24),
-    paddingHorizontal: responsive.padding(16),
+    marginBottom: responsive.margin(20),
   },
   footerText: {
-    fontSize: responsive.fontSize(12),
+    fontSize: responsive.fontSize(14),
     color: '#666',
-    textAlign: 'center',
-    lineHeight: responsive.height(18),
-    marginBottom: responsive.margin(4),
   },
   troubleLink: {
-    marginHorizontal: responsive.margin(16),
-    marginTop: responsive.margin(20),
-    marginBottom: responsive.margin(32),
     alignItems: 'center',
   },
   troubleLinkText: {
     fontSize: responsive.fontSize(14),
-    color: '#333',
-    fontWeight: '600',
-    textDecorationLine: 'underline',
-    textAlign: 'center',
+    fontWeight: '500',
+    color: '#007AFF',
   },
-  bottomNav: {
-    flexDirection: 'row',
-    backgroundColor: '#FFF',
-    borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
-    paddingVertical: responsive.padding(12),
-    paddingBottom: responsive.padding(24),
-  },
-  navItem: {
-    flex: 1,
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 1000,
   },
-  navText: {
-    fontSize: responsive.fontSize(11),
-    color: '#999',
-    marginTop: responsive.margin(4),
+  loadingText: {
+    marginTop: responsive.margin(10),
+    fontSize: responsive.fontSize(16),
+    color: '#FFF',
+    fontWeight: '500',
+  },
+  disabledButton: {
+    opacity: 0.7,
   },
 });
 
