@@ -77,7 +77,14 @@ export default function VitalsOverviewScreen() {
   // Format the vital values for display
   const rhrValue = vitalData?.heart_rate ? `${vitalData.heart_rate} bpm` : '0';
   const glucoseValue = vitalData?.glucose ? `${vitalData.glucose} mg/dL` : '0';
-  const sleepValue = vitalData?.sleep ? `${vitalData.sleep}m` : '0';
+  
+  // Combine sleep_hours and sleep_minutes into formatted string
+  const sleepHours = vitalData?.sleep_hours || 0;
+  const sleepMinutes = vitalData?.sleep_minutes || 0;
+  const sleepValue = sleepHours > 0 || sleepMinutes > 0 
+    ? `${sleepHours}h ${sleepMinutes}m` 
+    : '0';
+  
   const spO2Value = vitalData?.spo2 ? `${vitalData.spo2}%` : '0';
   const weightValue = vitalData?.weight ? `${vitalData.weight} kg` : '0';
   const bpValue = vitalData?.blood_pressure ? `${vitalData.blood_pressure}` : '0';
@@ -188,7 +195,9 @@ export default function VitalsOverviewScreen() {
                 <Icon name="moon" size={responsive.fontSize(16)} color="#333" />
                 <Text style={styles.vitalLabel}>Sleep</Text>
               </View>
-              <Text style={styles.timeText}>6h 20m</Text>
+              {sleepHours > 0 && sleepMinutes > 0 && (
+                <Text style={styles.timeText}>{sleepHours}h {sleepMinutes}m</Text>
+              )}
             </View>
             <Text style={styles.vitalValue}>{sleepValue}</Text>
             <Text style={styles.vitalDescription}>Last Night</Text>

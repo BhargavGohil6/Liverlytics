@@ -176,13 +176,13 @@ export default function Dashboard() {
 
           <View style={styles.vitalsList}>
             <View style={styles.vitalItem}>
-              <Text style={styles.vitalLabel}>BP: <Text style={styles.vitalValue}>{data?.vital?.blood_pressure || '120/80'}</Text></Text>
+              <Text style={styles.vitalLabel}>BP: <Text style={styles.vitalValue}>{data?.vital?.blood_pressure || ''}</Text></Text>
             </View>
             <View style={styles.vitalItem}>
-              <Text style={styles.vitalLabel}>RHR: <Text style={styles.vitalValue}>{data?.vital?.glucose || '98'} mg/dL</Text></Text>
+              <Text style={styles.vitalLabel}>RHR: <Text style={styles.vitalValue}>{data?.vital?.resting_heart_rate || ''} bpm</Text></Text>
             </View>
             <View style={styles.vitalItemFull}>
-              <Text style={styles.vitalLabel}>Oxygen: <Text style={styles.vitalValue}>{data?.vital?.weight ? `${data.vital.weight} kg` : '72 kg'}</Text></Text>
+              <Text style={styles.vitalLabel}>Oxygen: <Text style={styles.vitalValue}>{data?.vital?.spo2 ? `${data.vital.spo2} ` : ''}</Text></Text>
             </View>
           </View>
 
@@ -210,21 +210,21 @@ export default function Dashboard() {
               <Scale size={20} color="#333" />
               <Text style={styles.sectionTitle}>MELD Score</Text>
             </View>
-            <Text style={styles.meldScore}>Latest: {data?.meld?.inr || '12'}</Text>
+            <Text style={styles.meldScore}>Latest: {formatRelativeTime(data?.meld?.duration || data?.meld?.creation || '')}</Text>
           </View>
 
           <Text style={styles.updateText}>Last updated {formatRelativeTime(data?.meld?.duration || data?.meld?.creation || '')}</Text>
 
           <View style={styles.meldTags}>
             <View style={styles.meldTag}>
-              <Text style={styles.meldTagText}>Bilirubin</Text>
+              <Text style={styles.meldTagText}>Bilirubin: <Text style={styles.dietValue}>{data?.meld?.total_bilirubin || ''}</Text></Text>
             </View>
             <View style={styles.meldTag}>
-              <Text style={styles.meldTagText}>INR</Text>
+              <Text style={styles.meldTagText}>INR: <Text style={styles.dietValue}>{data?.meld?.inr || ''}</Text></Text>
             </View>
-            <View style={styles.meldTag}>
+            {/* <View style={styles.meldTag}>
               <Text style={styles.meldTagText}>Creatinine</Text>
-            </View>
+            </View> */}
           </View>
 
           <View style={styles.cardFooter}>
@@ -259,10 +259,14 @@ export default function Dashboard() {
 
           <View style={styles.dietRow}>
             <View style={styles.dietItem}>
-              <Text style={styles.dietLabel}>Sodium: <Text style={styles.dietValue}>{data?.diet?.sodium ? `${data.diet.sodium} g` : '1.7 g'}</Text></Text>
+              <Text style={styles.dietLabel}>Sodium: <Text style={styles.dietValue}>{data?.diet?.sodium ? `${data.diet.sodium} g` : '0 g'}</Text></Text>
             </View>
             <View style={styles.dietItem}>
-              <Text style={styles.dietLabel}>Fluids: <Text style={styles.dietValue}>{data?.diet?.fluid_ml ? `${(parseFloat(data.diet.fluid_ml) / 1000).toFixed(1)} L` : '1.2 L'}</Text></Text>
+              {/* <Text style={styles.dietLabel}>Fluids: <Text style={styles.dietValue}>{data?.diet?.fluid_ml ? `${(parseFloat(data.diet.fluid_ml) / 1000).toFixed(1)} L` : '1.2 L'}</Text></Text> */}
+              <Text style={styles.dietLabel}>Fluids: <Text style={styles.dietValue}>{data?.diet?.fluid_ml}</Text></Text>
+            </View>
+            <View style={styles.dietItem}>
+              <Text style={styles.dietLabel}>Protein: <Text style={styles.dietValue}>{data?.diet?.protein ? `${data.diet.protein} g` : '0 g'}</Text></Text>
             </View>
           </View>
         </TouchableOpacity>
@@ -282,13 +286,13 @@ export default function Dashboard() {
 
           <View style={styles.exerciseList}>
             <View style={styles.exerciseItem}>
-              <Text style={styles.exerciseLabel}>Steps: <Text style={styles.exerciseValue}>{data?.exercise?.steps || data?.vital?.steps || '6,420'}</Text></Text>
+              <Text style={styles.exerciseLabel}>Steps: <Text style={styles.exerciseValue}>{data?.exercise?.steps || data?.vital?.steps || '0'}</Text></Text>
             </View>
             <View style={styles.exerciseItem}>
-              <Text style={styles.exerciseLabel}>Rest HR: <Text style={styles.exerciseValue}>{data?.exercise?.resting_hr || '62'} bpm</Text></Text>
+              <Text style={styles.exerciseLabel}>Rest HR: <Text style={styles.exerciseValue}>{data?.exercise?.resting_hr || '0'} bpm</Text></Text>
             </View>
             <View style={styles.exerciseItemFull}>
-              <Text style={styles.exerciseLabel}>Sleep: <Text style={styles.exerciseValue}>{data?.exercise?.sleep_minutes || data?.vital?.sleep || '410'} min</Text></Text>
+              <Text style={styles.exerciseLabel}>Sleep: <Text style={styles.exerciseValue}>{data?.exercise?.sleep_hours ? `${data.exercise.sleep_hours} hours` : data?.exercise?.sleep_minutes || data?.vital?.sleep || '0'} min</Text></Text>
             </View>
           </View>
 
@@ -579,15 +583,29 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   dietRow: {
+    // flexDirection: 'row',
+    // gap: responsive.width(12),
+    //  width: responsive.width(310),
+    // flexWrap: 'wrap', 
+    marginBottom: responsive.margin(16),
     flexDirection: 'row',
-    gap: responsive.width(12),
+    alignItems: 'center',
+    gap: responsive.width(8),
+    width: responsive.width(310),
+    flexWrap: 'wrap', 
+   
   },
   dietItem: {
-    flex: 1,
-    backgroundColor: '#F8F8F8',
+    // flex: 1,
+    // backgroundColor: '#F8F8F8',
+    // paddingVertical: responsive.padding(10),
+    // paddingHorizontal: responsive.padding(12),
+    // borderRadius: responsive.borderRadius(8),
+     backgroundColor: '#F8F8F8',
     paddingVertical: responsive.padding(10),
     paddingHorizontal: responsive.padding(12),
     borderRadius: responsive.borderRadius(8),
+    marginBottom: responsive.margin(8),
   },
   dietLabel: {
     fontSize: responsive.fontSize(14),

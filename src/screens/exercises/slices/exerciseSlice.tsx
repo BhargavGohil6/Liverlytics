@@ -11,6 +11,7 @@ export interface ExerciseData {
   calories_burned?: string;
   blood_pressure?: string;
   sleep_minutes?: string;
+  sleep_hours?: number;
   user?: string;
   date?: string;
   creation?: string;

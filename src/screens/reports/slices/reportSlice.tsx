@@ -66,6 +66,13 @@ export interface ParameterData {
   previous_value: string;
 }
 
+// Interface for MELD metadata object (second item in data array)
+export interface MELDMetadata {
+  MELD_NA_count?: number;
+  MELD_3_count?: number;
+  MELD_TIMESTAMP?: string;
+}
+
 export interface AILabReportItem {
   name: string;
   gender: string;
@@ -89,12 +96,18 @@ export interface AILabReportItem {
   };
 }
 
+// Union type for data array items
+export type AILabReportDataItem = AILabReportItem | MELDMetadata;
+
 export interface AILabReportApiResponse {
   message: {
     status: string;
     count: number;
     user: string;
-    data: AILabReportItem[];
+    meld_na_count?: number;
+    meld_3_count?: number;
+    meld_timestamp?: string;
+    data: AILabReportDataItem[];
   };
 }
 
@@ -225,10 +238,13 @@ export interface LabReportState {
   meldError: string | null;
   uploadComplete: boolean;
   userDocuments: UserDocument[];
-  aiLabReports: AILabReportItem[];
+  aiLabReports: (AILabReportItem | MELDMetadata)[];
   latestTwoAILabReports: LatestTwoAILabReportItem[];
   latestTwoAILabReportsLoading: boolean;
   latestTwoAILabReportsError: string | null;
+  meldNaCount?: number;
+  meld3Count?: number;
+  meldTimestamp?: string;
 }
 
 // API call for file upload
@@ -331,13 +347,19 @@ export const addAILabReport = createAsyncThunk<
 // Async thunk to fetch AI Lab Reports
 export const fetchAILabReports = createAsyncThunk<
   AILabReportApiResponse,
-  { user: string },
+  { user: string; ai_lab_report_document?: string },
   { rejectValue: string }
->('reports/fetchAILabReports', async ({ user }, { rejectWithValue }) => {
+>('reports/fetchAILabReports', async ({ user, ai_lab_report_document }, { rejectWithValue }) => {
   try {
-    const response = await api.post('/cirrhosis_custom.cirrhosis_ai_lab_report.get_ai_lab_report', {
-      user: user
-    });
+    const requestBody: any = { user: user };
+    
+    // Add document name if provided
+    if (ai_lab_report_document) {
+      requestBody.ai_lab_report_document = ai_lab_report_document;
+    }
+    
+    const response = await api.post('/cirrhosis_custom.cirrhosis_ai_lab_report.get_ai_lab_report', requestBody);
+    console.log('AI Lab Reports response:', response.data)
     return response.data;
   } catch (error: any) {
     const msg =
@@ -352,13 +374,18 @@ export const fetchAILabReports = createAsyncThunk<
 
 export const fetchLatestTwoAILabReports = createAsyncThunk<
   LatestTwoAILabReportApiResponse,
-  { user: string },
+  { user: string; ai_lab_report_document?: string },
   { rejectValue: string }
->('reports/fetchLatestTwoAILabReports', async ({ user }, { rejectWithValue }) => {
+>('reports/fetchLatestTwoAILabReports', async ({ user, ai_lab_report_document }, { rejectWithValue }) => {
   try {
-    const response = await api.post('/cirrhosis_custom.cirrhosis_ai_lab_report.get_latest_two_ai_report', {
-      user: user
-    });
+    const requestBody: any = { user: user };
+    
+    // Add document name if provided
+    if (ai_lab_report_document) {
+      requestBody.ai_lab_report_document = ai_lab_report_document;
+    }
+    
+    const response = await api.post('/cirrhosis_custom.cirrhosis_ai_lab_report.get_latest_two_ai_report', requestBody);
     return response.data;
   } catch (error: any) {
     const msg =
@@ -525,6 +552,24 @@ const reportSlice = createSlice({
       .addCase(fetchAILabReports.fulfilled, (state, action: PayloadAction<AILabReportApiResponse>) => {
         state.loading = false;
         state.aiLabReports = action.payload.message.data;
+        // Extract MELD values from the second object in data array if available
+        if (action.payload.message.data.length > 1) {
+          const meldMetadata = action.payload.message.data[1] as MELDMetadata;
+          if (meldMetadata.MELD_NA_count !== undefined) {
+            state.meldNaCount = meldMetadata.MELD_NA_count;
+          }
+          if (meldMetadata.MELD_3_count !== undefined) {
+            state.meld3Count = meldMetadata.MELD_3_count;
+          }
+          if (meldMetadata.MELD_TIMESTAMP !== undefined) {
+            state.meldTimestamp = meldMetadata.MELD_TIMESTAMP;
+          }
+        } else {
+          // Fallback to top-level message fields if MELD metadata object is not present
+          state.meldNaCount = action.payload.message.meld_na_count;
+          state.meld3Count = action.payload.message.meld_3_count;
+          state.meldTimestamp = action.payload.message.meld_timestamp;
+        }
       })
       .addCase(fetchAILabReports.rejected, (state, action) => {
         state.loading = false;

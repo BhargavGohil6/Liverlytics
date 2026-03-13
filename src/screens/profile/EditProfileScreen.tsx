@@ -188,22 +188,49 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation }) => 
       };
       
       const result = await dispatch(updateUserProfile(updatedProfile));
-      if (updateUserProfile.fulfilled.match(result)) {
+      
+      // Check if the result has an error payload (rejected)
+      if (updateUserProfile.rejected.match(result)) {
+        // API returned an error - display the error message from payload
+        const errorMessage = result.payload || 'Failed to update profile';
         Toast.show({
-          type: 'success',
-          text1: 'Success',
-          text2: 'Profile updated successfully!',
+          type: 'error',
+          text1: 'Error',
+          text2: errorMessage,
           visibilityTime: 3000,
         });
-        navigation.goBack();
-      } else {
-        throw new Error(result.payload || 'Failed to update profile');
+        return;
       }
+      
+      // Check if the response contains a failure status in the message
+      const responseData = result.payload;
+      if (responseData?.message?.status === 'fail') {
+        // API returned status: fail - display the error message
+        const errorMessage = responseData.message.message || 'Failed to update profile';
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: errorMessage,
+          visibilityTime: 3000,
+        });
+        return;
+      }
+      
+      // Success case - profile updated successfully
+      Toast.show({
+        type: 'success',
+        text1: 'Success',
+        text2: 'Profile updated successfully!',
+        visibilityTime: 3000,
+      });
+      navigation.goBack();
     } catch (error: any) {
+      // Display the actual error message from API response
+      const errorMessage = error.message || 'Failed to update profile';
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: error.message || 'Failed to update profile',
+        text2: errorMessage,
         visibilityTime: 3000,
       });
     } finally {

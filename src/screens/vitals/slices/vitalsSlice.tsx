@@ -12,6 +12,8 @@ export interface VitalsData {
   blood_pressure_diastolic?: string | number;
   spo2?: string | number;
   sleep?: string | number;
+  sleep_hours?: number;
+  sleep_minutes?: number;
   user?: string;
   date?: string;
   vital_id?: string;
@@ -19,7 +21,6 @@ export interface VitalsData {
   blood_pressure?: string | number;
   steps?: string | number;
   spO2?: string | number; 
-  sleep_minutes?: number;
   weight_unit?: string;
 }
 
@@ -33,6 +34,8 @@ export interface VitalRecord {
   blood_pressure_systolic?: number;
   blood_pressure_diastolic?: number;
   sleep?: number;
+  sleep_hours?: number;
+  sleep_minutes?: number;
   steps?: number;
   glucose?: number;
   spo2?: number;
@@ -226,6 +229,8 @@ export const addVitals = createAsyncThunk<
     if (vitalsData.blood_pressure_diastolic !== undefined) payload.blood_pressure_diastolic = vitalsData.blood_pressure_diastolic;
     if (vitalsData.spo2 !== undefined) payload.spo2 = vitalsData.spo2;
     if (vitalsData.sleep !== undefined) payload.sleep = vitalsData.sleep;
+    if (vitalsData.sleep_hours !== undefined) payload.sleep_hours = vitalsData.sleep_hours;
+    if (vitalsData.sleep_minutes !== undefined) payload.sleep_minutes = vitalsData.sleep_minutes;
     if (vitalsData.user !== undefined) payload.user = vitalsData.user;
     
     // Handle date
@@ -327,6 +332,8 @@ export const updateVitals = createAsyncThunk<
     if (vitalsData.blood_pressure_diastolic !== undefined) payload.blood_pressure_diastolic = vitalsData.blood_pressure_diastolic;
     if (vitalsData.spo2 !== undefined) payload.spo2 = vitalsData.spo2;
     if (vitalsData.sleep !== undefined) payload.sleep = vitalsData.sleep;
+    if (vitalsData.sleep_hours !== undefined) payload.sleep_hours = vitalsData.sleep_hours;
+    if (vitalsData.sleep_minutes !== undefined) payload.sleep_minutes = vitalsData.sleep_minutes;
     if (vitalsData.user !== undefined) payload.user = vitalsData.user;
     if (vitalsData.date !== undefined) payload.date = vitalsData.date;
     

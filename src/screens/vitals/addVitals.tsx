@@ -53,6 +53,7 @@ export default function AddVitalsScreen() {
   const [heartRate, setHeartRate] = useState('');
   const [restingHR, setRestingHR] = useState('');
   const [glucose, setGlucose] = useState('');
+  const [sleepHours, setSleepHours] = useState('');
   const [sleepMinutes, setSleepMinutes] = useState('');
   const [spo2, setSpo2] = useState('');
   const [weight, setWeight] = useState('');
@@ -75,7 +76,8 @@ export default function AddVitalsScreen() {
       heart_rate: heartRate ? parseFloat(heartRate) : undefined,
       resting_heart_rate: restingHR ? parseFloat(restingHR) : undefined,
       glucose: glucose ? parseFloat(glucose) : undefined,
-      sleep: sleepMinutes ? parseInt(sleepMinutes, 10) : undefined,
+      sleep_hours: sleepHours ? parseInt(sleepHours, 10) : undefined,
+      sleep_minutes: sleepMinutes ? parseInt(sleepMinutes, 10) : undefined,
       spo2: spo2 ? parseFloat(spo2) : undefined,
       weight: weight ? parseFloat(weight) : undefined,
       blood_pressure_systolic: systolic ? parseInt(systolic, 10) : undefined,
@@ -87,6 +89,7 @@ export default function AddVitalsScreen() {
     setHeartRate('');
     setRestingHR('');
     setGlucose('');
+    setSleepHours('');
     setSleepMinutes('');
     setSpo2('');
     setWeight('');
@@ -150,6 +153,7 @@ export default function AddVitalsScreen() {
       setHeartRate('');
       setRestingHR('');
       setGlucose('');
+      setSleepHours('');
       setSleepMinutes('');
       setSpo2('');
       setWeight('');
@@ -222,6 +226,17 @@ export default function AddVitalsScreen() {
       const sleepValue = record.sleep.toString();
       setSleepMinutes(sleepValue);
       console.log('Setting sleepMinutes:', sleepValue);
+    }
+    // Handle sleep_hours and sleep_minutes if available
+    if (record.sleep_hours !== undefined && record.sleep_hours !== null) {
+      const sleepHoursValue = record.sleep_hours.toString();
+      setSleepHours(sleepHoursValue);
+      console.log('Setting sleepHours:', sleepHoursValue);
+    }
+    if (record.sleep_minutes !== undefined && record.sleep_minutes !== null) {
+      const sleepMinutesValue = record.sleep_minutes.toString();
+      setSleepMinutes(sleepMinutesValue);
+      console.log('Setting sleepMinutes:', sleepMinutesValue);
     }
     if (record.glucose !== undefined && record.glucose !== null) {
       const glucoseValue = record.glucose.toString();
@@ -376,19 +391,32 @@ export default function AddVitalsScreen() {
           </View>
         </View>
 
-        {/* Sleep Minutes */}
+        {/* Sleep Duration */}
         <View style={styles.inputCard}>
-          <Text style={styles.label}>Sleep Minutes</Text>
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.input}
-              placeholder="Tap to enter"
-              placeholderTextColor="#999"
-              keyboardType="numeric"
-              value={sleepMinutes}
-              onChangeText={setSleepMinutes}
-            />
-            <Text style={styles.unit}>min</Text>
+          <Text style={styles.label}>Sleep Duration</Text>
+          <View style={styles.sleepContainer}>
+            <View style={styles.sleepInputWrapper}>
+              <TextInput
+                style={styles.input}
+                placeholder="Hours"
+                placeholderTextColor="#999"
+                keyboardType="numeric"
+                value={sleepHours}
+                onChangeText={setSleepHours}
+              />
+              <Text style={styles.unit}>hr</Text>
+            </View>
+            <View style={styles.sleepInputWrapper}>
+              <TextInput
+                style={styles.input}
+                placeholder="Minutes"
+                placeholderTextColor="#999"
+                keyboardType="numeric"
+                value={sleepMinutes}
+                onChangeText={setSleepMinutes}
+              />
+              <Text style={styles.unit}>min</Text>
+            </View>
           </View>
           <View style={styles.infoRow}>
             <Icon name="moon" size={16} color="#666" />
@@ -730,6 +758,20 @@ const styles = StyleSheet.create({
     fontSize: font.sm,
     color: colors.gray666,
     marginLeft: responsive.margin(8),
+  },
+  sleepContainer: {
+    flexDirection: 'row',
+    gap: responsive.width(12),
+    marginBottom: responsive.margin(12),
+  },
+  sleepInputWrapper: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.gray100,
+    borderRadius: responsive.borderRadius(8),
+    paddingHorizontal: responsive.padding(16),
+    paddingVertical: responsive.padding(14),
   },
   aiInfoCard: {
     backgroundColor: colors.darkGreen,

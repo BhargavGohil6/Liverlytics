@@ -28,7 +28,8 @@ const ExerciseActivityScreen = ({ navigation }: { navigation: any }) => {
   const [oxygen, setOxygen] = useState('');
   const [calories, setCalories] = useState('');
   const [bp, setBp] = useState('');
-  const [sleep, setSleep] = useState('');
+  const [sleepHours, setSleepHours] = useState('');
+  const [sleepMinutes, setSleepMinutes] = useState('');
   
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
@@ -55,8 +56,11 @@ const ExerciseActivityScreen = ({ navigation }: { navigation: any }) => {
           setCalories(healthData.calories.toString());
         }
         if (healthData.sleepHours > 0) {
-          // Convert hours to minutes for the sleep input
-          setSleep((healthData.sleepHours * 60).toString());
+          // Split sleep hours into hours and minutes
+          const hours = Math.floor(healthData.sleepHours);
+          const minutes = Math.round((healthData.sleepHours - hours) * 60);
+          setSleepHours(hours.toString());
+          setSleepMinutes(minutes.toString());
         }
         if (healthData.distance > 0) {
           // You might want to use distance as a proxy for active heart rate or other metrics
@@ -272,20 +276,33 @@ const ExerciseActivityScreen = ({ navigation }: { navigation: any }) => {
             <View style={styles.card}>
               <View style={styles.inputHeader}>
                 <Icon name="moon-outline" size={20} color="#1f2937" />
-                <Text style={styles.inputLabel}>Sleep (minutes)</Text>
+                <Text style={styles.inputLabel}>Sleep Duration</Text>
               </View>
-              <View style={styles.inputContainerWithoutBorder}>
-                <CommonTextInput
-                  value={sleep}
-                  onChangeText={setSleep}
-                  placeholder="e.g., 420"
-                  keyboardType="numeric"
-                  suffixText="min"
-                  style={styles.commonInputStyle}
-                  borderColor="transparent"
-                  radius={8}
-                  padding={12}
-                />
+              <View style={styles.sleepRow}>
+                <View style={styles.sleepInputContainer}>
+                  <CommonTextInput
+                    value={sleepHours}
+                    onChangeText={setSleepHours}
+                    placeholder="0"
+                    keyboardType="numeric"
+                    suffixText="hrs"
+                    style={styles.commonInputStyle}
+                    borderColor="transparent"
+                    radius={8}
+                  />
+                </View>
+                <View style={styles.sleepInputContainer}>
+                  <CommonTextInput
+                    value={sleepMinutes}
+                    onChangeText={setSleepMinutes}
+                    placeholder="0"
+                    keyboardType="numeric"
+                    suffixText="min"
+                    style={styles.commonInputStyle}
+                    borderColor="transparent"
+                    radius={8}
+                  />
+                </View>
               </View>
               <Text style={styles.inputHint}>Prefilled when synced; editable anytime.</Text>
             </View>
@@ -305,7 +322,8 @@ const ExerciseActivityScreen = ({ navigation }: { navigation: any }) => {
                     oxygen_saturation: oxygen,
                     calories_burned: calories,
                     blood_pressure: bp,
-                    sleep_minutes: sleep,
+                    sleep_hours: sleepHours,
+                    sleep_minutes: sleepMinutes,
                     steps: steps,
                     user: user?.email || '', // Fallback to default email
                   };
@@ -450,6 +468,19 @@ const styles = StyleSheet.create({
     // paddingHorizontal: responsive.padding(10),
     marginBottom: responsive.margin(8),
     
+  },
+  sleepRow: {
+    flexDirection: 'row',
+    gap: responsive.margin(12),
+    marginBottom: responsive.margin(8),
+  },
+  sleepInputContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: responsive.borderRadius(8),
   },
   commonInputStyle: {
      flex: 1,

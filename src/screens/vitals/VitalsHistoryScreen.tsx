@@ -34,6 +34,9 @@ const VitalsHistoryScreen: React.FC<VitalsHistoryScreenProps> = ({ navigation })
   const [endDate, setEndDate] = useState<string>('');
   const [tempStartDate, setTempStartDate] = useState<string>('');
   const [tempEndDate, setTempEndDate] = useState<string>('');
+  const [showLeftArrow, setShowLeftArrow] = useState(false);
+  const [showRightArrow, setShowRightArrow] = useState(true);
+  const [displayCount, setDisplayCount] = useState(10);
   
   const dispatch: AppDispatch = useDispatch();
   const { todayData, loading, error } = useSelector((state: RootState) => state.vitals);
@@ -94,6 +97,27 @@ const VitalsHistoryScreen: React.FC<VitalsHistoryScreenProps> = ({ navigation })
     }
   }, [dispatch, user?.email, selectedDays, startDate, endDate]);
   
+  const getChartColor = (metric: string, lineIndex: number = 0) => {
+    switch(metric) {
+      case 'Heart Rate':
+      case 'Resting HR':
+        return '#4ECDC4'; // Teal
+      case 'Glucose':
+        return '#FF6B6B'; // Red
+      case 'Sleep':
+        return '#FF6B6B'; // Red
+      case 'SpO₂':
+        return '#6BCB77'; // Light Green
+      case 'Weight':
+        return '#52AB3C'; // Green
+      case 'Blood Pressure':
+        // Return array of colors for systolic and diastolic
+        return lineIndex === 0 ? '#FFD93D' : '#FF6B6B'; // Yellow for systolic, Red for diastolic
+      default:
+        return '#52a64a'; // Default Green
+    }
+  };
+
   // Process the fetched data when it's available
   useEffect(() => {
     if (todayData && todayData.data) {
@@ -117,43 +141,83 @@ const VitalsHistoryScreen: React.FC<VitalsHistoryScreenProps> = ({ navigation })
       
       // Transform the data to match the expected format for display
       const transformedData = processedData.map((vital: any) => {
-        // For demonstration, using heart_rate as the main metric
-        // In a real implementation, you'd want to map based on the selected metric
         let value, unit = 'bpm';
+        let numericValue = 0; // For chart display
+        let systolicValue = 0; // For blood pressure systolic
+        let diastolicValue = 0; // For blood pressure diastolic
         
         switch(selectedMetric) {
           case 'Heart Rate':
             value = vital.heart_rate;
             unit = 'bpm';
+            numericValue = Number(vital.heart_rate) || 0;
+            break;
+          case 'Resting HR':
+            value = vital.resting_heart_rate;
+            unit = 'bpm';
+            numericValue = Number(vital.resting_heart_rate) || 0;
             break;
           case 'Glucose':
             value = vital.glucose;
             unit = 'mg/dL';
+            numericValue = Number(vital.glucose) || 0;
             break;
           case 'Sleep':
-            value = vital.sleep;
-            unit = 'm';
+            // Combine sleep_hours and sleep_minutes into total minutes or hours
+            const hours = vital.sleep_hours || 0;
+            const minutes = vital.sleep_minutes || 0;
+            // Display in hours (e.g., "7h 10m" or "7.17h")
+            if (hours > 0 && minutes > 0) {
+              value = `${hours}h ${minutes}m`;
+            } else if (hours > 0) {
+              value = `${hours}h`;
+            } else if (minutes > 0) {
+              value = `${minutes}m`;
+            } else {
+              value = 0;
+            }
+            // For chart: convert to decimal hours (e.g., 6h 30m = 6.5 hours)
+            numericValue = hours + (minutes / 60); // Decimal hours for chart
+            unit = '';
             break;
           case 'SpO₂':
             value = vital.spo2;
             unit = '%';
+            numericValue = Number(vital.spo2) || 0;
             break;
           case 'Weight':
             value = vital.weight;
             unit = 'kg';
+            numericValue = Number(vital.weight) || 0;
             break;
           case 'Blood Pressure':
             value = vital.blood_pressure;
             unit = 'mmHg';
+            // Handle blood pressure format (e.g., "120/80")
+            if (value && typeof value === 'string' && value.includes('/')) {
+              systolicValue = Number(value.split('/')[0]) || 0;
+              diastolicValue = Number(value.split('/')[1]) || 0;
+              numericValue = systolicValue; // Use systolic for single value display
+            } else {
+              // Use separate systolic/diastolic fields if available
+              systolicValue = Number(vital.blood_pressure_systolic) || 0;
+              diastolicValue = Number(vital.blood_pressure_diastolic) || 0;
+              numericValue = systolicValue;
+            }
             break;
           default:
             value = vital.heart_rate;
             unit = 'bpm';
+            numericValue = Number(vital.heart_rate) || 0;
         }
         
         return {
           date: vital.date ? new Date(vital.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : 'Unknown',
+          dateRaw: vital.date ? new Date(vital.date).toISOString().split('T')[0] : '',
           value: value || 0,
+          numericValue: numericValue, // Add numeric value for chart
+          systolicValue: systolicValue, // Add systolic for BP chart
+          diastolicValue: diastolicValue, // Add diastolic for BP chart
           flag: '', // You can implement logic to determine flags based on the data
           source: vital.creation ? 'Manual' : 'Wearable', // Assuming creation means manually entered
           unit: unit,
@@ -164,6 +228,27 @@ const VitalsHistoryScreen: React.FC<VitalsHistoryScreenProps> = ({ navigation })
       setVitalsData(transformedData);
     }
   }, [todayData, selectedMetric]);
+  
+  // Reset display count when data changes
+  useEffect(() => {
+    setDisplayCount(10);
+  }, [vitalsData]);
+
+  const metricsList = ['Heart Rate', 'Resting HR', 'Glucose', 'Sleep', 'SpO₂', 'Weight', 'Blood Pressure'];
+  const scrollViewRef = React.useRef<ScrollView>(null);
+  const [currentScrollX, setCurrentScrollX] = useState(0);
+  
+  const scrollLeft = () => {
+    const newX = Math.max(0, currentScrollX - 200);
+    scrollViewRef.current?.scrollTo({ x: newX, animated: true });
+    setCurrentScrollX(newX);
+  };
+  
+  const scrollRight = () => {
+    const newX = currentScrollX + 200;
+    scrollViewRef.current?.scrollTo({ x: newX, animated: true });
+    setCurrentScrollX(newX);
+  };
 
   const handleDayPress = (day: DateData) => {
     const dateString = day.dateString;
@@ -313,29 +398,64 @@ const VitalsHistoryScreen: React.FC<VitalsHistoryScreenProps> = ({ navigation })
         )}
 
         {/* Metrics Selector */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.metricsScroll}>
-          {['Heart Rate', 'Resting HR', 'Glucose', 'Sleep', 'SpO₂', 'Weight', 'Blood Pressure'].map(
-            (metric) => (
-              <TouchableOpacity
-                key={metric}
-                style={[
-                  styles.metricButton,
-                  selectedMetric === metric && styles.metricButtonActive,
-                ]}
-                onPress={() => setSelectedMetric(metric)}
-              >
-                <Text
+        <View style={styles.metricsContainer}>
+          <TouchableOpacity
+            style={[styles.arrowButton, showLeftArrow ? styles.arrowVisible : styles.arrowHidden]}
+            onPress={scrollLeft}
+            disabled={!showLeftArrow}
+          >
+            <Icon name="chevron-back" size={24} color="#333" />
+          </TouchableOpacity>
+          
+          <ScrollView 
+            ref={scrollViewRef}
+            horizontal 
+            showsHorizontalScrollIndicator={false} 
+            style={styles.metricsScroll}
+            onScroll={(event) => {
+              const scrollPosition = event.nativeEvent.contentOffset.x;
+              const containerWidth = event.nativeEvent.layoutMeasurement.width;
+              const contentWidth = event.nativeEvent.contentSize.width;
+              const maxScroll = contentWidth - containerWidth;
+              
+              setCurrentScrollX(scrollPosition);
+              setShowLeftArrow(scrollPosition > 10);
+              setShowRightArrow(scrollPosition < maxScroll - 10);
+            }}
+            scrollEventThrottle={16}
+            contentContainerStyle={styles.metricsContent}
+          >
+            {metricsList.map(
+              (metric) => (
+                <TouchableOpacity
+                  key={metric}
                   style={[
-                    styles.metricText,
-                    selectedMetric === metric && styles.metricTextActive,
+                    styles.metricButton,
+                    selectedMetric === metric && styles.metricButtonActive,
                   ]}
+                  onPress={() => setSelectedMetric(metric)}
                 >
-                  {metric}
-                </Text>
-              </TouchableOpacity>
-            )
-          )}
-        </ScrollView>
+                  <Text
+                    style={[
+                      styles.metricText,
+                      selectedMetric === metric && styles.metricTextActive,
+                    ]}
+                  >
+                    {metric}
+                  </Text>
+                </TouchableOpacity>
+              )
+            )}
+          </ScrollView>
+          
+          <TouchableOpacity
+            style={[styles.arrowButton, showRightArrow ? styles.arrowVisible : styles.arrowHidden]}
+            onPress={scrollRight}
+            disabled={!showRightArrow}
+          >
+            <Icon name="chevron-forward" size={24} color="#333" />
+          </TouchableOpacity>
+        </View>
 
         {/* Chart */}
         <View style={styles.chartContainer}>
@@ -354,18 +474,36 @@ const VitalsHistoryScreen: React.FC<VitalsHistoryScreenProps> = ({ navigation })
           ) : vitalsData.length > 0 ? (
             <LineChart
               data={{
-                labels: vitalsData.slice(0, 7).map(item => item.date.substring(0, 3)), // Use first 3 letters of the date
-                datasets: [{
-                  data: vitalsData.slice(0, 7).map(item => {
-                    // Handle blood pressure format (e.g., "120/80")
-                    if (selectedMetric === 'Blood Pressure' && item.value && typeof item.value === 'string' && item.value.includes('/')) {
-                      // Use the systolic value (first number) for the chart
-                      return Number(item.value.split('/')[0]);
+                labels: vitalsData.slice(0, 7).map(item => {
+                  // For 7 days filter, show day names (Mon, Tue, etc.)
+                  // For other filters, show dates (MMM DD)
+                  if (selectedDays === '7') {
+                    return item.date.substring(0, 3); // First 3 letters (e.g., "Mon")
+                  } else {
+                    // Format as "MMM DD" (e.g., "Jan 15")
+                    // Date format is like "Mon, Jan 15" - extract "Jan 15"
+                    const parts = item.date.split(', ');
+                    if (parts.length >= 2) {
+                      return parts[1]; // Returns "Jan 15"
                     }
-                    return Number(item.value) || 0;
-                  })
-                }],
-                legend: [selectedMetric], // Use the selected metric as the legend
+                    return item.date;
+                  }
+                }),
+                datasets: selectedMetric === 'Blood Pressure' 
+                  ? [
+                      {
+                        data: vitalsData.slice(0, 7).map(item => item.systolicValue || 0),
+                        color: (opacity = 1) => `rgba(255, 217, 61, ${opacity})`, // Yellow for systolic
+                      },
+                      {
+                        data: vitalsData.slice(0, 7).map(item => item.diastolicValue || 0),
+                        color: (opacity = 1) => `rgba(255, 107, 107, ${opacity})`, // Red for diastolic
+                      }
+                    ]
+                  : [{
+                      data: vitalsData.slice(0, 7).map(item => item.numericValue || 0)
+                    }],
+                legend: selectedMetric === 'Blood Pressure' ? ['Systolic', 'Diastolic'] : [selectedMetric],
               }}
               width={width - responsive.width(48)}
               height={responsive.height(200)}
@@ -373,15 +511,39 @@ const VitalsHistoryScreen: React.FC<VitalsHistoryScreenProps> = ({ navigation })
                 backgroundColor: '#fff',
                 backgroundGradientFrom: '#fff',
                 backgroundGradientTo: '#fff',
-                decimalPlaces: 0,
-                color: (opacity = 1) => `rgba(82, 166, 74, ${opacity})`,
+                decimalPlaces: selectedMetric === 'SpO₂' ? 1 : 0,
+                color: (opacity = 1) => {
+                  if (selectedMetric === 'Blood Pressure') {
+                    // This will be overridden by dataset-specific colors
+                    return `rgba(255, 217, 61, ${opacity})`;
+                  }
+                  const hexColor = getChartColor(selectedMetric);
+                  const r = parseInt(hexColor.substring(1, 3), 16);
+                  const g = parseInt(hexColor.substring(3, 5), 16);
+                  const b = parseInt(hexColor.substring(5, 7), 16);
+                  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+                },
+                labelColor: (opacity = 1) => `rgba(107, 114, 128, ${opacity})`,
                 strokeWidth: responsive.width(2),
                 style: { borderRadius: responsive.borderRadius(16) },
                 propsForDots: {
                   r: responsive.width(4),
                   strokeWidth: responsive.width(2),
-                  stroke: '#52a64a'
+                  stroke: selectedMetric === 'Blood Pressure' ? '#FFD93D' : getChartColor(selectedMetric)
                 },
+                formatYLabel: (ylabel) => {
+                  // Special formatting for sleep chart (show as decimal hours)
+                  if (selectedMetric === 'Sleep') {
+                    const numValue = Number(ylabel);
+                    // Round to 1 decimal place
+                    return numValue.toFixed(1) + 'h';
+                  }
+                  return ylabel;
+                },
+                propsForLabels: {
+                  fontSize: selectedDays === '7' ? 12 : 10,
+                  fontWeight: selectedDays === '7' ? '500' : '400',
+                }
               }}
               bezier
               style={styles.chart}
@@ -390,18 +552,33 @@ const VitalsHistoryScreen: React.FC<VitalsHistoryScreenProps> = ({ navigation })
             <Text style={{ textAlign: 'center', padding: responsive.padding(20) }}>No data available</Text>
           )}
           <View style={styles.chartLegend}>
-            <View style={styles.legendItem}>
-              <View style={styles.legendDot} />
-              <Text style={styles.legendText}>Measured</Text>
-            </View>
-            <View style={styles.legendItem}>
-              <Icon name="warning-outline" size={responsive.fontSize(16)} color="#666" />
-              <Text style={styles.legendText}>AI anomaly</Text>
-            </View>
-            <View style={styles.legendItem}>
-              <Icon name="pulse-outline" size={responsive.fontSize(16)} color="#666" />
-              <Text style={styles.legendText}>Variable with spikes</Text>
-            </View>
+            {selectedMetric === 'Blood Pressure' ? (
+              <>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: '#FFD93D' }]} />
+                  <Text style={styles.legendText}>Systolic</Text>
+                </View>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: '#FF6B6B' }]} />
+                  <Text style={styles.legendText}>Diastolic</Text>
+                </View>
+              </>
+            ) : (
+              <>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: getChartColor(selectedMetric) }]} />
+                  <Text style={styles.legendText}>Measured</Text>
+                </View>
+                {/* <View style={styles.legendItem}>
+                  <Icon name="warning-outline" size={responsive.fontSize(16)} color="#666" />
+                  <Text style={styles.legendText}>AI anomaly</Text>
+                </View> */}
+                <View style={styles.legendItem}>
+                  <Icon name="pulse-outline" size={responsive.fontSize(16)} color="#666" />
+                  <Text style={styles.legendText}>Variable with spikes</Text>
+                </View>
+              </>
+            )}
           </View>
         </View>
 
@@ -413,32 +590,43 @@ const VitalsHistoryScreen: React.FC<VitalsHistoryScreenProps> = ({ navigation })
             <Text style={[styles.tableHeaderText, { flex: 1 }]}>AI Flag</Text>
             <Text style={[styles.tableHeaderText, { flex: 1 }]}>Source</Text>
           </View>
-          {vitalsData.length > 0 ? (
-            vitalsData.map((item, index) => (
-              <View key={index} style={styles.tableRow}>
-                <Text style={[styles.tableCell, { flex: 2 }]}>{item.date}</Text>
-                <Text style={[styles.tableCell, { flex: 1 }]}>{item.value} {item.unit}</Text>
-                <View style={[styles.tableCellIcon, { flex: 1 }]}> 
-                  {item.flag ? (
-                    <>
-                      <Icon name="warning-outline" size={responsive.fontSize(16)} color="#f59e0b" />
-                      <Text style={styles.flagText}>{item.flag}</Text>
-                    </>
-                  ) : (
-                    <Text style={styles.tableCell}>—</Text>
-                  )}
-                </View>
-                <View style={[styles.tableCellIcon, { flex: 1 }]}> 
-                  <Icon
-                    name={item.source === 'Wearable' ? 'watch-outline' : 'create-outline'}
-                    size={responsive.fontSize(16)}
-                    color="#666"
-                  />
-                  <Text style={styles.sourceText}>{item.source}</Text>
-                </View>
+          {vitalsData.slice(0, displayCount).map((item, index) => (
+            <View key={index} style={styles.tableRow}>
+              <Text style={[styles.tableCell, { flex: 2 }]}>{item.date}</Text>
+              <Text style={[styles.tableCell, { flex: 1 }]}>{item.value} {item.unit}</Text>
+              <View style={[styles.tableCellIcon, { flex: 1 }]}> 
+                {item.flag ? (
+                  <>
+                    <Icon name="warning-outline" size={responsive.fontSize(16)} color="#f59e0b" />
+                    <Text style={styles.flagText}>{item.flag}</Text>
+                  </>
+                ) : (
+                  <Text style={styles.tableCell}>—</Text>
+                )}
               </View>
-            ))
-          ) : (
+              <View style={[styles.tableCellIcon, { flex: 1 }]}> 
+                <Icon
+                  name={item.source === 'Wearable' ? 'watch-outline' : 'create-outline'}
+                  size={responsive.fontSize(16)}
+                  color="#666"
+                />
+                <Text style={styles.sourceText}>{item.source}</Text>
+              </View>
+            </View>
+          ))}
+          
+          {/* Load More Button */}
+          {vitalsData.length > displayCount && (
+            <TouchableOpacity
+              style={styles.loadMoreButton}
+              onPress={() => setDisplayCount(prev => prev + 10)}
+            >
+              <Text style={styles.loadMoreButtonText}>Load More</Text>
+              <Icon name="chevron-down" size={20} color="#fff" />
+            </TouchableOpacity>
+          )}
+          
+          {vitalsData.length === 0 && (
             <View style={styles.tableRow}>
               <Text style={[styles.tableCell, { flex: 1, textAlign: 'center' }]}>No data available</Text>
             </View>
@@ -702,10 +890,28 @@ const styles = StyleSheet.create({
   periodTextActive: {
     color: '#fff',
   },
-  metricsScroll: {
+  metricsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#fff',
     marginTop: responsive.margin(1),
     paddingVertical: responsive.padding(12),
+  },
+  arrowButton: {
+    padding: responsive.padding(8),
+    zIndex: 10,
+  },
+  arrowVisible: {
+    opacity: 1,
+  },
+  arrowHidden: {
+    opacity: 0,
+  },
+  metricsScroll: {
+    flex: 1,
+  },
+  metricsContent: {
+    paddingHorizontal: responsive.padding(8),
   },
   metricButton: {
     paddingVertical: responsive.padding(8),
@@ -812,6 +1018,23 @@ const styles = StyleSheet.create({
     fontSize: responsive.fontSize(12),
     color: '#666',
     marginLeft: responsive.margin(4),
+  },
+  loadMoreButton: {
+    backgroundColor: '#52a64a',
+    paddingVertical: responsive.padding(12),
+    paddingHorizontal: responsive.padding(24),
+    borderRadius: responsive.borderRadius(8),
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: responsive.margin(16),
+    alignSelf: 'center',
+  },
+  loadMoreButtonText: {
+    color: '#fff',
+    fontSize: responsive.fontSize(14),
+    fontWeight: '600',
+    marginRight: responsive.margin(8),
   },
   addButtonContainer: {
     padding: responsive.padding(16),

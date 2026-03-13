@@ -167,7 +167,7 @@ const SyncCompleteScreen = () => {
         </View>
 
         {/* Action Buttons */}
-        <TouchableOpacity style={styles.nextButton}  onPress={() => navigation.navigate('OnboardingSteps', { startIndex: 2 })}>
+        <TouchableOpacity style={styles.nextButton}  onPress={() => navigation.navigate('OnboardingSteps', { startIndex: 5 })}>
           <Text style={styles.nextButtonText}>Next</Text>
         </TouchableOpacity>
 

@@ -91,8 +91,7 @@ const ReportsMainScreen = ({ navigation }) => {
             </TouchableOpacity>
 
             <Text style={styles.includesText}>
-              Includes MELD summary, vitals snapshot, diet totals, exercise & sleep,
-              medication adherence, flags timeline, AI labs summary, and mini-charts.
+              Includes MELD summary, vitals snapshot, diet totals, exercise & sleep.
             </Text>
           </View>
 
