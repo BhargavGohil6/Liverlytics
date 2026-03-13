@@ -24,6 +24,7 @@ import { fetchUserDocuments } from './slices/reportSlice';
 
 interface ReportItem {
   id: string;
+  name: string; // Document name for API call
   date: string;
   time: string;
   source: string;
@@ -44,6 +45,7 @@ const ViewLabReports: React.FC = () => {
         const dateObj = new Date(doc.date);
         return {
             id: doc.name,
+            name: doc.name, // Store the document name for API call
             date: dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
             time: dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
             source: doc.source,
@@ -63,7 +65,7 @@ const ViewLabReports: React.FC = () => {
     //     offset={[0, 1]}
     //     style={styles.shadowWrapper}
     //   >
-     <TouchableOpacity onPress={()=>navigation.navigate('ReportMetadata')}>
+     <TouchableOpacity onPress={()=>navigation.navigate('ReportMetadata', { documentName: report.name })}>
         <View style={styles.reportCard}>
    
           <View style={styles.reportLeft}>
@@ -77,12 +79,12 @@ const ViewLabReports: React.FC = () => {
               <Text style={styles.reportSource}>Source: {report.source}</Text>
             </View>
           </View>
-          <View style={styles.reportRight}>
+          {/* <View style={styles.reportRight}>
             <Text style={styles.accuracyText}>{report.accuracy}% accurate</Text>
             <TouchableOpacity style={styles.commentButton}>
               <Icon name="chat-bubble-outline" size={20} color="#666666" />
             </TouchableOpacity>
-          </View>
+          </View> */}
          
         </View>
          </TouchableOpacity>

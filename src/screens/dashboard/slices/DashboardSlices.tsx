@@ -37,6 +37,7 @@ export interface DietData {
   item_name?: string;
   sodium?: string;
   fluid_ml?: string;
+  protein?: string;
   creation?: string;
   duration?: string;
   user?: string;
@@ -48,6 +49,7 @@ export interface ExerciseData {
   steps?: string;
   resting_hr?: string;
   sleep_minutes?: string;
+  sleep_hours?: number;
   exercise_name?: string;
   user?: string;
   creation?: string;

@@ -111,6 +111,7 @@ export default function GlucoseChartScreen({ navigation }: GlucoseChartScreenPro
       strokeWidth: '2',
       stroke: '#4CAF50',
     },
+    yAxisInterval: 20,
   };
 
   return (
@@ -174,9 +175,7 @@ export default function GlucoseChartScreen({ navigation }: GlucoseChartScreenPro
                 chartConfig={chartConfig}
                 bezier
                 style={styles.chart}
-                yAxisLabel=""
-                yAxisSuffix=" mg/dL"
-                fromZero={false}
+                fromZero={true}
               />
             </View>
           )}

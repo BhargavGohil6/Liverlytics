@@ -113,9 +113,9 @@ const MELDHistoryScreen = ({ navigation }: { navigation: MELDHistoryScreenNaviga
                 <Text style={styles.chartTitle}>MELD Trend Over Time</Text>
                 <Text style={styles.chartSubtitle}>Tap any point to see detailed values</Text>
               </View>
-              <View style={styles.dropdownContainer}>
+              {/* <View style={styles.dropdownContainer}>
                 <CommonDropdown
-                  label="Type"
+                  // label="Type"
                   placeholder="Select Type"
                   value={selectedSourceType}
                   options={[
@@ -126,7 +126,7 @@ const MELDHistoryScreen = ({ navigation }: { navigation: MELDHistoryScreenNaviga
                   onValueChange={setSelectedSourceType}
                   style={styles.smallDropdown}
                 />
-              </View>
+              </View> */}
             </View>
             
             {historyLoading ? (
@@ -161,6 +161,7 @@ const MELDHistoryScreen = ({ navigation }: { navigation: MELDHistoryScreenNaviga
                       color: () => colors.primary 
                     },
                   ],
+                  
                 }}
                 width={width - responsive.width(64)}
                 height={responsive.height(200)}
@@ -203,9 +204,9 @@ const MELDHistoryScreen = ({ navigation }: { navigation: MELDHistoryScreenNaviga
                 <Icon name="sparkles" size={20} color="#1A1A1A" />
                 <Text style={styles.newInsightsTitle}>AI Insights</Text>
               </View>
-              <View style={styles.infoBadge}>
+              {/* <View style={styles.infoBadge}>
                 <Text style={styles.infoBadgeText}>Today</Text>
-              </View>
+              </View> */}
             </View>
 
             <View style={styles.newInsightBox}>
@@ -497,6 +498,7 @@ const styles = StyleSheet.create({
   dropdownContainer: {
     minWidth: responsive.width(100),
     marginLeft: responsive.margin(16),
+    
   },
   smallDropdown: {
     paddingVertical: responsive.padding(6),

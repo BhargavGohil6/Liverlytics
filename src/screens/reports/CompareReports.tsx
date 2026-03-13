@@ -138,6 +138,7 @@ const CompareReports: React.FC = () => {
         key={index}
         style={[
           styles.labRow,
+          index % 2 === 0 ? styles.labRowEven : styles.labRowOdd,
           index === labResults.length - 1 && styles.labRowLast,
         ]}
       >
@@ -390,9 +391,16 @@ const styles = StyleSheet.create({
   labRow: {
     flexDirection: 'row',
     paddingVertical: hp('1%'),
+    paddingHorizontal: wp('2%'),
     borderBottomWidth: responsive.width(0.5),
     borderBottomColor: '#F5F5F5',
     alignItems: 'center',
+  },
+  labRowEven: {
+    backgroundColor: '#E8E8E8', // Darker gray background for even rows
+  },
+  labRowOdd: {
+    backgroundColor: '#FFFFFF', // White background for odd rows
   },
   labRowLast: {
     borderBottomWidth: 0,

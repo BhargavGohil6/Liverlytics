@@ -17,7 +17,7 @@ import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchAILabReports } from './slices/reportSlice';
 import { RootState, AppDispatch } from '../../redux/store';
@@ -31,20 +31,43 @@ interface LabResult {
   flag: 'High' | 'Low' | 'Normal' | 'Mild';
 }
 
+// Define the type for route params
+type RootStackParamList = {
+  ReportMetadata: {
+    documentName: string;
+  };
+};
+
 const ReportMetadata: React.FC = () => {
     const navigation = useNavigation();
+    const route = useRoute<RouteProp<RootStackParamList, 'ReportMetadata'>>();
     const dispatch = useDispatch<AppDispatch>();
-    const { aiLabReports, loading } = useSelector((state: RootState) => state.reports);
+    const { aiLabReports, loading, meldNaCount, meld3Count, meldTimestamp } = useSelector((state: RootState) => state.reports);
     const { user } = useSelector((state: RootState) => state.auth);
     const [activeTab, setActiveTab] = useState<string>('Reports');
     const userEmail = user?.email || '';
+    
+    // Get document name from route params
+    const documentName = route.params?.documentName || '';
 
     useEffect(() => {
-      // Fetch AI lab reports when component mounts
-      if (userEmail) {
-        dispatch(fetchAILabReports({ user: userEmail }));
+      // Fetch AI lab reports when component mounts with user email and document name
+      if (userEmail && documentName) {
+        dispatch(fetchAILabReports({ user: userEmail, ai_lab_report_document: documentName }));
       }
-    }, [dispatch, userEmail]);
+    }, [dispatch, userEmail, documentName]);
+
+    // Extract MELD values from the second object in the data array
+    const meldDataFromApi = aiLabReports.length > 1 && typeof aiLabReports[1] === 'object' && !('name' in aiLabReports[1]) 
+      ? aiLabReports[1] as any 
+      : null;
+    
+    const displayMeldNaCount = meldDataFromApi?.MELD_NA_count ?? meldNaCount;
+    const displayMeld3Count = meldDataFromApi?.MELD_3_count ?? meld3Count;
+    const displayMeldTimestamp = meldDataFromApi?.MELD_TIMESTAMP ?? meldTimestamp;
+    
+    // Filter out the MELD metadata object and get only the actual lab report
+    const actualLabReports = aiLabReports.filter(report => report && 'name' in report && 'parameters' in report);
 
     // Helper function to extract unit from normal range string
     const extractUnitFromRange = (range: string): string => {
@@ -105,21 +128,19 @@ const ReportMetadata: React.FC = () => {
     };
 
     // Convert API response to LabResult format
-    const labResults: LabResult[] = aiLabReports.flatMap(report => {
-      return Object.entries(report.parameters).map(([paramKey, paramData]) => {
-        // Convert parameter key to proper display name
-        const displayName = paramKey.split('_').map(word => 
-          word.charAt(0).toUpperCase() + word.slice(1)
-        ).join(' ');
-        
-        return {
-          parameter: displayName,
-          extractedValue: `${paramData.value} ${extractUnitFromRange(paramData.normal_range)}`,
-          normalRange: paramData.normal_range.replace(/ mg\/dL| mmol\/L| g\/dL| U\/L| ×10⁹\/L/g, ''), // Clean range without units
-          flag: mapApiFlagToDisplayFlag(paramData.flag),
-        };
-      });
-    });
+    const labResults: LabResult[] = actualLabReports.length > 0 ? actualLabReports[0].parameters ? Object.entries(actualLabReports[0].parameters).map(([paramKey, paramData]) => {
+      // Convert parameter key to proper display name
+      const displayName = paramKey.split('_').map(word => 
+        word.charAt(0).toUpperCase() + word.slice(1)
+      ).join(' ');
+      
+      return {
+        parameter: displayName,
+        extractedValue: `${paramData.value} ${extractUnitFromRange(paramData.normal_range)}`,
+        normalRange: paramData.normal_range.replace(/ mg\/dL| mmol\/L| g\/dL| U\/L| ×10⁹\/L/g, ''), // Clean range without units
+        flag: mapApiFlagToDisplayFlag(paramData.flag),
+      };
+    }) : [] : [];
 
   const getFlagColor = (flag: string) => {
     switch (flag) {
@@ -194,18 +215,18 @@ const ReportMetadata: React.FC = () => {
           offset={[0, 2]}
           style={styles.shadowWrapper}
         > */}
-          <View style={styles.metadataCard}>
+          {/* <View style={styles.metadataCard}>
             <Text style={styles.cardTitle}>Report Metadata</Text>
 
             <View style={styles.metadataRow}>
               <Icon name="calendar-today" size={responsive.fontSize(20)} color="#333333" />
               <Text style={styles.metadataText}>
-                Uploaded: {aiLabReports.length > 0 && aiLabReports[0].date ? formatDate(aiLabReports[0].date) : 'May 11, 2025'}
+                Uploaded: {actualLabReports.length > 0 && actualLabReports[0].date ? formatDate(actualLabReports[0].date) : 'May 11, 2025'}
               </Text>
               <View style={styles.pdfBadge}>
                 <Text style={styles.pdfText}>PDF</Text>
               </View>
-            </View>
+            </View> */}
 
             {/* <View style={styles.metadataRow}>
               <Icon name="autorenew" size={responsive.fontSize(20)} color="#333333" />
@@ -215,11 +236,11 @@ const ReportMetadata: React.FC = () => {
               </View>
             </View> */}
 
-            <TouchableOpacity style={styles.downloadButton}>
+            {/* <TouchableOpacity style={styles.downloadButton}>
               <Icon name="file-download" size={responsive.fontSize(20)} color="#333333" />
               <Text style={styles.downloadText}>Download Parsed PDF</Text>
             </TouchableOpacity>
-          </View>
+          </View> */}
         {/* </Shadow> */}
 
         {/* Extracted Labs Card */}
@@ -254,14 +275,14 @@ const ReportMetadata: React.FC = () => {
         {/* </Shadow> */}
 
         {/* Insights Card */}
-        <View style={styles.newAiInsightsCard}>
+         <View style={styles.newAiInsightsCard}> 
           <View style={styles.insightsHeader}>
             <View style={styles.sectionTitleRow}>
               <MaterialCommunityIcons name="lightbulb" size={20} color="#1A1A1A" />
               <Text style={styles.newInsightsTitle}>AI Insights</Text>
             </View>
             <View style={styles.infoBadge}>
-              <Text style={styles.infoBadgeText}>{aiLabReports.length > 0 && aiLabReports[0].date ? formatRelativeTime(aiLabReports[0].date) : 'Today'}</Text>
+              <Text style={styles.infoBadgeText}>{actualLabReports.length > 0 && actualLabReports[0].date ? formatRelativeTime(actualLabReports[0].date) : 'Today'}</Text>
             </View>
           </View>
 
@@ -286,7 +307,7 @@ const ReportMetadata: React.FC = () => {
 
             <Text style={styles.disclaimerText}>These insights are informational only and not a diagnosis.</Text>
           </View>
-        </View>
+        </View> 
 
         {/* Related MELD Values Card */}
         {/* <Shadow
@@ -302,10 +323,10 @@ const ReportMetadata: React.FC = () => {
               <View style={styles.meldLeft}>
                 <Icon name="show-chart" size={responsive.fontSize(24)} color="#333333" />
                 <View style={styles.meldInfo}>
-                  <Text style={styles.meldTitle}>MELD-Na: 18</Text>
-                  <Text style={styles.meldSubtitle}>MELD 3.0: 20</Text>
+                  <Text style={styles.meldTitle}>MELD-Na: {displayMeldNaCount ?? 'N/A'}</Text>
+                  <Text style={styles.meldSubtitle}>MELD 3.0: {displayMeld3Count ?? 'N/A'}</Text>
                   <Text style={styles.meldTimestamp}>
-                    Timestamp: {aiLabReports.length > 0 && aiLabReports[0].date ? formatDate(aiLabReports[0].date) : 'May 11, 2025'}
+                    Timestamp: {displayMeldTimestamp || (actualLabReports.length > 0 && actualLabReports[0].date ? formatDate(actualLabReports[0].date) : 'May 11, 2025')}
                   </Text>
                 </View>
               </View>

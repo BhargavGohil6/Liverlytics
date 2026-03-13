@@ -234,7 +234,7 @@ const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
     
     // Filter entries for today's date only
     const todayEntries = entries.filter(entry => {
-      if (!entry.creation) return false;
+      if (!entry || !entry.creation) return false;
       // Parse the creation date and compare with today
       const entryDate = new Date(entry.creation);
       const entryDateStr = entryDate.toISOString().split('T')[0];
@@ -327,15 +327,15 @@ const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
             <Text style={styles.totalsTitle}>Today's Totals</Text>
             <View style={styles.totalsRow}>
               <View style={[styles.totalItem, { flex: 1, marginRight: responsive.margin(8), marginBottom: responsive.margin(8) }] }>
-                <Text style={styles.totalLabel}>Total Sodium Today</Text>
+                <Text style={styles.totalLabel}>Sodium</Text>
                 <Text style={styles.totalValue}>{totalSodium.toLocaleString()} mg</Text>
               </View>
               <View style={[styles.totalItem, { flex: 1, marginRight: responsive.margin(8), marginBottom: responsive.margin(8) }] }>
-                <Text style={styles.totalLabel}>Total Fluid Today</Text>
+                <Text style={styles.totalLabel}>Fluid</Text>
                 <Text style={styles.totalValue}>{totalFluid.toLocaleString()} mL</Text>
               </View>
               <View style={[styles.totalItem, { flex: 1 }] }>
-                <Text style={styles.totalLabel}>Total Protein Today</Text>
+                <Text style={styles.totalLabel}>Protein</Text>
                 <Text style={styles.totalValue}>{totalProtein.toLocaleString()} g</Text>
               </View>
             </View>
@@ -458,7 +458,7 @@ const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
                           
               // Filter entries for today's date only
               const todayEntries = entries?.filter(entry => {
-                if (!entry.creation) return false;
+                if (!entry || !entry.creation) return false;
                 // Parse the creation date and compare with today
                 const entryDate = new Date(entry.creation);
                 const entryDateStr = entryDate.toISOString().split('T')[0];
@@ -669,6 +669,7 @@ const styles = StyleSheet.create({
     color: colors.coolGray,
     marginBottom: responsive.margin(4),
     textAlign: 'center',
+    fontWeight: 'bold',
   },
   totalValue: {
     fontSize: responsive.fontSize(22),

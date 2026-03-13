@@ -395,6 +395,14 @@ const ExerciseHistoryScreen = ({ navigation }: ExerciseHistoryScreenProps) => {
               View your exercise metrics including heart rate, oxygen, calories, and blood pressure trends.
             </Text>
           </View>
+          <View style={styles.topRightButtonContainer}>
+            <TouchableOpacity style={styles.addButton} onPress={() => {
+              navigation.navigate('ExerciseActivityScreen');
+            }}>
+              <Icon name="add" size={responsive.fontSize(16)} color="#fff" />
+              <Text style={styles.addButtonTextSmall}>Add</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Tabs */}
@@ -967,6 +975,25 @@ const styles = StyleSheet.create({
   titleContent: {
     marginLeft: responsive.margin(16),
     flex: 1,
+  },
+  topRightButtonContainer: {
+    position: 'absolute',
+    right: responsive.margin(16),
+    top: responsive.margin(20),
+  },
+  addButton: {
+    flexDirection: 'row',
+    backgroundColor: colors.primary,
+    paddingVertical: responsive.padding(8),
+    paddingHorizontal: responsive.padding(12),
+    borderRadius: responsive.borderRadius(20),
+    alignItems: 'center',
+  },
+  addButtonTextSmall: {
+    color: '#fff',
+    fontSize: responsive.fontSize(12),
+    fontWeight: '600',
+    marginLeft: responsive.margin(4),
   },
   title: {
     fontSize: responsive.fontSize(24),
