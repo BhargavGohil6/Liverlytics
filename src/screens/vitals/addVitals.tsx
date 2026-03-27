@@ -464,8 +464,8 @@ export default function AddVitalsScreen() {
               style={styles.unitSelector}
               onPress={() => setShowUnitPicker(!showUnitPicker)}
             >
-              <Text style={styles.unitSelectorText}>
-                select{'\n'}option
+              <Text style={[styles.unitSelectorText, weightUnit && styles.unitSelectorTextActive]}>
+                {weightUnit || 'Select'}
               </Text>
               <Icon name="chevron-down" size={16} color="#666" />
             </TouchableOpacity>
@@ -709,6 +709,10 @@ const styles = StyleSheet.create({
     color: colors.gray666,
     textAlign: 'center',
     lineHeight: responsive.height(14),
+  },
+  unitSelectorTextActive: {
+    color: colors.darkGray,
+    fontWeight: '600',
   },
   unitPicker: {
     flexDirection: 'row',

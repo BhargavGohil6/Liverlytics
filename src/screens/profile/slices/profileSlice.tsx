@@ -187,6 +187,108 @@ export const updateUserProfile = createAsyncThunk<
   }
 });
 
+// Interface for profile photo upload response
+export interface UploadProfilePhotoResponse {
+  message: {
+    status: string;
+    message: string;
+    profile_picture?: string;
+  };
+}
+
+// API call to upload profile photo
+export const uploadProfilePhoto = createAsyncThunk<
+  UploadProfilePhotoResponse,
+  { fileuri: string; filename: string; filetype: string },
+  { rejectValue: string }
+>('profile/uploadProfilePhoto', async (filedata, { rejectWithValue }) => {
+  try {
+    console.log('Uploading profile photo:', filedata);
+
+    // Create FormData for file upload
+    const formData = new FormData();
+    formData.append('user', filedata.filename); // Using filename as user identifier
+    formData.append('file', {
+      uri: filedata.fileuri,
+      type: filedata.filetype,
+      name: filedata.filename,
+    } as any);
+
+    // Make the API call - setting headers to undefined allows axios to set the correct Content-Type for multipart/form-data
+    const response = await api.post('/cirrhosis_custom.change_profile.upload_profile_photo', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
+    console.log('Profile photo upload response:', response.data);
+    return response.data;
+  } catch (error: any) {
+    console.log('Upload Error:', error);
+    console.log('Error response:', error.response);
+
+    const msg =
+      error.response?.data?.message?.message ||
+      error.response?.data?.message ||
+      error.message ||
+      'Failed to upload profile photo';
+
+    return rejectWithValue(msg);
+  }
+});
+
+// Interface for getting profile photo response
+export interface GetProfilePhotoResponse {
+  message: {
+    status: string;
+    message?: string;
+    profile_photo?: string;
+    file_url?: string;
+  };
+}
+
+// API call to get profile photo
+export const getProfilePhoto = createAsyncThunk<
+  GetProfilePhotoResponse,
+  { user: string },
+  { rejectValue: string }
+>('profile/getProfilePhoto', async (payload, { rejectWithValue }) => {
+  try {
+    console.log('Fetching profile photo for user:', payload.user);
+
+    // Make the API call to get profile photo
+    const response = await api.get('/cirrhosis_custom.change_profile.get_profile_photo', {
+      params: {
+        user: payload.user,
+      },
+    });
+
+    console.log('Profile photo response:', response.data);
+    
+    // If file_url exists, prepend the base URL
+    if (response.data?.message?.file_url) {
+      const fullUrl = `https://cirrhosis.mukesoft.com${response.data.message.file_url}`;
+      console.log('Full profile photo URL:', fullUrl);
+      
+      // Update the response with the full URL
+      response.data.message.profile_photo = fullUrl;
+    }
+    
+    return response.data;
+  } catch (error: any) {
+    console.log('Get Profile Photo Error:', error);
+    console.log('Error response:', error.response);
+
+    const msg =
+      error.response?.data?.message?.message ||
+      error.response?.data?.message ||
+      error.message ||
+      'Failed to fetch profile photo';
+
+    return rejectWithValue(msg);
+  }
+});
+
 // API call to update daily health targets
 export interface UpdateDailyHealthTargetsPayload {
   daily_sodium_limit: string | number;
@@ -350,6 +452,41 @@ const profileSlice = createSlice({
       .addCase(updateDailyHealthTargets.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Failed to update daily health targets';
+      })
+      .addCase(uploadProfilePhoto.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(uploadProfilePhoto.fulfilled, (state, action: PayloadAction<UploadProfilePhotoResponse>) => {
+        state.loading = false;
+        state.error = null;
+        // Update the profile picture URL in the user profile
+        if (state.userProfile && action.payload.message.profile_picture) {
+          state.userProfile.profile_picture = action.payload.message.profile_picture;
+        }
+      })
+      .addCase(uploadProfilePhoto.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to upload profile photo';
+      })
+      .addCase(getProfilePhoto.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getProfilePhoto.fulfilled, (state, action: PayloadAction<GetProfilePhotoResponse>) => {
+        state.loading = false;
+        state.error = null;
+        // Update the profile picture URL in the user profile if file_url is present
+        if (state.userProfile && action.payload.message?.file_url) {
+          const fullUrl = `https://cirrhosis.mukesoft.com${action.payload.message.file_url}`;
+          state.userProfile.profile_picture = fullUrl;
+        } else if (state.userProfile && action.payload.message?.profile_photo) {
+          state.userProfile.profile_picture = action.payload.message.profile_photo;
+        }
+      })
+      .addCase(getProfilePhoto.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to fetch profile photo';
       });
   },
 });

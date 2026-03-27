@@ -15,7 +15,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../redux/store';
 import { logout } from '../auth/slices/authSlice';
-import { getUserProfile, getDailyHealthTargets } from './slices/profileSlice';
+import { getUserProfile, getDailyHealthTargets, getProfilePhoto } from './slices/profileSlice';
 import ProfileHeader from '../../components/profile/ProfileHeader';
 import ProfileSection from '../../components/profile/ProfileSection';
 
@@ -31,11 +31,12 @@ const ProfileMainScreen: React.FC<ProfileMainScreenProps> = ({ navigation }) => 
   const { user } = useSelector((state: RootState) => state.auth);
   const { userProfile, dailyHealthTargets, loading, error } = useSelector((state: RootState) => state.profile);
   
-  // Fetch user profile and daily health targets on component mount
+  // Fetch user profile, daily health targets and profile photo on component mount
   useEffect(() => {
     if (user?.email) {
       dispatch(getUserProfile({ user: user.email }) as any);
       dispatch(getDailyHealthTargets({ user: user.email }) as any);
+      dispatch(getProfilePhoto({ user: user.email }) as any);
     }
   }, [dispatch, user?.email]);
 
@@ -78,6 +79,7 @@ const ProfileMainScreen: React.FC<ProfileMainScreenProps> = ({ navigation }) => 
   // Get profile data or use defaults
   const fullName = userProfile?.full_name || 'User Name';
   const email = userProfile?.email || user?.email || '';
+  const avatarSource = userProfile?.profile_picture || null;
   
   return (
     <SafeAreaView style={styles.container}>
@@ -87,6 +89,7 @@ const ProfileMainScreen: React.FC<ProfileMainScreenProps> = ({ navigation }) => 
           <ProfileHeader
             fullName={fullName}
             email={email}
+            avatarSource={avatarSource}
             onEditPress={() => navigation.navigate('EditProfileScreen')}
           />
 
@@ -117,7 +120,7 @@ const ProfileMainScreen: React.FC<ProfileMainScreenProps> = ({ navigation }) => 
               <Icon name="chevron-forward" size={20} color="#9ca3af" />
             </TouchableOpacity>
 
-            <View style={styles.switchItem}>
+            {/* <View style={styles.switchItem}>
               <View style={styles.menuLeft}>
                 <Text style={styles.menuLabel}>AI Processing Consent</Text>
                 <Text style={styles.menuSubtext}>On-device, cloud processing opt-in</Text>
@@ -128,9 +131,9 @@ const ProfileMainScreen: React.FC<ProfileMainScreenProps> = ({ navigation }) => 
                 trackColor={{ false: '#d1d5db', true: '#52ab3c' }}
                 thumbColor={aiProcessing ? '#52ab3c' : '#f3f4f6'}
               />
-            </View>
+            </View> */}
 
-            <TouchableOpacity 
+            {/* <TouchableOpacity 
               style={styles.menuItem}
               onPress={() => navigation.navigate('NotificationRemindersScreen')}
             >
@@ -139,7 +142,7 @@ const ProfileMainScreen: React.FC<ProfileMainScreenProps> = ({ navigation }) => 
                 <Text style={styles.menuSubtext}>Manage push alerts and reminder schedules</Text>
               </View>
               <Icon name="chevron-forward" size={20} color="#9ca3af" />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
 
             {/* <TouchableOpacity 
               style={styles.menuItem}
@@ -158,6 +161,15 @@ const ProfileMainScreen: React.FC<ProfileMainScreenProps> = ({ navigation }) => 
             title="Your Targets"
             subtitle="Goals used for alerts and daily guidance."
           >
+            {/* Common Edit Button */}
+            <TouchableOpacity 
+              style={styles.editAllButton}
+              onPress={() => navigation.navigate('EditHealthTargetsScreen')}
+            >
+              <Icon name="create-outline" size={18} color="#52ab3c" />
+              <Text style={styles.editAllText}>Edit Targets</Text>
+            </TouchableOpacity>
+
             {dailyHealthTargets && dailyHealthTargets.length > 0 ? (
               // Display actual health targets from API
               [
@@ -171,13 +183,13 @@ const ProfileMainScreen: React.FC<ProfileMainScreenProps> = ({ navigation }) => 
                 <TouchableOpacity 
                   key={index} 
                   style={styles.targetItem}
-                  onPress={() => navigation.navigate('EditHealthTargetsScreen')}
+                  // onPress={() => navigation.navigate('EditHealthTargetsScreen')}
                 >
                   <View style={styles.targetInfo}>
                     <Text style={styles.targetLabel}>{item.label}</Text>
                     <Text style={styles.targetValue}>{item.value}</Text>
                   </View>
-                  <Icon name="create-outline" size={20} color="#9ca3af" />
+                  {/* <Icon name="create-outline" size={20} color="#9ca3af" /> */}
                 </TouchableOpacity>
               ))
             ) : (
@@ -367,6 +379,22 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#9ca3af',
     marginTop: 2,
+  },
+  editAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f3f4f6',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginBottom: 12,
+    gap: 8,
+  },
+  editAllText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#52ab3c',
   },
   targetItem: {
     flexDirection: 'row',

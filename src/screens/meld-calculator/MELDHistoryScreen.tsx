@@ -35,11 +35,31 @@ const MELDHistoryScreen = ({ navigation }: { navigation: MELDHistoryScreenNaviga
   const [selectedTimeRange, setSelectedTimeRange] = useState('All Time');
   const [selectedSourceType, setSelectedSourceType] = useState('All');
   const [selectedMeldType, setSelectedMeldType] = useState('MELD3');
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+
+  // Helper function to get period value from time range
+  const getPeriodValue = (timeRange: string): string | undefined => {
+    switch (timeRange) {
+      case 'Last 1 Month':
+        return '1m';
+      case 'Last 3 Months':
+        return '3m';
+      case 'Last 6 Months':
+        return '6m';
+      case 'Last 12 Months':
+        return '12m';
+      case 'All Time':
+      default:
+        return undefined; // No period parameter for All Time
+    }
+  };
 
   useEffect(() => {
-    // Fetch MELD history when component mounts
-    dispatch(fetchMeldHistory());
-  }, [dispatch]);
+    // Fetch MELD history when component mounts or when time range changes
+    const period = getPeriodValue(selectedTimeRange);
+    dispatch(fetchMeldHistory({ period }));
+    setSelectedIndex(null);
+  }, [dispatch, selectedTimeRange]);
 
   // Show error message if there's an error
   useEffect(() => {
@@ -111,7 +131,13 @@ const MELDHistoryScreen = ({ navigation }: { navigation: MELDHistoryScreenNaviga
             <View style={styles.chartHeaderRow}>
               <View style={styles.chartTitleContainer}>
                 <Text style={styles.chartTitle}>MELD Trend Over Time</Text>
-                <Text style={styles.chartSubtitle}>Tap any point to see detailed values</Text>
+                {selectedIndex !== null && entries.length > 0 ? (
+                  <Text style={[styles.chartSubtitle, { color: colors.primary, fontWeight: '600' }]}>
+                    {entries.slice(0, 5).reverse()[selectedIndex].date?.substring(0, 6)} • MELD-Na: {entries.slice(0, 5).reverse()[selectedIndex].meldNa} • MELD 3.0: {entries.slice(0, 5).reverse()[selectedIndex].meld30}
+                  </Text>
+                ) : (
+                  <Text style={styles.chartSubtitle}>Tap any point to see detailed values</Text>
+                )}
               </View>
               {/* <View style={styles.dropdownContainer}>
                 <CommonDropdown
@@ -175,7 +201,13 @@ const MELDHistoryScreen = ({ navigation }: { navigation: MELDHistoryScreenNaviga
                 }}
                 bezier
                 style={styles.chart}
-                onDataPointClick={(data) => console.log('Data point clicked', data)}
+                onDataPointClick={(data) => {
+                  if (selectedIndex === data.index) {
+                    setSelectedIndex(null);
+                  } else {
+                    setSelectedIndex(data.index);
+                  }
+                }}
               />
             ) : (
               <Text style={styles.noDataText}>No chart data available</Text>
@@ -198,19 +230,20 @@ const MELDHistoryScreen = ({ navigation }: { navigation: MELDHistoryScreenNaviga
           </View>
 
            {/* Insights */}
-          <View style={styles.newAiInsightsCard}>
-            <View style={styles.insightsHeader}>
-              <View style={styles.sectionTitleRow}>
-                <Icon name="sparkles" size={20} color="#1A1A1A" />
-                <Text style={styles.newInsightsTitle}>AI Insights</Text>
+          {meldHistory && meldHistory.ai_insights && meldHistory.ai_insights.status !== 'no_ai_insights' && (
+            <View style={styles.newAiInsightsCard}>
+              <View style={styles.insightsHeader}>
+                <View style={styles.sectionTitleRow}>
+                  <Icon name="sparkles" size={20} color="#1A1A1A" />
+                  <Text style={styles.newInsightsTitle}>AI Insights</Text>
+                </View>
+                {/* <View style={styles.infoBadge}>
+                  <Text style={styles.infoBadgeText}>Today</Text>
+                </View> */}
               </View>
-              {/* <View style={styles.infoBadge}>
-                <Text style={styles.infoBadgeText}>Today</Text>
-              </View> */}
-            </View>
 
-            <View style={styles.newInsightBox}>
-              {meldHistory && meldHistory.ai_insights?.ai_insights && meldHistory.ai_insights.ai_insights.length > 0 && (
+              <View style={styles.newInsightBox}>
+                {meldHistory && meldHistory.ai_insights?.ai_insights && meldHistory.ai_insights.ai_insights.length > 0 && (
                 meldHistory.ai_insights.ai_insights.map((insight, index) => {
                   // Determine icon and color based on insight content
                   let iconName = "trending-up";
@@ -283,6 +316,7 @@ const MELDHistoryScreen = ({ navigation }: { navigation: MELDHistoryScreenNaviga
               </Text>
             </View>
           </View>
+          )}
 
           {/* Entries */}
           <View style={styles.entriesSection}>

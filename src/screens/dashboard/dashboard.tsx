@@ -134,6 +134,68 @@ export default function Dashboard() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
+        {/* AI Insights Section */}
+        {data?.ai_insights && data.ai_insights.status !== 'no_ai_insights' && (
+          <View style={styles.newAiInsightsCard}>
+            <View style={styles.insightsHeader}>
+              <View style={styles.sectionTitleRow}>
+                <Sparkles size={20} color="#1A1A1A" />
+                <Text style={styles.newInsightsTitle}>AI Insights</Text>
+              </View>
+              {/* <View style={styles.infoBadge}>
+                <Text style={styles.infoBadgeText}>{formatRelativeTime(data?.ai_insights?.timestamp || '')}</Text>
+              </View> */}
+            </View>
+
+            <View style={styles.newInsightBox}>
+              {/* Sodium Insight */}
+              {data?.ai_insights?.sodium && (
+                <View style={[styles.insightItem, { backgroundColor: '#FFF8E1' }]}>
+                  <ArrowUpRight size={22} color="#FBC02D" style={styles.insightIcon} />
+                  <View style={styles.insightContent}>
+                    <Text style={[styles.insightItemText, { color: '#FBC02D' }]}>Sodium</Text>
+                    <Text style={styles.insightItemSubText}>{data.ai_insights.sodium}</Text>
+                  </View>
+                </View>
+              )}
+
+              {/* Blood Pressure Insight */}
+              {data?.ai_insights?.blood_pressure && (
+                <View style={[styles.insightItem, { backgroundColor: '#E8F5E9' }]}>              
+                  <Minus size={22} color="#43A047" style={styles.insightIcon} />
+                  <View style={styles.insightContent}>
+                    <Text style={[styles.insightItemText, { color: '#43A047' }]}>Blood Pressure</Text>
+                    <Text style={styles.insightItemSubText}>{data.ai_insights.blood_pressure}</Text>
+                  </View>
+                </View>
+              )}
+
+              {/* Heart Rate Insight */}
+              {data?.ai_insights?.heart_rate && (
+                <View style={[styles.insightItem, { backgroundColor: '#FEECEE' }]}>
+                  <ArrowDownRight size={22} color="#D32F2F" style={styles.insightIcon} />
+                  <View style={styles.insightContent}>
+                    <Text style={[styles.insightItemText, { color: '#D32F2F' }]}>Heart Rate</Text>
+                    <Text style={styles.insightItemSubText}>{data.ai_insights.heart_rate}</Text>
+                  </View>
+                </View>
+              )}
+
+              {/* Main AI Insights Summary */}
+              {data?.ai_insights?.ai_insights && (
+                <View style={[styles.insightItem, { backgroundColor: '#F3E5F5' }]}>
+                  <Sparkles size={22} color="#7B1FA2" style={styles.insightIcon} />
+                  <View style={styles.insightContent}>
+                    <Text style={[styles.insightItemText, { color: '#7B1FA2' }]}>Overall Summary</Text>
+                    <Text style={styles.insightItemSubText}>{data.ai_insights.ai_insights}</Text>
+                  </View>
+                </View>
+              )}
+
+              <Text style={styles.disclaimerText}>These insights are informational only and not a diagnosis.</Text>
+            </View>
+          </View>
+        )}
         {/* Quick Actions - Top */}
         <View style={styles.quickActionsContainer}>
           <TouchableOpacity 
@@ -222,9 +284,9 @@ export default function Dashboard() {
             <View style={styles.meldTag}>
               <Text style={styles.meldTagText}>INR: <Text style={styles.dietValue}>{data?.meld?.inr || ''}</Text></Text>
             </View>
-            {/* <View style={styles.meldTag}>
-              <Text style={styles.meldTagText}>Creatinine</Text>
-            </View> */}
+            <View style={styles.meldTag}>
+              <Text style={styles.meldTagText}>Creatinine : <Text style={styles.dietValue}>{data?.meld?.serum_creatinine || ''}</Text></Text>
+            </View>
           </View>
 
           <View style={styles.cardFooter}>
@@ -291,9 +353,9 @@ export default function Dashboard() {
             <View style={styles.exerciseItem}>
               <Text style={styles.exerciseLabel}>Rest HR: <Text style={styles.exerciseValue}>{data?.exercise?.resting_hr || '0'} bpm</Text></Text>
             </View>
-            <View style={styles.exerciseItemFull}>
+            {/* <View style={styles.exerciseItemFull}>
               <Text style={styles.exerciseLabel}>Sleep: <Text style={styles.exerciseValue}>{data?.exercise?.sleep_hours ? `${data.exercise.sleep_hours} hours` : data?.exercise?.sleep_minutes || data?.vital?.sleep || '0'} min</Text></Text>
-            </View>
+            </View> */}
           </View>
 
           <View style={styles.cardFooter}>
@@ -313,51 +375,7 @@ export default function Dashboard() {
           </View>
         </TouchableOpacity>
 
-        {/* AI Insights Section */}
-        {data?.ai_insights && (
-          <View style={styles.newAiInsightsCard}>
-            <View style={styles.insightsHeader}>
-              <View style={styles.sectionTitleRow}>
-                <Sparkles size={20} color="#1A1A1A" />
-                <Text style={styles.newInsightsTitle}>AI Insights</Text>
-              </View>
-              <View style={styles.infoBadge}>
-                <Text style={styles.infoBadgeText}>{formatRelativeTime(data?.duration || data?.date || '')}</Text>
-              </View>
-            </View>
-
-            <View style={styles.newInsightBox}>
-              {/* Sodium Insight */}
-              <View style={[styles.insightItem, { backgroundColor: '#FFF8E1' }]}>
-                <ArrowUpRight size={22} color="#FBC02D" style={styles.insightIcon} />
-                <View style={styles.insightContent}>
-                  <Text style={[styles.insightItemText, { color: '#FBC02D' }]}>Sodium {data?.diet?.sodium ? `${data.diet.sodium} g` : '1.7 g'}</Text>
-                  <Text style={styles.insightItemSubText}>Slightly high compared to your daily limit.</Text>
-                </View>
-              </View>
-
-              {/* BP Insight */}
-              <View style={[styles.insightItem, { backgroundColor: '#E8F5E9' }]}>              
-                <Minus size={22} color="#43A047" style={styles.insightIcon} />
-                <View style={styles.insightContent}>
-                  <Text style={[styles.insightItemText, { color: '#43A047' }]}>BP {data?.vital?.blood_pressure || '120/80'}</Text>
-                  <Text style={styles.insightItemSubText}>Your blood pressure is within the normal range.</Text>
-                </View>
-              </View>
-
-              {/* Heart Rate Insight */}
-              <View style={[styles.insightItem, { backgroundColor: '#FEECEE' }]}>
-                <ArrowDownRight size={22} color="#D32F2F" style={styles.insightIcon} />
-                <View style={styles.insightContent}>
-                  <Text style={[styles.insightItemText, { color: '#D32F2F' }]}>Heart Rate {data?.exercise?.resting_hr || '62'} bpm</Text>
-                  <Text style={styles.insightItemSubText}>Your resting heart rate is slightly lower than usual.</Text>
-                </View>
-              </View>
-
-              <Text style={styles.disclaimerText}>These insights are informational only and not a diagnosis.</Text>
-            </View>
-          </View>
-        )}
+        
 
         {/* Bottom Spacing */}
         <View style={styles.bottomSpacing} />

@@ -19,10 +19,12 @@ import CountryPicker from '../../components/CountryPicker';
 import Icon from 'react-native-vector-icons/Ionicons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useDispatch, useSelector } from 'react-redux';
-import { getUserProfile } from './slices/profileSlice';
+import { getUserProfile, uploadProfilePhoto, getProfilePhoto } from './slices/profileSlice';
 import { RootState } from '../../redux/store';
 import { updateUserProfile } from './slices/profileSlice';
 import type { AppDispatch } from '../../redux/store';
+import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import { Alert } from 'react-native';
 
 
 type EditProfileScreenProps = {
@@ -55,6 +57,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation }) => 
   
   // Loader state
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   
   // Date picker state
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -88,16 +91,184 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation }) => 
   useEffect(() => {
     if (user?.email) {
       dispatch(getUserProfile({ user: user.email }));
+      // Fetch and console profile photo
+      dispatch(getProfilePhoto({ user: user.email }));
     }
   }, [dispatch, user?.email]);
   
   // Handle profile picture selection
   const handleProfilePictureSelect = () => {
-    // For Toast, we'll use a simpler approach
-    // Since Toast doesn't support multiple options like Alert, we'll implement a custom modal or use a different approach
-    // For now, let's implement a simple approach with individual buttons
-    // Or you could implement a custom modal for image selection
-    console.log('Image selection options should appear here');
+    Alert.alert(
+      'Select Profile Picture',
+      'Choose an option',
+      [
+        {
+          text: 'Take Photo',
+          onPress: handleTakePhoto,
+        },
+        {
+          text: 'Choose from Gallery',
+          onPress: handleChooseFromGallery,
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+      ]
+    );
+  };
+
+  // Handle taking a photo with camera
+  const handleTakePhoto = async () => {
+    try {
+      const result = await launchCamera({
+        mediaType: 'photo',
+        quality: 0.8,
+        maxWidth: 800,
+        maxHeight: 800,
+        includeBase64: false,
+      });
+
+      if (result.didCancel) {
+        console.log('User cancelled camera');
+        return;
+      }
+
+      if (result.errorCode) {
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: result.errorMessage || 'Failed to take photo',
+          visibilityTime: 3000,
+        });
+        return;
+      }
+
+      if (result.assets && result.assets[0]) {
+        const asset = result.assets[0];
+        await uploadProfile(asset.uri!, asset.fileName || 'photo.jpg', asset.type || 'image/jpeg');
+      }
+    } catch (error: any) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: error.message || 'Failed to take photo',
+        visibilityTime: 3000,
+      });
+    }
+  };
+
+  // Handle choosing from gallery
+  const handleChooseFromGallery = async () => {
+    try {
+      const result = await launchImageLibrary({
+        mediaType: 'photo',
+        quality: 0.8,
+        maxWidth: 800,
+        maxHeight: 800,
+        includeBase64: false,
+      });
+
+      if (result.didCancel) {
+        console.log('User cancelled gallery');
+        return;
+      }
+
+      if (result.errorCode) {
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: result.errorMessage || 'Failed to select image',
+          visibilityTime: 3000,
+        });
+        return;
+      }
+
+      if (result.assets && result.assets[0]) {
+        const asset = result.assets[0];
+        await uploadProfile(asset.uri!, asset.fileName || 'photo.jpg', asset.type || 'image/jpeg');
+      }
+    } catch (error: any) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: error.message || 'Failed to select image',
+        visibilityTime: 3000,
+      });
+    }
+  };
+
+  // Upload profile photo
+  const uploadProfile = async (uri: string, filename: string, filetype: string) => {
+    if (!user?.email) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'User email not available',
+        visibilityTime: 3000,
+      });
+      return;
+    }
+
+    setIsUploadingPhoto(true);
+
+    try {
+      const result = await dispatch(uploadProfilePhoto({
+        fileuri: uri,
+        filename: filename,
+        filetype: filetype,
+      }));
+
+      // Check if the action was rejected (error occurred)
+      if (uploadProfilePhoto.rejected.match(result)) {
+        // Display the error message from payload
+        const errorMessage = result.payload || 'Failed to upload profile photo';
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: errorMessage,
+          visibilityTime: 3000,
+        });
+        setIsUploadingPhoto(false);
+        return;
+      }
+
+      // Check if the response contains a failure status in the message
+      const responseData = result.payload;
+      if (responseData?.message?.status === 'fail' || responseData?.message?.status === 'error') {
+        const errorMessage = responseData.message.message || 'Failed to upload profile photo';
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: errorMessage,
+          visibilityTime: 3000,
+        });
+        setIsUploadingPhoto(false);
+        return;
+      }
+
+      // Success case - profile photo uploaded successfully
+      Toast.show({
+        type: 'success',
+        text1: 'Success',
+        text2: 'Profile photo updated successfully!',
+        visibilityTime: 3000,
+      });
+
+      // Refresh the user profile to get the updated profile picture URL
+      dispatch(getUserProfile({ user: user.email }));
+    } catch (error: any) {
+      // Display the actual error message from API response
+      const errorMessage = error.message || 'Failed to upload profile photo';
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: errorMessage,
+        visibilityTime: 3000,
+      });
+    } finally {
+      setIsUploadingPhoto(false);
+    }
   };
 
   // Handle date selection from date picker
@@ -293,7 +464,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation }) => 
             <Text style={styles.cardSubtitle}>Update your personal information.</Text>
   
             <View style={styles.avatarSection}>
-              <TouchableOpacity onPress={handleProfilePictureSelect}>
+              <TouchableOpacity onPress={handleProfilePictureSelect} disabled={isUploadingPhoto}>
                 {profilePicture ? (
                   <Image source={{ uri: profilePicture }} style={styles.avatarImage} />
                 ) : (
@@ -304,12 +475,25 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation }) => 
                   </View>
                 )}
               </TouchableOpacity>
-              {/* <TouchableOpacity style={styles.changePhotoButton} onPress={handleProfilePictureSelect}>
-                <Icon name="camera-outline" size={16} color="#52a64a" />
-                <Text style={styles.changePhotoText}>
-                  {profilePicture ? 'Change Photo' : 'Add Photo'}
-                </Text>
-              </TouchableOpacity> */}
+              <TouchableOpacity 
+                style={[styles.changePhotoButton, isUploadingPhoto && styles.changePhotoButtonDisabled]} 
+                onPress={handleProfilePictureSelect}
+                disabled={isUploadingPhoto}
+              >
+                {isUploadingPhoto ? (
+                  <>
+                    <Icon name="hourglass-outline" size={16} color="#9ca3af" />
+                    <Text style={[styles.changePhotoText, styles.changePhotoTextDisabled]}>Uploading...</Text>
+                  </>
+                ) : (
+                  <>
+                    <Icon name="camera-outline" size={16} color="#52a64a" />
+                    <Text style={styles.changePhotoText}>
+                      {profilePicture ? 'Change Photo' : 'Add Photo'}
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
             </View>
   
             <View style={styles.inputGroup}>
@@ -644,11 +828,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    marginTop: 8,
+  },
+  changePhotoButtonDisabled: {
+    opacity: 0.5,
   },
   changePhotoText: {
     fontSize: 14,
     fontWeight: '600',
     color: '#52a64a',
+  },
+  changePhotoTextDisabled: {
+    color: '#9ca3af',
   },
   inputGroup: {
     gap: 16,

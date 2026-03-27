@@ -4,17 +4,41 @@ import responsive from '../../theme/responsive';
 import { Navyblue, BlueishGray, CoolGray } from '../../theme/color';
 import CommonTextInput from '../../components/CommonTextInput';
 import CommonDropdown from '../../components/CommonDropdown';
+import { useDispatch, useSelector } from 'react-redux';
+import { updateDailyTargets } from './slices/onboardingSlice';
 
 
 
 const HealthTargets = () => {
+  const dispatch = useDispatch();
+  const dailyTargets = useSelector((state: any) => state.onboarding.dailyTargets);
 
+  // Initialize with empty strings for UI, only show values if user has entered something
   const [sodium, setSodium] = useState('');
   const [protein, setProtein] = useState('');
   const [fluid, setFluid] = useState('');
   const [weightGain, setWeightGain] = useState('');
   const [restingHR, setRestingHR] = useState('');
   const [weightUnit, setWeightUnit] = useState('kg');
+
+  // Update state when Redux values change (for back/forward navigation)
+  useEffect(() => {
+    if (dailyTargets?.daily_sodium_limit && dailyTargets.daily_sodium_limit !== 1800.0) {
+      setSodium(dailyTargets.daily_sodium_limit.toString());
+    }
+    if (dailyTargets?.daily_protein_limit && dailyTargets.daily_protein_limit !== 60.0) {
+      setProtein(dailyTargets.daily_protein_limit.toString());
+    }
+    if (dailyTargets?.daily_fluid_limit && dailyTargets.daily_fluid_limit !== 1500.0) {
+      setFluid(dailyTargets.daily_fluid_limit.toString());
+    }
+    if (dailyTargets?.weight_gain_alert_threshold && dailyTargets.weight_gain_alert_threshold !== 1.5) {
+      setWeightGain(dailyTargets.weight_gain_alert_threshold.toString());
+    }
+    if (dailyTargets?.resting_hr_alert_threshold && dailyTargets.resting_hr_alert_threshold !== 80.0) {
+      setRestingHR(dailyTargets.resting_hr_alert_threshold.toString());
+    }
+  }, [dailyTargets]);
 
   return (
     <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -28,7 +52,10 @@ const HealthTargets = () => {
         <View style={styles.singleInputContainer}>
           <CommonTextInput 
             placeholder="e.g., 2000" 
-            onChangeText={setSodium} 
+            onChangeText={(text) => {
+              setSodium(text);
+              dispatch(updateDailyTargets({ daily_sodium_limit: parseFloat(text) || 0 }));
+            }} 
             value={sodium} 
             style={styles.inputtext} 
             keyboardType="numeric"
@@ -42,7 +69,10 @@ const HealthTargets = () => {
         <View style={styles.singleInputContainer}>
           <CommonTextInput 
             placeholder="e.g., 60" 
-            onChangeText={setProtein} 
+            onChangeText={(text) => {
+              setProtein(text);
+              dispatch(updateDailyTargets({ daily_protein_limit: parseFloat(text) || 0 }));
+            }} 
             value={protein} 
             style={styles.inputtext} 
             keyboardType="numeric"
@@ -57,7 +87,10 @@ const HealthTargets = () => {
           <CommonTextInput 
             placeholder="e.g., 1500" 
             value={fluid} 
-            onChangeText={setFluid} 
+            onChangeText={(text) => {
+              setFluid(text);
+              dispatch(updateDailyTargets({ daily_fluid_limit: parseFloat(text) || 0 }));
+            }} 
             style={styles.inputtext} 
             keyboardType="numeric"
             suffixText="mL"
@@ -71,7 +104,10 @@ const HealthTargets = () => {
           <CommonTextInput 
             placeholder="e.g., 2" 
             value={weightGain} 
-            onChangeText={setWeightGain} 
+            onChangeText={(text) => {
+              setWeightGain(text);
+              dispatch(updateDailyTargets({ weight_gain_alert_threshold: parseFloat(text) || 0 }));
+            }} 
             style={styles.weightInput} 
             keyboardType="numeric"
           />
@@ -93,7 +129,10 @@ const HealthTargets = () => {
             placeholder="e.g., 80"
             keyboardType="numeric"
             value={restingHR}
-            onChangeText={setRestingHR}
+            onChangeText={(text) => {
+              setRestingHR(text);
+              dispatch(updateDailyTargets({ resting_hr_alert_threshold: parseFloat(text) || 0 }));
+            }}
             style={styles.inputtext}
             suffixText="bpm"
           />

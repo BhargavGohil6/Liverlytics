@@ -245,6 +245,8 @@ export interface LabReportState {
   meldNaCount?: number;
   meld3Count?: number;
   meldTimestamp?: string;
+  downloadReportLoading: boolean;
+  downloadReportError: string | null;
 }
 
 // API call for file upload
@@ -418,6 +420,50 @@ export const fetchUserDocuments = createAsyncThunk<
   }
 });
 
+// API call for downloading health report
+export const downloadHealthReport = createAsyncThunk<
+  any,
+  { user: string; days: string },
+  { rejectValue: string }
+>('reports/downloadHealthReport', async (payload, { rejectWithValue }) => {
+  try {
+    console.log('Downloading health report...', payload);
+
+    // Make the API call
+    const response = await api.post(
+      '/cirrhosis_custom.cirrhosis_download_report.download_health_report_pdf',
+      payload
+    );
+
+    console.log('Download health report response:', response.data);
+    
+    // Extract file_url from response and prepend base URL
+    if (response.data?.message?.file_url) {
+      const fullUrl = `https://cirrhosis.mukesoft.com${response.data.message.file_url}`;
+      console.log('Full download URL:', fullUrl);
+      
+      // Return the full URL for downloading
+      return {
+        ...response.data,
+        downloadUrl: fullUrl
+      };
+    }
+    
+    return response.data;
+  } catch (error: any) {
+    console.log('Download Health Report Error:', error);
+    console.log('Error response:', error.response);
+
+    const msg =
+      error.response?.data?.message?.message ||
+      error.response?.data?.message ||
+      error.message ||
+      'Failed to download health report';
+
+    return rejectWithValue(msg);
+  }
+});
+
 const reportSlice = createSlice({
   name: 'reports',
   initialState: {
@@ -433,6 +479,8 @@ const reportSlice = createSlice({
     latestTwoAILabReports: [],
     latestTwoAILabReportsLoading: false,
     latestTwoAILabReportsError: null,
+    downloadReportLoading: false,
+    downloadReportError: null,
   } as LabReportState,
 
   reducers: {
@@ -587,6 +635,19 @@ const reportSlice = createSlice({
       .addCase(fetchLatestTwoAILabReports.rejected, (state, action) => {
         state.latestTwoAILabReportsLoading = false;
         state.latestTwoAILabReportsError = action.payload || 'Failed to fetch latest two AI lab reports';
+      })
+      // Download Health Report reducers
+      .addCase(downloadHealthReport.pending, (state) => {
+        state.downloadReportLoading = true;
+        state.downloadReportError = null;
+      })
+      .addCase(downloadHealthReport.fulfilled, (state, action) => {
+        state.downloadReportLoading = false;
+        // Response is logged in the thunk, no need to store it
+      })
+      .addCase(downloadHealthReport.rejected, (state, action) => {
+        state.downloadReportLoading = false;
+        state.downloadReportError = action.payload || 'Failed to download health report';
       });
   },
 });

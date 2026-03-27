@@ -32,6 +32,7 @@ export default function BPChartScreen({ navigation }: BPChartScreenProps) {
   const [diastolicData, setDiastolicData] = useState<number[]>([]);
   const [bpLabels, setBpLabels] = useState<string[]>([]);
   const [last7DaysData, setLast7DaysData] = useState<any[]>([]);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
   // Get user email from auth state
   const userEmail = useSelector((state: any) => state.auth?.user?.email);
@@ -94,6 +95,7 @@ export default function BPChartScreen({ navigation }: BPChartScreenProps) {
       setSystolicData(systolicValues.reverse());
       setDiastolicData(diastolicValues.reverse());
       setBpLabels(dates.reverse());
+      setSelectedIndex(null);
     }
   }, [todayData]);
 
@@ -106,37 +108,68 @@ export default function BPChartScreen({ navigation }: BPChartScreenProps) {
     ? (diastolicData.reduce((sum, value) => sum + value, 0) / diastolicData.length).toFixed(0)
     : '0';
 
+  // Calculate Min/Max for proper padding boundary
+  let chartMin = 0;
+  let chartMax = 200;
+  
+  if (systolicData.length > 0 || diastolicData.length > 0) {
+    let minVal = 9999;
+    let maxVal = -9999;
+    
+    systolicData.forEach(s => { if (s > 0) { minVal = Math.min(minVal, s); maxVal = Math.max(maxVal, s); } });
+    diastolicData.forEach(d => { if (d > 0) { minVal = Math.min(minVal, d); maxVal = Math.max(maxVal, d); } });
+    
+    if (minVal === 9999) minVal = 0;
+    if (maxVal === -9999) maxVal = 100;
+    
+    const range = maxVal - minVal;
+    let padding = range * 0.2;
+    if (padding < 10) padding = 10;
+    
+    chartMin = Math.max(0, minVal - padding);
+    chartMax = maxVal + padding + (range === 0 ? 10 : 0);
+  }
+
+  const dummyData = systolicData.map((_, i) => i === 0 ? chartMax : chartMin);
+
   const chartData = {
     labels: bpLabels,
     datasets: [
       {
         data: systolicData,
-        strokeWidth: 3,
-        color: (opacity = 1) => `rgba(255, 152, 0, ${opacity})`, // Orange for systolic
+        color: (opacity = 1) => `rgba(255, 217, 61, ${opacity})`, // Yellow for systolic
       },
       {
         data: diastolicData,
-        strokeWidth: 3,
-        color: (opacity = 1) => `rgba(33, 150, 243, ${opacity})`, // Blue for diastolic
+        color: (opacity = 1) => `rgba(255, 107, 107, ${opacity})`, // Red for diastolic
       },
+      {
+        data: dummyData.length > 0 ? dummyData : [chartMax, chartMin],
+        color: () => 'rgba(0,0,0,0)', // Invisible bounds
+        withDots: false,
+      }
     ],
+    legend: ['Systolic', 'Diastolic', ''],
   };
 
   const chartConfig = {
-    backgroundColor: colors.white,
-    backgroundGradientFrom: colors.white,
-    backgroundGradientTo: colors.white,
+    backgroundColor: '#fff',
+    backgroundGradientFrom: '#fff',
+    backgroundGradientTo: '#fff',
     decimalPlaces: 0,
-    color: (opacity = 1) => `rgba(51, 51, 51, ${opacity})`,
-    labelColor: (opacity = 1) => `rgba(102, 102, 102, ${opacity})`,
-    style: {
-      borderRadius: responsive.borderRadius(16),
-    },
+    color: (opacity = 1) => `rgba(255, 217, 61, ${opacity})`, // Match VitalsHistoryScreen BP color
+    labelColor: (opacity = 1) => `rgba(107, 114, 128, ${opacity})`,
+    strokeWidth: responsive.width(2),
+    style: { borderRadius: responsive.borderRadius(16) },
     propsForDots: {
-      r: '4',
-      strokeWidth: '2',
-      stroke: colors.primary,
+      r: responsive.width(4),
+      strokeWidth: responsive.width(2),
+      stroke: '#FFD93D',
     },
+    propsForLabels: {
+      fontSize: 12,
+      fontWeight: '500',
+    }
   };
 
   return (
@@ -162,9 +195,23 @@ export default function BPChartScreen({ navigation }: BPChartScreenProps) {
       >
         {/* Chart Card */}
         <View style={styles.chartCard}>
-          <View style={styles.chartHeader}>
-            <Text style={styles.chartTitle}>7-Day Trend</Text>
-            <Text style={styles.chartSubtitle}>Blood Pressure (mmHg)</Text>
+          <View style={[styles.chartHeader, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }]}>
+            <View>
+              <Text style={styles.chartTitle}>7-Day Trend</Text>
+              <Text style={styles.chartSubtitle}>Blood Pressure (mmHg)</Text>
+            </View>
+            {systolicData.length > 0 && diastolicData.length > 0 && (
+              <View style={{ alignItems: 'flex-end' }}>
+                <Text style={styles.chartSubtitle}>
+                  {selectedIndex !== null ? bpLabels[selectedIndex] : 'Latest'}
+                </Text>
+                <Text style={[styles.chartTitle, { color: '#FF5252' }]}>
+                  {selectedIndex !== null 
+                    ? `${systolicData[selectedIndex]}/${diastolicData[selectedIndex]}`
+                    : `${systolicData[systolicData.length - 1]}/${diastolicData[diastolicData.length - 1]}`}
+                </Text>
+              </View>
+            )}
           </View>
           
           {error ? (
@@ -193,27 +240,34 @@ export default function BPChartScreen({ navigation }: BPChartScreenProps) {
             </View>
           ) : (
             <View style={styles.chartContainer}>
+              <View style={{ position: 'relative' }}>
               <LineChart
                 data={chartData}
-                width={width - responsive.padding(32) * 2}
-                height={220}
+                width={width - responsive.padding(40)}
+                height={responsive.height(200)}
                 chartConfig={chartConfig}
                 bezier
                 style={styles.chart}
-                yAxisLabel=""
-                yAxisSuffix=" mmHg"
                 fromZero={false}
+                withShadow={false}
+                onDataPointClick={(data) => {
+                  if (data.value === chartMax || data.value === chartMin) return;
+                  if (selectedIndex === data.index) {
+                    setSelectedIndex(null);
+                  } else {
+                    setSelectedIndex(data.index);
+                  }
+                }}
               />
-              <View style={styles.legend}>
+              </View>
+              <View style={styles.chartLegend}>
                 <View style={styles.legendItem}>
-                  <View style={[styles.legendColor, { backgroundColor: '#FF9800' }]} />
+                  <View style={[styles.legendDot, { backgroundColor: '#FFD93D' }]} />
                   <Text style={styles.legendText}>Systolic</Text>
-                  <Text style={styles.legendText}>(High)</Text>
                 </View>
                 <View style={styles.legendItem}>
-                  <View style={[styles.legendColor, { backgroundColor: '#2196F3' }]} />
+                  <View style={[styles.legendDot, { backgroundColor: '#FF6B6B' }]} />
                   <Text style={styles.legendText}>Diastolic</Text>
-                  <Text style={styles.legendText}>(Low)</Text>
                 </View>
               </View>
             </View>
@@ -372,26 +426,28 @@ const styles = StyleSheet.create({
     marginVertical: responsive.margin(8),
     borderRadius: responsive.borderRadius(16),
   },
-  legend: {
+  chartLegend: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    gap: responsive.padding(20),
+    flexWrap: 'wrap',
     marginTop: responsive.margin(12),
+    justifyContent: 'center',
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: responsive.padding(6),
+    marginHorizontal: responsive.margin(8),
+    marginBottom: responsive.margin(8),
   },
-  legendColor: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+  legendDot: {
+    width: responsive.width(8),
+    height: responsive.height(8),
+    borderRadius: responsive.borderRadius(4),
+    marginRight: responsive.margin(6),
   },
   legendText: {
-    fontSize: font.sm,
-    color: colors.darkGray,
-    fontWeight: '500',
+    fontSize: responsive.fontSize(12),
+    color: '#666',
+    marginLeft: responsive.margin(4),
   },
   errorContainer: {
     alignItems: 'center',

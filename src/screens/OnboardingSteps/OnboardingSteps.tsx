@@ -95,7 +95,7 @@ export default function OnboardingSteps() {
   const [hasRespondedToWearablePopup, setHasRespondedToWearablePopup] = useState(false); 
   const flatListRef = useRef<FlatList>(null);
   const dispatch = useDispatch();
-  const { submitting } = useSelector((state: any) => state.onboarding);
+  const { submitting, apiResponseStatus } = useSelector((state: any) => state.onboarding);
   const navigation = useNavigation<any>();
 
   const route = useRoute<any>();
@@ -150,17 +150,73 @@ export default function OnboardingSteps() {
       }
       flatListRef.current?.scrollToIndex({ index: currentIndex + 1 });
     } else {
+      // Last slide - submit consents
       dispatch(submitAllConsents() as any)
         .unwrap()
-        .then(() => {
-          navigation.replace('Dashboard');
+        .then((response: any) => {
+          console.log('📋 Response received in component:', response);
+          console.log('📋 Response status:', response?.status);
+          console.log('📋 Response overall_status:', response?.overall_status);
+          console.log('📋 Response message:', response?.message);
+          
+          // Navigate to dashboard on success
+          // Check multiple possible success indicators
+          const isSuccess = 
+            response?.status === 'success' || 
+            response?.overall_status === 'success' ||
+            (response?.message && !response?.error);
+          
+          if (isSuccess) {
+            console.log('✅ Onboarding completed successfully!');
+            console.log('🔄 Navigating to Dashboard...');
+            console.log('Navigation methods available:', Object.keys(navigation));
+            
+            // Try navigate first, fallback to replace
+            if (navigation.navigate) {
+              console.log('Using navigation.navigate');
+              navigation.navigate('Dashboard');
+            } else if (navigation.replace) {
+              console.log('Using navigation.replace');
+              navigation.replace('Dashboard');
+            }
+            
+            console.log('✅ Navigation command executed');
+          } else {
+            console.log('❌ API returned non-success status:', response);
+            // Don't navigate - user needs to fix errors first
+            Toast.show({
+              type: 'error',
+              text1: 'Please fix the errors',
+              text2: response?.message || 'Some values need correction before proceeding.',
+              visibilityTime: 5000,
+            });
+          }
         })
         .catch((error: any) => {
-          Toast.show({
-            type: 'error',
-            text1: 'Submission failed',
-            text2: error?.message || 'Please try again',
-          });
+          console.error('❌ Submission error:', error);
+          
+          // Check if it's a validation error with specific message
+          if (error?.status === 'fail' || error?.overall_status === 'error') {
+            // Show detailed validation error
+            Toast.show({
+              type: 'error',
+              text1: 'Validation Error',
+              text2: error?.message || 'Please check your input values and try again.',
+              visibilityTime: 6000,
+              topOffset: 50,
+            });
+          } else {
+            // Generic error
+            Toast.show({
+              type: 'error',
+              text1: 'Submission failed',
+              text2: error?.message || 'Please try again.',
+              visibilityTime: 5000,
+            });
+          }
+          
+          // DO NOT navigate to dashboard on error - stay on this screen
+          // User must fix the values and try again
         });
     }
   };

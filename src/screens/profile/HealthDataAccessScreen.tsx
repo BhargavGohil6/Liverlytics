@@ -229,7 +229,7 @@ const HealthDataAccessScreen: React.FC<HealthDataAccessScreenProps> = ({ navigat
             </View>
           </View>
 
-          <View style={styles.card}>
+          {/* <View style={styles.card}>
             <Text style={styles.cardTitle}>Data Types</Text>
             
             <View style={styles.permissionItem}>
@@ -316,7 +316,7 @@ const HealthDataAccessScreen: React.FC<HealthDataAccessScreenProps> = ({ navigat
                 ios_backgroundColor="#d1d5db"
               />
             </View>
-          </View>
+          </View> */}
 
           <View style={styles.infoCard}>
             <Icon name="information-circle-outline" size={24} color="#3b82f6" />

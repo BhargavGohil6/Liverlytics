@@ -37,6 +37,7 @@ const VitalsHistoryScreen: React.FC<VitalsHistoryScreenProps> = ({ navigation })
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
   const [displayCount, setDisplayCount] = useState(10);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   
   const dispatch: AppDispatch = useDispatch();
   const { todayData, loading, error } = useSelector((state: RootState) => state.vitals);
@@ -232,6 +233,7 @@ const VitalsHistoryScreen: React.FC<VitalsHistoryScreenProps> = ({ navigation })
   // Reset display count when data changes
   useEffect(() => {
     setDisplayCount(10);
+    setSelectedIndex(null);
   }, [vitalsData]);
 
   const metricsList = ['Heart Rate', 'Resting HR', 'Glucose', 'Sleep', 'SpO₂', 'Weight', 'Blood Pressure'];
@@ -322,6 +324,11 @@ const VitalsHistoryScreen: React.FC<VitalsHistoryScreenProps> = ({ navigation })
     }
     return `Last ${selectedDays} days`;
   };
+
+  const activeSlicedData = vitalsData.length > 0 ? [...vitalsData.slice(0, 7)].reverse() : [];
+  const displayItem = selectedIndex !== null && selectedIndex < activeSlicedData.length 
+    ? activeSlicedData[selectedIndex] 
+    : (activeSlicedData.length > 0 ? activeSlicedData[activeSlicedData.length - 1] : null);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -459,95 +466,153 @@ const VitalsHistoryScreen: React.FC<VitalsHistoryScreenProps> = ({ navigation })
 
         {/* Chart */}
         <View style={styles.chartContainer}>
-          <View style={styles.chartHeader}>
-            <Text style={styles.chartTitle}>Trend</Text>
-            <Text style={styles.chartSubtitle}>
-              {selectedDays === 'Custom' && startDate && endDate 
-                ? `${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()} • ${selectedMetric}`
-                : `Last ${selectedDays} days • ${selectedMetric}`}
-            </Text>
+          <View style={[styles.chartHeader, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }]}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.chartTitle}>Trend</Text>
+              <Text style={styles.chartSubtitle}>
+                {selectedDays === 'Custom' && startDate && endDate 
+                  ? `${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()} • ${selectedMetric}`
+                  : `Last ${selectedDays} days • ${selectedMetric}`}
+              </Text>
+            </View>
+            {displayItem && (
+              <View style={{ alignItems: 'flex-end', marginLeft: responsive.margin(8) }}>
+                <Text style={styles.chartSubtitle}>{selectedIndex !== null ? displayItem.date : 'Latest'}</Text>
+                <Text style={[styles.chartTitle, { color: getChartColor(selectedMetric) }]}>
+                  {selectedMetric === 'Blood Pressure' 
+                    ? `${displayItem.systolicValue}/${displayItem.diastolicValue}`
+                    : displayItem.value} {displayItem.unit}
+                </Text>
+              </View>
+            )}
           </View>
           {loading ? (
             <Text style={{ textAlign: 'center', padding: responsive.padding(20) }}>Loading vitals data...</Text>
           ) : error ? (
             <Text style={{ textAlign: 'center', padding: responsive.padding(20), color: 'red' }}>Error: {error}</Text>
-          ) : vitalsData.length > 0 ? (
-            <LineChart
-              data={{
-                labels: vitalsData.slice(0, 7).map(item => {
-                  // For 7 days filter, show day names (Mon, Tue, etc.)
-                  // For other filters, show dates (MMM DD)
-                  if (selectedDays === '7') {
-                    return item.date.substring(0, 3); // First 3 letters (e.g., "Mon")
-                  } else {
-                    // Format as "MMM DD" (e.g., "Jan 15")
-                    // Date format is like "Mon, Jan 15" - extract "Jan 15"
-                    const parts = item.date.split(', ');
-                    if (parts.length >= 2) {
-                      return parts[1]; // Returns "Jan 15"
-                    }
-                    return item.date;
-                  }
-                }),
-                datasets: selectedMetric === 'Blood Pressure' 
-                  ? [
+          ) : activeSlicedData.length > 0 ? (
+            (() => {
+              // 1. Array is already reversed and stored in activeSlicedData
+              const slicedData = activeSlicedData;
+              
+              // 2. Calculate Min and Max for padding
+              let minVal = 9999;
+              let maxVal = -9999;
+              
+              if (selectedMetric === 'Blood Pressure') {
+                slicedData.forEach(item => {
+                  if (item.systolicValue > 0) { minVal = Math.min(minVal, item.systolicValue); maxVal = Math.max(maxVal, item.systolicValue); }
+                  if (item.diastolicValue > 0) { minVal = Math.min(minVal, item.diastolicValue); maxVal = Math.max(maxVal, item.diastolicValue); }
+                });
+              } else {
+                slicedData.forEach(item => {
+                  if (item.numericValue > 0) { minVal = Math.min(minVal, item.numericValue); maxVal = Math.max(maxVal, item.numericValue); }
+                });
+              }
+              
+              if (minVal === 9999) minVal = 0;
+              if (maxVal === -9999) maxVal = 100;
+              
+              // 3. Define padding
+              const range = maxVal - minVal;
+              let padding = range * 0.2;
+              if (padding < 10 && selectedMetric !== 'SpO₂') padding = 10;
+              if (selectedMetric === 'SpO₂') padding = 2;
+              
+              const chartMin = Math.max(0, minVal - padding);
+              const chartMax = maxVal + padding + (range === 0 ? 10 : 0);
+              
+              const dummyData = slicedData.map((_, i) => i === 0 ? chartMax : chartMin);
+
+              return (
+                <View style={{ position: 'relative' }}>
+                <LineChart
+                  data={{
+                    labels: slicedData.map(item => {
+                      if (selectedDays === '7') return item.date.substring(0, 3);
+                      const parts = item.date.split(', ');
+                      return parts.length >= 2 ? parts[1] : item.date;
+                    }),
+                    datasets: [
+                      ...(selectedMetric === 'Blood Pressure' 
+                        ? [
+                            {
+                              data: slicedData.map(item => item.systolicValue || 0),
+                              color: (opacity = 1) => `rgba(255, 217, 61, ${opacity})`, // Yellow for systolic
+                            },
+                            {
+                              data: slicedData.map(item => item.diastolicValue || 0),
+                              color: (opacity = 1) => `rgba(255, 107, 107, ${opacity})`, // Red for diastolic
+                            }
+                          ]
+                        : [
+                            {
+                              data: slicedData.map(item => item.numericValue || 0)
+                            }
+                          ]),
                       {
-                        data: vitalsData.slice(0, 7).map(item => item.systolicValue || 0),
-                        color: (opacity = 1) => `rgba(255, 217, 61, ${opacity})`, // Yellow for systolic
-                      },
-                      {
-                        data: vitalsData.slice(0, 7).map(item => item.diastolicValue || 0),
-                        color: (opacity = 1) => `rgba(255, 107, 107, ${opacity})`, // Red for diastolic
+                        data: dummyData,
+                        color: () => 'rgba(0,0,0,0)', // Transparent dummy for padding
+                        withDots: false,
                       }
-                    ]
-                  : [{
-                      data: vitalsData.slice(0, 7).map(item => item.numericValue || 0)
-                    }],
-                legend: selectedMetric === 'Blood Pressure' ? ['Systolic', 'Diastolic'] : [selectedMetric],
-              }}
-              width={width - responsive.width(48)}
-              height={responsive.height(200)}
-              chartConfig={{
-                backgroundColor: '#fff',
-                backgroundGradientFrom: '#fff',
-                backgroundGradientTo: '#fff',
-                decimalPlaces: selectedMetric === 'SpO₂' ? 1 : 0,
-                color: (opacity = 1) => {
-                  if (selectedMetric === 'Blood Pressure') {
-                    // This will be overridden by dataset-specific colors
-                    return `rgba(255, 217, 61, ${opacity})`;
-                  }
-                  const hexColor = getChartColor(selectedMetric);
-                  const r = parseInt(hexColor.substring(1, 3), 16);
-                  const g = parseInt(hexColor.substring(3, 5), 16);
-                  const b = parseInt(hexColor.substring(5, 7), 16);
-                  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
-                },
-                labelColor: (opacity = 1) => `rgba(107, 114, 128, ${opacity})`,
-                strokeWidth: responsive.width(2),
-                style: { borderRadius: responsive.borderRadius(16) },
-                propsForDots: {
-                  r: responsive.width(4),
-                  strokeWidth: responsive.width(2),
-                  stroke: selectedMetric === 'Blood Pressure' ? '#FFD93D' : getChartColor(selectedMetric)
-                },
-                formatYLabel: (ylabel) => {
-                  // Special formatting for sleep chart (show as decimal hours)
-                  if (selectedMetric === 'Sleep') {
-                    const numValue = Number(ylabel);
-                    // Round to 1 decimal place
-                    return numValue.toFixed(1) + 'h';
-                  }
-                  return ylabel;
-                },
-                propsForLabels: {
-                  fontSize: selectedDays === '7' ? 12 : 10,
-                  fontWeight: selectedDays === '7' ? '500' : '400',
-                }
-              }}
-              bezier
-              style={styles.chart}
-            />
+                    ],
+                    legend: selectedMetric === 'Blood Pressure' 
+                      ? ['Systolic', 'Diastolic', ''] 
+                      : [selectedMetric, ''],
+                  }}
+                  width={width - responsive.width(48)}
+                  height={responsive.height(200)}
+                  chartConfig={{
+                    backgroundColor: '#fff',
+                    backgroundGradientFrom: '#fff',
+                    backgroundGradientTo: '#fff',
+                    decimalPlaces: selectedMetric === 'SpO₂' ? 1 : 0,
+                    color: (opacity = 1) => {
+                      if (selectedMetric === 'Blood Pressure') {
+                        return `rgba(255, 217, 61, ${opacity})`;
+                      }
+                      const hexColor = getChartColor(selectedMetric);
+                      const r = parseInt(hexColor.substring(1, 3), 16);
+                      const g = parseInt(hexColor.substring(3, 5), 16);
+                      const b = parseInt(hexColor.substring(5, 7), 16);
+                      return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+                    },
+                    labelColor: (opacity = 1) => `rgba(107, 114, 128, ${opacity})`,
+                    strokeWidth: responsive.width(2),
+                    style: { borderRadius: responsive.borderRadius(16) },
+                    propsForDots: {
+                      r: responsive.width(4),
+                      strokeWidth: responsive.width(2),
+                      stroke: selectedMetric === 'Blood Pressure' ? '#FFD93D' : getChartColor(selectedMetric)
+                    },
+                    formatYLabel: (ylabel) => {
+                      if (selectedMetric === 'Sleep') {
+                        const numValue = Number(ylabel);
+                        return numValue.toFixed(1) + 'h';
+                      }
+                      return ylabel;
+                    },
+                    propsForLabels: {
+                      fontSize: selectedDays === '7' ? 12 : 10,
+                      fontWeight: selectedDays === '7' ? '500' : '400',
+                    }
+                  }}
+                  bezier
+                  fromZero={false}
+                  withShadow={false}
+                  style={styles.chart}
+                  onDataPointClick={(data) => {
+                    if (data.value === chartMax || data.value === chartMin) return;
+                    if (selectedIndex === data.index) {
+                      setSelectedIndex(null);
+                    } else {
+                      setSelectedIndex(data.index);
+                    }
+                  }}
+                />
+                </View>
+              );
+            })()
           ) : (
             <Text style={{ textAlign: 'center', padding: responsive.padding(20) }}>No data available</Text>
           )}

@@ -12,7 +12,7 @@ import responsive from '../../../theme/responsive';
 import { useNavigation } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchMeldHistory, selectMeldHistory, selectMeldHistoryLoading, selectMeldHistoryError } from '../../meld-calculator/slices/meldSlice';
-import type { AppDispatch } from '../../../redux/store';
+import type { AppDispatch, RootState } from '../../../redux/store';
 import CommonLoader from '../../../components/CommonLoader';
 
 const MeldTrendScreen = () => {
@@ -21,10 +21,15 @@ const MeldTrendScreen = () => {
   const meldHistory = useSelector(selectMeldHistory);
   const historyLoading = useSelector(selectMeldHistoryLoading);
   const historyError = useSelector(selectMeldHistoryError);
+  
+  // Get user email from auth state
+  const { user } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
-    dispatch(fetchMeldHistory());
-  }, [dispatch]);
+    if (user?.email) {
+      dispatch(fetchMeldHistory({ user: user.email }));
+    }
+  }, [dispatch, user?.email]);
 
   return (
     <SafeAreaView style={styles.container}>

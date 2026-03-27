@@ -106,25 +106,30 @@ export interface MeldState {
 // Async thunk for fetching MELD history
 export const fetchMeldHistory = createAsyncThunk<
   MeldHistoryPayload,
-  void,
+  { period?: string; user?: string },
   { rejectValue: string, state: { auth: { user: { email: string } | null } } }
->('meld/fetchMeldHistory', async (_, { rejectWithValue, getState }) => {
+>('meld/fetchMeldHistory', async ({ period, user }, { rejectWithValue, getState }) => {
   try {
     console.log('Fetching MELD history');
     
-    const state = getState();
-    const userEmail = state.auth.user?.email;
+    // Use provided user email or get from state
+    let userEmail = user;
+    if (!userEmail) {
+      const state = getState();
+      userEmail = state.auth.user?.email;
+    }
     
     if (!userEmail) {
       return rejectWithValue('User email not available');
     }
     
-    console.log('Making API call with user email:', userEmail);
+    console.log('Making API call with user email:', userEmail, 'period:', period || 'All Time');
     
     // Make the API call to fetch MELD history
     const response = await api.get('/cirrhosis_custom.cirrhosis_meld_calculator.get_meld', {
       params: {
-        user: userEmail
+        user: userEmail,
+        ...(period ? { period } : {})
       }
     });
     

@@ -365,7 +365,7 @@ const MELDDataEntryScreen = () => {
             </View>
             
             {/* Sex Selection for Small Screens */}
-            {isSmallScreen && (
+            {/* {isSmallScreen && (
               <View style={styles.formItem}>
                 <View style={styles.labelRow}>
                   <Text style={styles.label}>Sex</Text>
@@ -392,7 +392,7 @@ const MELDDataEntryScreen = () => {
                   </View>
                 </View>
               </View>
-            )}
+            )} */}
 
             {/* AST and ALT Row */}
             <View style={isSmallScreen ? styles.formColumn : styles.formRow}>

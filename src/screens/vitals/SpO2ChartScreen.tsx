@@ -32,6 +32,7 @@ export default function SpO2ChartScreen({ navigation }: SpO2ChartScreenProps) {
   const [spo2Data, setSpo2Data] = useState<number[]>([]);
   const [spo2Labels, setSpo2Labels] = useState<string[]>([]);
   const [last7DaysData, setLast7DaysData] = useState<any[]>([]);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
   // Get user email from auth state
   const userEmail = useSelector((state: any) => state.auth?.user?.email);
@@ -75,6 +76,7 @@ export default function SpO2ChartScreen({ navigation }: SpO2ChartScreenProps) {
       // Reverse to show oldest first (left to right)
       setSpo2Data(spo2Values.reverse());
       setSpo2Labels(dates.reverse());
+      setSelectedIndex(null);
     }
   }, [todayData]);
 
@@ -137,9 +139,23 @@ export default function SpO2ChartScreen({ navigation }: SpO2ChartScreenProps) {
       >
         {/* Chart Card */}
         <View style={styles.chartCard}>
-          <View style={styles.chartHeader}>
-            <Text style={styles.chartTitle}>7-Day Trend</Text>
-            <Text style={styles.chartSubtitle}>Oxygen Saturation (SpO₂ %)</Text>
+          <View style={[styles.chartHeader, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }]}>
+            <View>
+              <Text style={styles.chartTitle}>7-Day Trend</Text>
+              <Text style={styles.chartSubtitle}>Oxygen Saturation (SpO₂ %)</Text>
+            </View>
+            {spo2Data.length > 0 && (
+              <View style={{ alignItems: 'flex-end' }}>
+                <Text style={styles.chartSubtitle}>
+                  {selectedIndex !== null ? spo2Labels[selectedIndex] : 'Latest'}
+                </Text>
+                <Text style={[styles.chartTitle, { color: '#2196F3' }]}>
+                  {selectedIndex !== null 
+                    ? spo2Data[selectedIndex]
+                    : spo2Data[spo2Data.length - 1]}%
+                </Text>
+              </View>
+            )}
           </View>
           
           {error ? (
@@ -170,7 +186,7 @@ export default function SpO2ChartScreen({ navigation }: SpO2ChartScreenProps) {
             <View style={styles.chartContainer}>
               <LineChart
                 data={chartData}
-                width={width - responsive.padding(32) * 2}
+                width={width - responsive.padding(40)}
                 height={220}
                 chartConfig={chartConfig}
                 bezier
@@ -178,6 +194,13 @@ export default function SpO2ChartScreen({ navigation }: SpO2ChartScreenProps) {
                 yAxisLabel=""
                 yAxisSuffix="%"
                 fromZero={false}
+                onDataPointClick={(data) => {
+                  if (selectedIndex === data.index) {
+                    setSelectedIndex(null);
+                  } else {
+                    setSelectedIndex(data.index);
+                  }
+                }}
               />
             </View>
           )}

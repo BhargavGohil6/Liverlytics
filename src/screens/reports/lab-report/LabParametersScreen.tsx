@@ -38,6 +38,8 @@ const LabParametersScreen = () => {
     sex: user?.gender_custom || 'Female',
     onDialysis: 'Yes',
   });
+
+  console.log('Lab Data:', labData)
   
   useEffect(() => {
     if (reduxLabData && reduxLabData.medical_analysis && reduxLabData.medical_analysis.medical_data) {
@@ -181,7 +183,7 @@ const LabParametersScreen = () => {
           .filter(Boolean)}
 
         {/* Sex Selection - Pre-filled and disabled based on user profile */}
-        <View style={styles.parameterRow}>
+        {/* <View style={styles.parameterRow}>
           <Text style={styles.parameterLabel}>Sex</Text>
           <View style={styles.sexButtons}>
             <View
@@ -195,7 +197,7 @@ const LabParametersScreen = () => {
               <Text style={[styles.sexButtonText, labData.sex === 'Male' && styles.sexButtonTextActive]}>Male</Text>
             </View>
           </View>
-        </View>
+        </View> */}
 
 
 
@@ -236,21 +238,42 @@ const LabParametersScreen = () => {
           style={styles.continueButton}
           onPress={async () => {
             // Prepare the data for the API call
-            const aiLabReportData = {
-              bilirubin: (labData.bilirubin as LabParameter)?.value || '0',
-              creatinine: (labData.creatinine as LabParameter)?.value || '0',
-              sodium: (labData.sodium as LabParameter)?.value || '0',
-              albumin: (labData.albumin as LabParameter)?.value || '0',
-              ast: (labData.ast as LabParameter)?.value || '0',
-              alt: (labData.alt as LabParameter)?.value || '0',
-              platelet_count: (labData.platelet_count as LabParameter)?.value || '0',
-              hemoglobin: (labData.hemoglobin as LabParameter)?.value || '0',
-              wbc: (labData.wbc as LabParameter)?.value || '0',
-              potassium: (labData.potassium as LabParameter)?.value || '0',
-              ammonia: (labData.ammonia as LabParameter)?.value || '0',
-              inr: (labData.inr as LabParameter)?.value || '0',
-              user: user?.email || '',
+            console.log('Submitting AI Lab Report Data:', labData)
+            
+            // Helper function to safely get parameter value from multiple possible keys
+            const getParamValue = (possibleKeys: string[]) => {
+              for (const key of possibleKeys) {
+                const param = labData[key];
+                if (param && typeof param === 'object' && 'value' in param) {
+                  const value = (param as LabParameter).value;
+                  if (value && value.trim() !== '') {
+                    return value;
+                  }
+                }
+              }
+              return '0';
             };
+            
+            // Build the API data object with ALL required MELD parameters
+            const aiLabReportData: any = {
+              user: user?.email || '',
+              
+              // Required MELD parameters - must have values
+              bilirubin: getParamValue(['Bilirubin', 'Total Bilirubin', 'Direct Bilirubin']),
+              creatinine: getParamValue(['Creatinine', 'Serum Creatinine']),
+              sodium: getParamValue(['Sodium']),
+              albumin: getParamValue(['Albumin', 'Serum Albumin']),
+              ast: getParamValue(['AST', 'Aspartate Aminotransferase', 'SGOT']),
+              alt: getParamValue(['ALT', 'Alanine Aminotransferase', 'SGPT']),
+              platelet_count: getParamValue(['Platelet Count', 'Platelets']),
+              hemoglobin: getParamValue(['Hemoglobin', 'Hb']),
+              wbc: getParamValue(['WBC', 'White Blood Cells']),
+              potassium: getParamValue(['Potassium']),
+              ammonia: getParamValue(['Ammonia']),
+              inr: getParamValue(['INR', 'Prothrombin Time']),
+            };
+            
+            console.log('Final API Data:', aiLabReportData);
             
             try {
               const resultAction = await dispatch(addAILabReport(aiLabReportData));

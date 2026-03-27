@@ -74,8 +74,12 @@ export default function VitalsOverviewScreen() {
     ? todayData.data[0] 
     : null;
   
+  // Extract trends and warnings from API response
+  const trends = todayData?.trends || [];
+  const warnings = todayData?.warnings || [];
+  
   // Format the vital values for display
-  const rhrValue = vitalData?.heart_rate ? `${vitalData.heart_rate} bpm` : '0';
+  const rhrValue = vitalData?.resting_heart_rate ? `${vitalData.resting_heart_rate} bpm` : '0';
   const glucoseValue = vitalData?.glucose ? `${vitalData.glucose} mg/dL` : '0';
   
   // Combine sleep_hours and sleep_minutes into formatted string
@@ -88,6 +92,18 @@ export default function VitalsOverviewScreen() {
   const spO2Value = vitalData?.spo2 ? `${vitalData.spo2}%` : '0';
   const weightValue = vitalData?.weight ? `${vitalData.weight} kg` : '0';
   const bpValue = vitalData?.blood_pressure ? `${vitalData.blood_pressure}` : '0';
+  
+  // Helper function to get icon based on trend direction
+  const getTrendIcon = (direction: string) => {
+    switch (direction?.toLowerCase()) {
+      case 'up':
+        return { name: 'arrow-up', color: '#FF9800' };
+      case 'down':
+        return { name: 'trending-down', color: '#4CAF50' };
+      default:
+        return { name: 'minus', color: '#666' };
+    }
+  };
   
   return (
     <SafeAreaView style={styles.container}>
@@ -278,22 +294,46 @@ export default function VitalsOverviewScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Recent Trends</Text>
           
-          <View style={styles.trendCard}>
-            <Icon name="trending-up" size={responsive.fontSize(16)} color="#FF9800" />
-            <Text style={styles.trendText}>RHR elevated 3 days</Text>
-          </View>
+          {trends.length > 0 ? (
+            <>
+              {trends.slice(0, 1).map((trend: any, index: number) => (
+                <View key={index} style={styles.trendCard}>
+                  <Icon name={getTrendIcon(trend.direction).name} size={responsive.fontSize(16)} color={getTrendIcon(trend.direction).color} />
+                  <Text style={styles.trendText}>{trend.label}</Text>
+                </View>
+              ))}
 
-          <View style={styles.trendsRow}>
-            <View style={[styles.trendCard, styles.trendCardHalf]}>
-              <Icon name="trending-down" size={responsive.fontSize(16)} color="#4CAF50" />
-              <Text style={styles.trendText}>Sleep lower than usual</Text>
-            </View>
-            
-            <View style={[styles.trendCard, styles.trendCardHalf]}>
-              <Icon name="arrow-up" size={responsive.fontSize(16)} color="#FF9800" />
-              <Text style={styles.trendText}>+1.2 kg in 24h</Text>
-            </View>
-          </View>
+              {trends.length > 1 && (
+                <View style={styles.trendsRow}>
+                  {trends.slice(1, 3).map((trend: any, idx: number) => (
+                    <View key={idx} style={[styles.trendCard, styles.trendCardHalf]}>
+                      <Icon name={getTrendIcon(trend.direction).name} size={responsive.fontSize(16)} color={getTrendIcon(trend.direction).color} />
+                      <Text style={styles.trendText}>{trend.label}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </>
+          ) : (
+            <>
+              {/* <View style={styles.trendCard}>
+                <Icon name="trending-up" size={responsive.fontSize(16)} color="#FF9800" />
+                <Text style={styles.trendText}>RHR elevated 3 days</Text>
+              </View>
+
+              <View style={styles.trendsRow}>
+                <View style={[styles.trendCard, styles.trendCardHalf]}>
+                  <Icon name="trending-down" size={responsive.fontSize(16)} color="#4CAF50" />
+                  <Text style={styles.trendText}>Sleep lower than usual</Text>
+                </View>
+                
+                <View style={[styles.trendCard, styles.trendCardHalf]}>
+                  <Icon name="arrow-up" size={responsive.fontSize(16)} color="#FF9800" />
+                  <Text style={styles.trendText}>+1.2 kg in 24h</Text>
+                </View>
+              </View> */}
+            </>
+          )}
         </View>
 
         {/* Mini Charts */}
@@ -324,7 +364,7 @@ export default function VitalsOverviewScreen() {
         </View> */}
 
         {/* Warning Alert */}
-        <View style={styles.warningCard}>
+        {/* <View style={styles.warningCard}>
           <Icon name="alert-triangle" size={responsive.fontSize(20)} color="#F57C00" />
           <View style={styles.warningContent}>
             <Text style={styles.warningTitle}>Low SpO₂ detected</Text>
@@ -332,18 +372,39 @@ export default function VitalsOverviewScreen() {
               93% recorded. If you feel unwell, rest and recheck in 15 minutes.
             </Text>
           </View>
-        </View>
+        </View> */}
 
-        {/* No Warnings Card */}
-        <View style={styles.noWarningsCard}>
-          <Icon name="shield" size={responsive.fontSize(20)} color="#666" />
-          <View style={styles.noWarningsContent}>
-            <Text style={styles.noWarningsTitle}>No current warnings</Text>
-            <Text style={styles.noWarningsText}>
-              We'll notify you if anything needs attention.
-            </Text>
+        {/* Warnings Section */}
+        {warnings.length > 0 ? (
+          warnings.map((warning: any, index: number) => (
+            <View key={index} style={[
+              styles.warningCard,
+              warning.severity === 'high' ? styles.warningHigh : 
+              warning.severity === 'medium' ? styles.warningMedium : styles.warningLow
+            ]}>
+              <Icon 
+                name={warning.severity === 'high' ? 'alert-circle' : 'alert-triangle'} 
+                size={responsive.fontSize(20)} 
+                color={warning.severity === 'high' ? '#F44336' : warning.severity === 'medium' ? '#FF9800' : '#FFC107'} 
+              />
+              <View style={styles.warningContent}>
+                <Text style={styles.warningTitle}>{warning.title}</Text>
+                <Text style={styles.warningText}>{warning.message}</Text>
+              </View>
+            </View>
+          ))
+        ) : (
+          /* No Warnings Card */
+          <View style={styles.noWarningsCard}>
+            <Icon name="shield" size={responsive.fontSize(20)} color="#666" />
+            <View style={styles.noWarningsContent}>
+              <Text style={styles.noWarningsTitle}>No current warnings</Text>
+              <Text style={styles.noWarningsText}>
+                We'll notify you if anything needs attention.
+              </Text>
+            </View>
           </View>
-        </View>
+        )}
 
         {/* View All Link */}
         {/* <TouchableOpacity style={styles.viewAllButton} onPress={()=>navigation.navigate('VitalsHistoryScreen' as never)}>
@@ -666,6 +727,21 @@ const styles = StyleSheet.create({
     fontSize: font.sm,
     color: colors.darkGray,
     lineHeight: responsive.fontSize(18),
+  },
+  warningHigh: {
+    backgroundColor: '#FFEBEE',
+    borderColor: '#F44336',
+    borderWidth: 1,
+  },
+  warningMedium: {
+    backgroundColor: '#FFF3E0',
+    borderColor: '#FF9800',
+    borderWidth: 1,
+  },
+  warningLow: {
+    backgroundColor: '#FFFDE7',
+    borderColor: '#FFC107',
+    borderWidth: 1,
   },
   noWarningsCard: {
     flexDirection: 'row',
