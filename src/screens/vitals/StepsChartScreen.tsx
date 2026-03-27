@@ -31,6 +31,7 @@ export default function StepsChartScreen({ navigation }: StepsChartScreenProps) 
   const [stepsData, setStepsData] = useState<number[]>([]);
   const [stepsLabels, setStepsLabels] = useState<string[]>([]);
   const [last7DaysData, setLast7DaysData] = useState<any[]>([]);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
   // Get user email from auth state
   const userEmail = useSelector((state: any) => state.auth?.user?.email);
@@ -73,6 +74,7 @@ export default function StepsChartScreen({ navigation }: StepsChartScreenProps) 
       // Reverse to show oldest first (left to right)
       setStepsData(stepsValues.reverse());
       setStepsLabels(dates.reverse());
+      setSelectedIndex(null);
     }
   }, [todayData]);
 
@@ -141,9 +143,23 @@ export default function StepsChartScreen({ navigation }: StepsChartScreenProps) 
       >
         {/* Chart Card */}
         <View style={styles.chartCard}>
-          <View style={styles.chartHeader}>
-            <Text style={styles.chartTitle}>7-Day Trend</Text>
-            <Text style={styles.chartSubtitle}>Daily Steps</Text>
+          <View style={[styles.chartHeader, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }]}>
+            <View>
+              <Text style={styles.chartTitle}>7-Day Trend</Text>
+              <Text style={styles.chartSubtitle}>Daily Steps</Text>
+            </View>
+            {stepsData.length > 0 && (
+              <View style={{ alignItems: 'flex-end' }}>
+                <Text style={styles.chartSubtitle}>
+                  {selectedIndex !== null ? stepsLabels[selectedIndex] : 'Latest'}
+                </Text>
+                <Text style={[styles.chartTitle, { color: '#4CAF50' }]}>
+                  {selectedIndex !== null 
+                    ? stepsData[selectedIndex].toLocaleString()
+                    : stepsData[stepsData.length - 1].toLocaleString()}
+                </Text>
+              </View>
+            )}
           </View>
           
           {error ? (
@@ -174,13 +190,20 @@ export default function StepsChartScreen({ navigation }: StepsChartScreenProps) 
             <View style={styles.chartContainer}>
               <LineChart
                 data={chartData}
-                width={width - responsive.padding(32) * 2}
+                width={width - responsive.padding(40)}
                 height={220}
                 chartConfig={chartConfig}
                 bezier
                 style={styles.chart}
                 yAxisLabel=""
                 fromZero={false}
+                onDataPointClick={(data) => {
+                  if (selectedIndex === data.index) {
+                    setSelectedIndex(null);
+                  } else {
+                    setSelectedIndex(data.index);
+                  }
+                }}
               />
             </View>
           )}

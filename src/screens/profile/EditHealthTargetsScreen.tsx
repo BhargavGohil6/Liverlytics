@@ -33,12 +33,12 @@ const EditHealthTargetsScreen = ({ navigation }: { navigation: any }) => {
   useEffect(() => {
     if (dailyHealthTargets && dailyHealthTargets.length > 0) {
       const target = dailyHealthTargets[0];
-      setSodiumLimit(target.daily_sodium_limit.toString());
-      setFluidLimit(target.daily_fluid_limit.toString());
-      setProteinLimit(target.daily_protein_limit.toString());
-      setWeightGainThreshold(target.weight_gain_alert_threshold.toString());
-      setHrThreshold(target.resting_hr_alert_threshold.toString());
-      setSleepGoal(target.sleep_goal.toString());
+      setSodiumLimit(target.daily_sodium_limit?.toString() ?? '');
+      setFluidLimit(target.daily_fluid_limit?.toString() ?? '');
+      setProteinLimit(target.daily_protein_limit?.toString() ?? '');
+      setWeightGainThreshold(target.weight_gain_alert_threshold?.toString() ?? '');
+      setHrThreshold(target.resting_hr_alert_threshold?.toString() ?? '');
+      setSleepGoal(target.sleep_goal?.toString() ?? '');
     }
   }, [dailyHealthTargets]);
 
@@ -200,6 +200,7 @@ const EditHealthTargetsScreen = ({ navigation }: { navigation: any }) => {
           />
         </View>
       </ScrollView>
+      <Toast />
     </SafeAreaView>
   );
 };

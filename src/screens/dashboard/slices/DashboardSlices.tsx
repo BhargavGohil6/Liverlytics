@@ -6,6 +6,7 @@ import Toast from 'react-native-toast-message';
 export interface VitalData {
   name?: string;
   heart_rate?: number;
+  resting_heart_rate?: string;
   weight?: number;
   blood_pressure?: string;
   sleep?: number;
@@ -91,7 +92,11 @@ export interface DashboardData {
   ai_insights?: {
     status: string;
     summary?: string;
-    ai_insights?: string[] | string;
+    ai_insights?: string;
+    blood_pressure?: string;
+    heart_rate?: string;
+    sodium?: string;
+    timestamp?: string;
   };
 }
 

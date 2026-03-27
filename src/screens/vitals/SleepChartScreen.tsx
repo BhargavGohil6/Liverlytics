@@ -34,6 +34,7 @@ export default function SleepChartScreen({ navigation }: SleepChartScreenProps) 
   const [sleepLabels, setSleepLabels] = useState<string[]>([]);
   const [last7DaysData, setLast7DaysData] = useState<any[]>([]);
   const [sleepGoal, setSleepGoal] = useState<number>(0);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
   // Get user email from auth state
   const userEmail = useSelector((state: any) => state.auth?.user?.email);
@@ -64,10 +65,14 @@ export default function SleepChartScreen({ navigation }: SleepChartScreenProps) 
       const dates: string[] = [];
 
       last7Days.forEach((record: any) => {
-        // Handle sleep in minutes
-        const sleepMinutes = record.sleep || record.sleep_minutes || 0;
+        // Handle sleep in hours and minutes from API
+        const sleepHours = record.sleep_hours || 0;
+        const sleepMinutes = record.sleep_minutes || 0;
+        // Convert to total minutes for storage
+        const totalMinutes = (Number(sleepHours) || 0) * 60 + (Number(sleepMinutes) || 0);
+        
         // Store minutes for display conversion
-        sleepValues.push(Number(sleepMinutes) || 0);
+        sleepValues.push(totalMinutes);
         
         // Format date for display
         const date = new Date(record.date || '');
@@ -79,6 +84,7 @@ export default function SleepChartScreen({ navigation }: SleepChartScreenProps) 
       // Reverse to show oldest first (left to right)
       setSleepData(sleepValues.reverse());
       setSleepLabels(dates.reverse());
+      setSelectedIndex(null);
     }
   }, [todayData]);
 
@@ -99,6 +105,12 @@ export default function SleepChartScreen({ navigation }: SleepChartScreenProps) 
   }, [dailyHealthTargets]);
 
   // Convert minutes to hours and minutes for display
+  const getSleepDisplay = (minutes: number) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${hours}h ${mins}m`;
+  };
+
   const sleepDataHoursMinutes = sleepData.map(minutes => {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
@@ -156,9 +168,23 @@ export default function SleepChartScreen({ navigation }: SleepChartScreenProps) 
       >
         {/* Chart Card */}
         <View style={styles.chartCard}>
-          <View style={styles.chartHeader}>
-            <Text style={styles.chartTitle}>7-Day Trend</Text>
-            <Text style={styles.chartSubtitle}>Sleep Duration (hr & min)</Text>
+          <View style={[styles.chartHeader, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }]}>
+            <View>
+              <Text style={styles.chartTitle}>7-Day Trend</Text>
+              <Text style={styles.chartSubtitle}>Sleep Duration (hr & min)</Text>
+            </View>
+            {sleepData.length > 0 && (
+              <View style={{ alignItems: 'flex-end' }}>
+                <Text style={styles.chartSubtitle}>
+                  {selectedIndex !== null ? sleepLabels[selectedIndex] : 'Latest'}
+                </Text>
+                <Text style={[styles.chartTitle, { color: '#9C27B0' }]}>
+                  {selectedIndex !== null 
+                    ? getSleepDisplay(sleepData[selectedIndex])
+                    : getSleepDisplay(sleepData[sleepData.length - 1])}
+                </Text>
+              </View>
+            )}
           </View>
           
           {error ? (
@@ -189,7 +215,7 @@ export default function SleepChartScreen({ navigation }: SleepChartScreenProps) 
             <View style={styles.chartContainer}>
               <LineChart
                 data={chartData}
-                width={width - responsive.padding(32) * 2}
+                width={width - responsive.padding(40)}
                 height={220}
                 chartConfig={chartConfig}
                 bezier
@@ -197,6 +223,13 @@ export default function SleepChartScreen({ navigation }: SleepChartScreenProps) 
                 yAxisLabel=""
                 yAxisSuffix="h"
                 fromZero={false}
+                onDataPointClick={(data) => {
+                  if (selectedIndex === data.index) {
+                    setSelectedIndex(null);
+                  } else {
+                    setSelectedIndex(data.index);
+                  }
+                }}
               />
             </View>
           )}
@@ -238,10 +271,14 @@ export default function SleepChartScreen({ navigation }: SleepChartScreenProps) 
             <Text style={styles.readingsTitle}>Recent Readings</Text>
             
             {last7DaysData.map((record: any, index: number) => {
-              const sleepMinutes = record.sleep || record.sleep_minutes || 0;
-              const hours = Math.floor(sleepMinutes / 60);
-              const minutes = sleepMinutes % 60;
-              const sleepDisplay = `${hours} hr and ${minutes} min`;
+              // Get sleep hours and minutes from API
+              const sleepHours = record.sleep_hours || 0;
+              const sleepMinutes = record.sleep_minutes || 0;
+              // Calculate total minutes
+              const totalMinutes = (Number(sleepHours) || 0) * 60 + (Number(sleepMinutes) || 0);
+              const hours = Math.floor(totalMinutes / 60);
+              const mins = totalMinutes % 60;
+              const sleepDisplay = `${hours} hr and ${mins} min`;
               
               const date = new Date(record.date || '');
               const formattedDate = date.toLocaleDateString('en-US', {
@@ -266,12 +303,12 @@ export default function SleepChartScreen({ navigation }: SleepChartScreenProps) 
                   <View style={styles.readingRight}>
                     <Text style={styles.readingValue}>{sleepDisplay}</Text>
                     <Text style={styles.readingStatus}>
-                      {sleepMinutes / 60 < sleepGoal ? 'Less' : ''}
+                      {totalMinutes / 60 < sleepGoal ? 'Less' : ''}
                     </Text>
                     <View style={[
                       styles.statusIndicator,
-                      sleepMinutes / 60 < sleepGoal ? styles.statusLow : // Less than goal
-                      sleepMinutes / 60 > (sleepGoal + 3) ? styles.statusHigh : // Significantly more than goal
+                      totalMinutes / 60 < sleepGoal ? styles.statusLow : // Less than goal
+                      totalMinutes / 60 > (sleepGoal + 3) ? styles.statusHigh : // Significantly more than goal
                       styles.statusNormal
                     ]} />
                   </View>

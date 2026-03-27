@@ -39,7 +39,8 @@ const ExerciseHistoryScreen = ({ navigation }: ExerciseHistoryScreenProps) => {
   
   const [selectedTab, setSelectedTab] = useState<string>('All');
   const [selectedPeriod, setSelectedPeriod] = useState<string>('7');
-  const [selectedChartTab, setSelectedChartTab] = useState<string>('Steps');
+  // const [selectedChartTab, setSelectedChartTab] = useState<string>('Steps');
+  const [selectedChartTab, setSelectedChartTab] = useState<string>('Resting HR');
   const [showCalendar, setShowCalendar] = useState(false);
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
@@ -70,6 +71,7 @@ const ExerciseHistoryScreen = ({ navigation }: ExerciseHistoryScreenProps) => {
   const [scrollViewOffset, setScrollViewOffset] = useState<number>(0);
   const [showLeftArrow, setShowLeftArrow] = useState<boolean>(false);
   const [showRightArrow, setShowRightArrow] = useState<boolean>(true);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
   const convertMinutesToHours = (minutes: number): string => {
     const hours = Math.floor(minutes / 60);
@@ -101,6 +103,10 @@ const ExerciseHistoryScreen = ({ navigation }: ExerciseHistoryScreenProps) => {
       };
     }).sort((a, b) => b.timestamp - a.timestamp) : [];
   }, [history]);
+
+  useEffect(() => {
+    setSelectedIndex(null);
+  }, [selectedChartTab, selectedPeriod, startDate, endDate, logs]);
 
   // Calculate chart data based on selected period and history data
   const calculateChartData = () => {
@@ -183,15 +189,16 @@ const ExerciseHistoryScreen = ({ navigation }: ExerciseHistoryScreenProps) => {
           datasets: [{ data: stepsData, strokeWidth: responsive.width(2) }],
         };
       case 'Sleep':
-        const sleepData = recentLogs.map(log => {
-          const [hoursStr, minutesStr] = log.sleep.split('h ');
-          const hours = parseInt(hoursStr) || 0;
-          const minutes = parseInt(minutesStr.replace('m', '')) || 0;
-          return hours * 60 + minutes;
-        });
+        // Commented out sleep data processing
+        // const sleepData = recentLogs.map(log => {
+        //   const [hoursStr, minutesStr] = log.sleep.split('h ');
+        //   const hours = parseInt(hoursStr) || 0;
+        //   const minutes = parseInt(minutesStr.replace('m', '')) || 0;
+        //   return hours * 60 + minutes;
+        // });
         return {
           labels,
-          datasets: [{ data: sleepData, strokeWidth: responsive.width(2) }],
+          datasets: [{ data: [], strokeWidth: responsive.width(2) }],
         };
       case 'Resting HR':
         const rhrData = recentLogs.map(log => log.rhr);
@@ -232,8 +239,8 @@ const ExerciseHistoryScreen = ({ navigation }: ExerciseHistoryScreenProps) => {
     switch(tab) {
       case 'Steps':
         return '#52AB3C';
-      case 'Sleep':
-        return '#FF6B6B';
+      // case 'Sleep':
+      //   return '#FF6B6B';
       case 'Resting HR':
         return '#4ECDC4';
       case 'Active HR':
@@ -340,32 +347,33 @@ const ExerciseHistoryScreen = ({ navigation }: ExerciseHistoryScreenProps) => {
   };
   
   // Helper function to calculate average sleep
-  const calculateAverageSleep = (data: LogEntry[]) => {
-    if (!data || data.length === 0) return '0h 0m';
-    
-    const validData = data.filter(log => log.sleep && log.sleep !== '');
-    if (validData.length === 0) return '0h 0m';
-    
-    const totalSleepInMinutes = validData.reduce((sum, log) => {
-      const [hoursStr, minutesStr] = log.sleep.split('h ');
-      const hours = parseInt(hoursStr) || 0;
-      const minutes = parseInt(minutesStr.replace('m', '')) || 0;
-      return sum + (hours * 60 + minutes);
-    }, 0);
-    
-    const avgSleepInMinutes = totalSleepInMinutes / validData.length;
-    const avgHours = Math.floor(avgSleepInMinutes / 60);
-    const avgMinutes = Math.round(avgSleepInMinutes % 60);
-    
-    return `${avgHours}h ${avgMinutes}m`;
-  };
+  // Commented out - Sleep functionality disabled
+  // const calculateAverageSleep = (data: LogEntry[]) => {
+  //   if (!data || data.length === 0) return '0h 0m';
+  //   
+  //   const validData = data.filter(log => log.sleep && log.sleep !== '');
+  //   if (validData.length === 0) return '0h 0m';
+  //   
+  //   const totalSleepInMinutes = validData.reduce((sum, log) => {
+  //     const [hoursStr, minutesStr] = log.sleep.split('h ');
+  //     const hours = parseInt(hoursStr) || 0;
+  //     const minutes = parseInt(minutesStr.replace('m', '')) || 0;
+  //     return sum + (hours * 60 + minutes);
+  //   }, 0);
+  //   
+  //   const avgSleepInMinutes = totalSleepInMinutes / validData.length;
+  //   const avgHours = Math.floor(avgSleepInMinutes / 60);
+  //   const avgMinutes = Math.round(avgSleepInMinutes % 60);
+  //   
+  //   return `${avgHours}h ${avgMinutes}m`;
+  // };
   
-  const getSleepInMinutes = (sleepString: string) => {
-    const [hoursStr, minutesStr] = sleepString.split('h ');
-    const hours = parseInt(hoursStr) || 0;
-    const minutes = parseInt(minutesStr.replace('m', '')) || 0;
-    return hours * 60 + minutes;
-  };
+  // const getSleepInMinutes = (sleepString: string) => {
+  //   const [hoursStr, minutesStr] = sleepString.split('h ');
+  //   const hours = parseInt(hoursStr) || 0;
+  //   const minutes = parseInt(minutesStr.replace('m', '')) || 0;
+  //   return hours * 60 + minutes;
+  // };
   
   // Handler for download buttons
   const handleDownloadCSV = () => {
@@ -470,11 +478,17 @@ const ExerciseHistoryScreen = ({ navigation }: ExerciseHistoryScreenProps) => {
           <View style={styles.chartHeader}>
             <Icon name="trending-up-outline" size={responsive.fontSize(20)} color={colors.darkGray} />
             <Text style={styles.chartTitle}>Trends</Text>
-            <Text style={styles.chartSubtitle}>
-              {selectedPeriod === 'Custom' && startDate && endDate 
-                ? `${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()} • ${selectedChartTab}`
-                : `Last ${selectedPeriod} days • ${selectedChartTab}`}
-            </Text>
+            {selectedIndex !== null ? (
+              <Text style={[styles.chartSubtitle, { color: getChartColor(selectedChartTab), fontWeight: '600' }]}>
+                Selected Value: {chartData.datasets[0].data[selectedIndex]}
+              </Text>
+            ) : (
+              <Text style={styles.chartSubtitle}>
+                {selectedPeriod === 'Custom' && startDate && endDate 
+                  ? `${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()} • ${selectedChartTab}`
+                  : `Last ${selectedPeriod} days • ${selectedChartTab}`}
+              </Text>
+            )}
           </View>
           <View style={styles.chartTabsContainer}>
             {showLeftArrow && (
@@ -507,7 +521,8 @@ const ExerciseHistoryScreen = ({ navigation }: ExerciseHistoryScreenProps) => {
               }}
               scrollEventThrottle={16}
             >
-              {['Steps', 'Sleep', 'Resting HR', 'Active HR', 'Oxygen', 'Calories'].map((tab) => (
+              {/* 'Steps', 'Sleep', 'Resting HR', 'Active HR', 'Oxygen', 'Calories' - Sleep commented out */}
+              {['Steps', 'Resting HR', 'Active HR', 'Oxygen', 'Calories'].map((tab) => (
                 <TouchableOpacity 
                   accessibilityRole="button" 
                   key={tab} 
@@ -571,6 +586,13 @@ const ExerciseHistoryScreen = ({ navigation }: ExerciseHistoryScreenProps) => {
               withVerticalLabels={true}
               verticalLabelRotation={30}
               style={styles.chart}
+              onDataPointClick={(data) => {
+                if (selectedIndex === data.index) {
+                  setSelectedIndex(null);
+                } else {
+                  setSelectedIndex(data.index);
+                }
+              }}
             />
           ) : (
             <View style={styles.noDataChartContainer}>
@@ -595,16 +617,19 @@ const ExerciseHistoryScreen = ({ navigation }: ExerciseHistoryScreenProps) => {
                                               selectedChartTab.toLowerCase().includes('active') ? 'ahr' : 
                                               selectedChartTab.toLowerCase() === 'oxygen' ? 'oxygen' :
                                               selectedChartTab.toLowerCase() === 'calories' ? 'calories' :
-                                              selectedChartTab.toLowerCase() === 'sleep' ? 'sleep' : 'steps')}%
+                                              // selectedChartTab.toLowerCase() === 'sleep' ? 'sleep' : 
+                                              'steps')}%
                 </Text>
               </View>
             </View>
-            {selectedChartTab.toLowerCase() === 'sleep' ? (
+            {/* Commented out Sleep stat item */}
+            {/* selectedChartTab.toLowerCase() === 'sleep' ? (
               <View style={styles.statItem}>
                 <Text style={styles.statLabel}>Avg Sleep</Text>
                 <Text style={styles.statValue}>{calculateAverageSleep(logs)}</Text>
               </View>
-            ) : selectedChartTab.toLowerCase() === 'oxygen' ? (
+            ) :  */}
+            {selectedChartTab.toLowerCase() === 'oxygen' ? (
               <View style={styles.statItem}>
                 <Text style={styles.statLabel}>Avg Oxygen</Text>
                 <Text style={styles.statValue}>
@@ -626,8 +651,8 @@ const ExerciseHistoryScreen = ({ navigation }: ExerciseHistoryScreenProps) => {
                       value = isNaN(log.ahr) ? 0 : log.ahr;
                     } else if (selectedChartTab.toLowerCase() === 'calories') {
                       value = isNaN(log.calories) ? 0 : log.calories;
-                    } else if (selectedChartTab.toLowerCase() === 'sleep') {
-                      value = isNaN(getSleepInMinutes(log.sleep)) ? 0 : getSleepInMinutes(log.sleep);
+                    // } else if (selectedChartTab.toLowerCase() === 'sleep') {
+                    //   value = isNaN(getSleepInMinutes(log.sleep)) ? 0 : getSleepInMinutes(log.sleep);
                     } else {
                       value = isNaN(log.steps) ? 0 : log.steps;
                     }
@@ -742,50 +767,52 @@ const ExerciseHistoryScreen = ({ navigation }: ExerciseHistoryScreenProps) => {
         </Modal>
 
         {/* AI Insights */}
-        <View style={styles.newAiInsightsCard}>
-          <View style={styles.insightsHeader}>
-            <View style={styles.sectionTitleRow}>
-              <Icon name="sparkles" size={20} color="#1A1A1A" />
-              <Text style={styles.newInsightsTitle}>AI Insights</Text>
+        {(!history || !history.ai_insights || history.ai_insights.status !== 'no_ai_insights') && (
+          <View style={styles.newAiInsightsCard}>
+            <View style={styles.insightsHeader}>
+              <View style={styles.sectionTitleRow}>
+                <Icon name="sparkles" size={20} color="#1A1A1A" />
+                <Text style={styles.newInsightsTitle}>AI Insights</Text>
+              </View>
+              <View style={styles.infoBadge}>
+                <Text style={styles.infoBadgeText}>Today</Text>
+              </View>
             </View>
-            <View style={styles.infoBadge}>
-              <Text style={styles.infoBadgeText}>Today</Text>
-            </View>
-          </View>
 
-          <View style={styles.newInsightBox}>
-            {/* Steps Insight */}
-            <View style={[styles.insightItem, { backgroundColor: '#FFF8E1' }]}>              
-              <Icon name="trending-down" size={22} color="#FBC02D" style={styles.insightIcon} />
-              <View style={styles.insightContent}>
-                <Text style={[styles.insightItemText, { color: '#FBC02D' }]}>Activity Level</Text>
-                <Text style={styles.insightItemSubText}>Your steps this week are lower than last week.</Text>
+            <View style={styles.newInsightBox}>
+              {/* Steps Insight */}
+              <View style={[styles.insightItem, { backgroundColor: '#FFF8E1' }]}>              
+                <Icon name="trending-down" size={22} color="#FBC02D" style={styles.insightIcon} />
+                <View style={styles.insightContent}>
+                  <Text style={[styles.insightItemText, { color: '#FBC02D' }]}>Activity Level</Text>
+                  <Text style={styles.insightItemSubText}>Your steps this week are lower than last week.</Text>
+                </View>
               </View>
-            </View>
-            
-            {/* Sleep Insight */}
-            <View style={[styles.insightItem, { backgroundColor: '#FEECEE' }]}>              
-              <Icon name="moon" size={22} color="#D32F2F" style={styles.insightIcon} />
-              <View style={styles.insightContent}>
-                <Text style={[styles.insightItemText, { color: '#D32F2F' }]}>Sleep Pattern</Text>
-                <Text style={styles.insightItemSubText}>Sleep duration shows mild downward trend.</Text>
+              
+              {/* Sleep Insight - Commented out */}
+              {/* <View style={[styles.insightItem, { backgroundColor: '#FEECEE' }]}>              
+                <Icon name="moon" size={22} color="#D32F2F" style={styles.insightIcon} />
+                <View style={styles.insightContent}>
+                  <Text style={[styles.insightItemText, { color: '#D32F2F' }]}>Sleep Pattern</Text>
+                  <Text style={styles.insightItemSubText}>Sleep duration shows mild downward trend.</Text>
+                </View>
+              </View> */}
+              
+              {/* Heart Rate Insight */}
+              <View style={[styles.insightItem, { backgroundColor: '#E8F5E9' }]}>              
+                <Icon name="heart" size={22} color="#43A047" style={styles.insightIcon} />
+                <View style={styles.insightContent}>
+                  <Text style={[styles.insightItemText, { color: '#43A047' }]}>Heart Rate</Text>
+                  <Text style={styles.insightItemSubText}>Resting HR increased on 3 days compared to your baseline.</Text>
+                </View>
               </View>
+              
+              <Text style={styles.disclaimerText}>
+                These insights are informational only and not a diagnosis.
+              </Text>
             </View>
-            
-            {/* Heart Rate Insight */}
-            <View style={[styles.insightItem, { backgroundColor: '#E8F5E9' }]}>              
-              <Icon name="heart" size={22} color="#43A047" style={styles.insightIcon} />
-              <View style={styles.insightContent}>
-                <Text style={[styles.insightItemText, { color: '#43A047' }]}>Heart Rate</Text>
-                <Text style={styles.insightItemSubText}>Resting HR increased on 3 days compared to your baseline.</Text>
-              </View>
-            </View>
-            
-            <Text style={styles.disclaimerText}>
-              These insights are informational only and not a diagnosis.
-            </Text>
           </View>
-        </View>
+        )}
 
         {/* Error message */}
         {historyError && (
@@ -814,7 +841,7 @@ const ExerciseHistoryScreen = ({ navigation }: ExerciseHistoryScreenProps) => {
               <View style={styles.logStats}>
                 <View style={styles.logStatsRow}>
                   <Text style={styles.logStat}>Steps: {log.steps}</Text>
-                  <Text style={styles.logStat}>Sleep: {log.sleep}</Text>
+                  {/* <Text style={styles.logStat}>Sleep: {log.sleep}</Text> */}
                   <Text style={styles.logStat}>RHR: {log.rhr} bpm</Text>
                 </View>
                 <View style={styles.logStatsRow}>

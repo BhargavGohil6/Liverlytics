@@ -31,6 +31,7 @@ export default function RHRChartScreen({ navigation }: RHRChartScreenProps) {
   const [rhrData, setRhrData] = useState<number[]>([]);
   const [rhrLabels, setRhrLabels] = useState<string[]>([]);
   const [last7DaysData, setLast7DaysData] = useState<any[]>([]);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
   // Get user email from auth state
   const userEmail = useSelector((state: any) => state.auth?.user?.email);
@@ -60,8 +61,7 @@ export default function RHRChartScreen({ navigation }: RHRChartScreenProps) {
       const dates: string[] = [];
 
       last7Days.forEach((record: any) => {
-        // Handle both heart_rate and resting_heart_rate fields
-        const rhr = record.heart_rate || record.resting_heart_rate || 0;
+        const rhr = record.resting_heart_rate || 0;
         rhrValues.push(Number(rhr) || 0);
         
         // Format date for display (e.g., "Jan 15")
@@ -74,6 +74,7 @@ export default function RHRChartScreen({ navigation }: RHRChartScreenProps) {
       // Reverse to show oldest first (left to right)
       setRhrData(rhrValues.reverse());
       setRhrLabels(dates.reverse());
+      setSelectedIndex(null);
     }
   }, [todayData]);
 
@@ -136,9 +137,23 @@ export default function RHRChartScreen({ navigation }: RHRChartScreenProps) {
       >
         {/* Chart Card */}
         <View style={styles.chartCard}>
-          <View style={styles.chartHeader}>
-            <Text style={styles.chartTitle}>7-Day Trend</Text>
-            <Text style={styles.chartSubtitle}>Resting Heart Rate (bpm)</Text>
+          <View style={[styles.chartHeader, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }]}>
+            <View>
+              <Text style={styles.chartTitle}>7-Day Trend</Text>
+              <Text style={styles.chartSubtitle}>Resting Heart Rate (bpm)</Text>
+            </View>
+            {rhrData.length > 0 && (
+              <View style={{ alignItems: 'flex-end' }}>
+                <Text style={styles.chartSubtitle}>
+                  {selectedIndex !== null ? rhrLabels[selectedIndex] : 'Latest'}
+                </Text>
+                <Text style={[styles.chartTitle, { color: colors.primary }]}>
+                  {selectedIndex !== null 
+                    ? rhrData[selectedIndex]
+                    : rhrData[rhrData.length - 1]} bpm
+                </Text>
+              </View>
+            )}
           </View>
           
           {error ? (
@@ -169,14 +184,21 @@ export default function RHRChartScreen({ navigation }: RHRChartScreenProps) {
             <View style={styles.chartContainer}>
               <LineChart
                 data={chartData}
-                width={width - responsive.padding(32) * 2}
+                width={width - responsive.padding(40)}
                 height={220}
                 chartConfig={chartConfig}
                 bezier
                 style={styles.chart}
                 yAxisLabel=""
-                yAxisSuffix=" bpm"
+                // yAxisSuffix=" bpm"
                 fromZero={false}
+                onDataPointClick={(data) => {
+                  if (selectedIndex === data.index) {
+                    setSelectedIndex(null);
+                  } else {
+                    setSelectedIndex(data.index);
+                  }
+                }}
               />
             </View>
           )}
@@ -212,7 +234,7 @@ export default function RHRChartScreen({ navigation }: RHRChartScreenProps) {
             <Text style={styles.readingsTitle}>Recent Readings</Text>
             
             {last7DaysData.map((record: any, index: number) => {
-              const rhr = record.heart_rate || record.resting_heart_rate || 0;
+              const rhr = record.resting_heart_rate || 0;
               const date = new Date(record.date || '');
               const formattedDate = date.toLocaleDateString('en-US', {
                 weekday: 'short',
@@ -301,13 +323,14 @@ const styles = StyleSheet.create({
   chartCard: {
     backgroundColor: colors.white,
     borderRadius: responsive.borderRadius(16),
-    padding: responsive.padding(20),
+    padding: responsive.padding(15),
     marginBottom: responsive.margin(16),
     shadowColor: colors.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 3,
+    //  marginLeft: -responsive.padding(13),
   },
   chartHeader: {
     marginBottom: responsive.margin(16),
@@ -325,6 +348,7 @@ const styles = StyleSheet.create({
   chartContainer: {
     alignItems: 'center',
     marginVertical: responsive.margin(8),
+    marginLeft: -responsive.padding(10),
   },
   chart: {
     marginVertical: responsive.margin(8),

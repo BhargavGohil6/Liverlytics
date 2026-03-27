@@ -27,8 +27,17 @@ interface OnboardingState {
     weight: string;
     weightUnit: string;
   };
+  dailyTargets: {
+    daily_sodium_limit: number;
+    daily_fluid_limit: number;
+    daily_protein_limit: number;
+    weight_gain_alert_threshold: number;
+    resting_hr_alert_threshold: number;
+  };
   submitting: boolean;
   submitError: string | null;
+  apiResponseMessage: string | null;
+  apiResponseStatus: 'success' | 'fail' | 'error' | null;
 }
 
 const initialState: OnboardingState = {
@@ -53,8 +62,17 @@ const initialState: OnboardingState = {
     weight: '',
     weightUnit: 'kg',
   },
+  dailyTargets: {
+    daily_sodium_limit: 1800.0,
+    daily_fluid_limit: 1500.0,
+    daily_protein_limit: 60.0,
+    weight_gain_alert_threshold: 1.5,
+    resting_hr_alert_threshold: 80.0,
+  },
   submitting: false,
   submitError: null,
+  apiResponseMessage: null,
+  apiResponseStatus: null,
 };
 
 // ASYNC THUNK — YEH SAB KUCH EK SAATH SAVE KAREGA
@@ -75,7 +93,7 @@ console.log('userEmail',userEmail);
       return rejectWithValue('User email not found in auth state');
     }
 
-    const { privacyAccepted, termsAccepted, medicalAccepted, aiConsentOption, healthAccess, basicDetails } = state.onboarding;
+    const { privacyAccepted, termsAccepted, medicalAccepted, aiConsentOption, healthAccess, basicDetails, dailyTargets } = state.onboarding;
 
     const payload = {
       user_email: userEmail, // YE HAI WO CORRECT EMAIL JO LOGIN KIYA HAI
@@ -100,12 +118,14 @@ console.log('userEmail',userEmail);
             : 'do_not_use_ai',
       },
       daily_targets: {
-        daily_sodium_limit: 1800.0,
-        daily_fluid_limit: 1500.0,
-        weight_gain_alert_threshold: 1.5,
-        resting_hr_alert_threshold: 80.0,
+        daily_sodium_limit: parseFloat(dailyTargets.daily_sodium_limit.toString()) || 1800.0,
+        daily_fluid_limit: parseFloat(dailyTargets.daily_fluid_limit.toString()) || 1500.0,
+        daily_protein_limit: parseFloat(dailyTargets.daily_protein_limit.toString()) || 60.0,
+        weight_gain_alert_threshold: parseFloat(dailyTargets.weight_gain_alert_threshold.toString()) || 1.5,
+        resting_hr_alert_threshold: parseFloat(dailyTargets.resting_hr_alert_threshold.toString()) || 80.0,
       },
     };
+    console.log('cirrhosis_custom.cirrhosis_single_api.store_user_consents', payload)
 
     try {
       const response = await axios.post(
@@ -120,10 +140,57 @@ console.log('userEmail',userEmail);
       );
 
       console.log('All Consents Saved Successfully →', response.data);
-      return response.data;
+      console.log('Response status:', response.data?.status);
+      console.log('Response message:', response.data?.message);
+      console.log('Response overall_status:', response.data?.overall_status);
+      
+      // Frappe/ERPNext API response handling
+      const apiData = response.data;
+      
+      // Check for success in multiple possible formats
+      // Frappe often returns status in different fields
+      const isSuccess = 
+        apiData?.status === 'success' || 
+        apiData?.overall_status === 'success' ||
+        (apiData?.message && !apiData?.error) ||
+        (response.status === 200 && !apiData?.error);
+      
+      if (isSuccess) {
+        console.log('✅ API returned success status');
+        return apiData;
+      }
+      
+      // Check for validation errors
+      if (apiData?.status === 'fail' || apiData?.overall_status === 'error' || apiData?.error) {
+        console.log('❌ API returned error status');
+        const errorMessage = apiData?.message?.message || apiData?.message || apiData?.error || 'Failed to store consents. Please check your inputs.';
+        return rejectWithValue({
+          message: errorMessage,
+          status: apiData?.status || 'error',
+          overall_status: apiData?.overall_status || 'error'
+        });
+      }
+      
+      // If no explicit status, assume success if no error
+      console.log('⚠️ No explicit status found, assuming success');
+      return apiData;
     } catch (error: any) {
       console.error('Submit failed:', error.response?.data || error);
-      return rejectWithValue(error.response?.data || 'Network error');
+      
+      // If error has API response data with specific message
+      if (error.response?.data) {
+        const apiError = error.response.data;
+        return rejectWithValue({
+          message: apiError.message || 'Failed to store consents. Please check your inputs.',
+          status: apiError.status || 'error',
+          overall_status: apiError.overall_status
+        });
+      }
+      
+      return rejectWithValue({
+        message: error.message || 'Network error. Please try again.',
+        status: 'error'
+      });
     }
   }
 );
@@ -150,6 +217,9 @@ const onboardingSlice = createSlice({
     updateBasicDetails: (state, action: PayloadAction<Partial<OnboardingState['basicDetails']>>) => {
       state.basicDetails = { ...state.basicDetails, ...action.payload };
     },
+    updateDailyTargets: (state, action: PayloadAction<Partial<OnboardingState['dailyTargets']>>) => {
+      state.dailyTargets = { ...state.dailyTargets, ...action.payload };
+    },
     completeOnboarding: (state) => {
       state.onboardingCompleted = true;
       EncryptedStorage.setItem('onboarding_completed', 'true');
@@ -161,17 +231,36 @@ const onboardingSlice = createSlice({
       .addCase(submitAllConsents.pending, (state) => {
         state.submitting = true;
         state.submitError = null;
+        state.apiResponseMessage = null;
+        state.apiResponseStatus = null;
       })
-      .addCase(submitAllConsents.fulfilled, (state) => {
+      .addCase(submitAllConsents.fulfilled, (state, action) => {
         state.submitting = false;
         state.onboardingCompleted = true;
+        state.apiResponseStatus = action.payload?.status || 'success';
+        state.apiResponseMessage = action.payload?.message || 'Consents saved successfully!';
         EncryptedStorage.setItem('onboarding_completed', 'true');
-        Toast.show({ type: 'success', text1: 'All Set!', text2: 'Welcome to the app!' });
+        Toast.show({ 
+          type: 'success', 
+          text1: 'All Set!', 
+          text2: state.apiResponseMessage || undefined
+        });
       })
       .addCase(submitAllConsents.rejected, (state, action) => {
         state.submitting = false;
-        state.submitError = action.payload as string;
-        Toast.show({ type: 'error', text1: 'Failed', text2: 'Please try again' });
+        state.submitError = action.payload as any;
+        state.apiResponseStatus = (action.payload as any)?.status || 'error';
+        state.apiResponseMessage = (action.payload as any)?.message || 'Failed to save consents';
+        
+        // Show detailed error toast with API message
+        const errorMessage = (action.payload as any)?.message || 'Please try again';
+        Toast.show({ 
+          type: 'error', 
+          text1: 'Failed', 
+          text2: errorMessage,
+          visibilityTime: 5000,
+          topOffset: 50,
+        });
       });
   },
 });
@@ -183,6 +272,7 @@ export const {
   setAIConsentOption,
   setHealthAccess,
   updateBasicDetails,
+  updateDailyTargets,
   completeOnboarding,
 } = onboardingSlice.actions;
 

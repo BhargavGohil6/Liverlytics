@@ -38,6 +38,16 @@ export interface ChangePasswordPayload {
   reenter_new_password: string;
 }
 
+export interface SendResetOtpPayload {
+  email: string;
+}
+
+export interface ResetPasswordWithOtpPayload {
+  email: string;
+  otp: string;
+  new_password: string;
+}
+
 // Using the shared API client instead of direct axios call
 import api from '../../../services/api';
 
@@ -46,6 +56,12 @@ const API_URL =
 
 const CHANGE_PASSWORD_URL =
   '/cirrhosis_custom.cirrhosis_auth.change_password';
+
+const SEND_RESET_OTP_URL =
+  '/cirrhosis_custom.cirrhosis_auth.send_reset_otp';
+
+const RESET_PASSWORD_WITH_OTP_URL =
+  '/cirrhosis_custom.cirrhosis_auth.reset_password_with_otp';
 
 // Login Thunk
 export const loginUser = createAsyncThunk<
@@ -260,6 +276,30 @@ const authSlice = createSlice({
       .addCase(changePassword.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Password change failed';
+      })
+      .addCase(sendResetOtp.pending, state => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(sendResetOtp.fulfilled, (state, action: PayloadAction<any>) => {
+        state.loading = false;
+        // OTP sent successfully - no state changes needed
+      })
+      .addCase(sendResetOtp.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to send OTP';
+      })
+      .addCase(resetPasswordWithOtp.pending, state => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(resetPasswordWithOtp.fulfilled, (state, action: PayloadAction<any>) => {
+        state.loading = false;
+        // Password reset successfully - no state changes needed
+      })
+      .addCase(resetPasswordWithOtp.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Password reset failed';
       });
   },
 });
@@ -300,5 +340,69 @@ export const changePassword = createAsyncThunk<
 
 export const { logout, setOnboardingCompleted, hydrateFromStorage } =
   authSlice.actions;
+
+// Send Reset OTP Thunk
+export const sendResetOtp = createAsyncThunk<
+  any,
+  SendResetOtpPayload,
+  { rejectValue: string }
+>('auth/sendResetOtp', async (payload, { rejectWithValue }) => {
+  try {
+    const response = await api.post(SEND_RESET_OTP_URL, payload);
+    
+    const data = response.data;
+    console.log('Send Reset OTP Response:', data);
+    
+    // Check if the response indicates failure
+    if (data.status === 'fail' || (data.message && data.message.status === 'fail')) {
+      const errorMsg = (data.message && data.message.message) || data.message || 'Failed to send OTP';
+      return rejectWithValue(errorMsg);
+    }
+    
+    return data;
+  } catch (error: any) {
+    console.log('Send Reset OTP Error:', error);
+    console.log('Error response:', error.response);
+    const msg =
+      error.response?.data?.message?.message ||
+      error.response?.data?.message ||
+      error.message ||
+      'Failed to send OTP';
+
+    return rejectWithValue(msg);
+  }
+});
+
+// Reset Password with OTP Thunk
+export const resetPasswordWithOtp = createAsyncThunk<
+  any,
+  ResetPasswordWithOtpPayload,
+  { rejectValue: string }
+>('auth/resetPasswordWithOtp', async (payload, { rejectWithValue }) => {
+  try {
+    const response = await api.post(RESET_PASSWORD_WITH_OTP_URL, payload);
+    
+    const data = response.data;
+    console.log('Reset Password with OTP Response:', data);
+    
+    // Check if the response indicates failure
+    if (data.status === 'fail' || (data.message && data.message.status === 'fail')) {
+      const errorMsg = (data.message && data.message.message) || data.message || 'Password reset failed';
+      return rejectWithValue(errorMsg);
+    }
+    
+    return data;
+  } catch (error: any) {
+    console.log('Reset Password with OTP Error:', error);
+    console.log('Error response:', error.response);
+    const msg =
+      error.response?.data?.message?.message ||
+      error.response?.data?.message ||
+      error.message ||
+      'Password reset failed';
+
+    return rejectWithValue(msg);
+  }
+});
 
 export default authSlice.reducer;
