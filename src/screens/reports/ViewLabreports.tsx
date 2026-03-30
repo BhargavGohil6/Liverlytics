@@ -122,12 +122,14 @@ const ViewLabReports: React.FC = () => {
       >
         <View style={styles.headerRow}>
           <Text style={styles.sectionTitle}>Uploaded Lab Reports</Text>
-          <TouchableOpacity 
-            style={styles.compareButton}
-            onPress={() => navigation.navigate('CompareReports')}
-          >
-            <Text style={styles.compareButtonText}>Compare</Text>
-          </TouchableOpacity>
+          {formattedReports.length > 0 && (
+            <TouchableOpacity 
+              style={styles.compareButton}
+              onPress={() => navigation.navigate('CompareReports')}
+            >
+              <Text style={styles.compareButtonText}>Compare</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {loading ? (

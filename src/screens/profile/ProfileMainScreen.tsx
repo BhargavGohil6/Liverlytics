@@ -178,7 +178,7 @@ const ProfileMainScreen: React.FC<ProfileMainScreenProps> = ({ navigation }) => 
                 { label: 'Daily Protein Limit', value: `${dailyHealthTargets[0].daily_protein_limit} g per day` },
                 { label: 'Weight Gain Alert Threshold', value: `+${dailyHealthTargets[0].weight_gain_alert_threshold} kg in 48 hours` },
                 { label: 'Resting HR Alert Threshold', value: `≥ ${dailyHealthTargets[0].resting_hr_alert_threshold} bpm sustained` },
-                { label: 'Sleep Goal', value: `${dailyHealthTargets[0].sleep_goal} hours per night` },
+                // { label: 'Sleep Goal', value: `${dailyHealthTargets[0].sleep_goal} hours per night` },
               ].map((item, index) => (
                 <TouchableOpacity 
                   key={index} 
@@ -223,11 +223,11 @@ const ProfileMainScreen: React.FC<ProfileMainScreenProps> = ({ navigation }) => 
             subtitle="Learn how this companion supports your care."
           >
             {[
-              { 
-                label: 'Medical Disclaimer', 
-                subtitle: 'This app does not replace professional care.',
-                screen: 'MedicalDisclaimerScreen'
-              },
+              // { 
+              //   label: 'Medical Disclaimer', 
+              //   subtitle: 'This app does not replace professional care.',
+              //   screen: 'MedicalDisclaimerScreen'
+              // },
               { 
                 label: 'Privacy Policy', 
                 subtitle: 'How your data is collected and stored.',
@@ -238,11 +238,11 @@ const ProfileMainScreen: React.FC<ProfileMainScreenProps> = ({ navigation }) => 
                 subtitle: 'Legal terms for using Cirrhosis Companion.',
                 screen: 'TermsofUse'
               },
-              { 
-                label: 'Data Usage & Security', 
-                subtitle: 'Encryption, retention, and access controls.',
-                screen: 'DataUsageSecurityScreen'
-              },
+              // { 
+              //   label: 'Data Usage & Security', 
+              //   subtitle: 'Encryption, retention, and access controls.',
+              //   screen: 'DataUsageSecurityScreen'
+              // },
               { 
                 label: 'AI Transparency Statement', 
                 subtitle: 'What AI analyzes on-device and how it is used.',

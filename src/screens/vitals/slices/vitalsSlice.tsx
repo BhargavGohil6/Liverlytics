@@ -46,11 +46,55 @@ export interface VitalRecord {
   owner?: string;
 }
 
+export interface SevenDayStats {
+  resting_heart_rate?: {
+    avg: number;
+    min: number;
+    max: number;
+  };
+  glucose?: {
+    avg: number;
+    min: number;
+    max: number;
+  };
+  sleep_hours?: {
+    avg: number;
+    min: number;
+    max: number;
+  };
+  spo2?: {
+    avg: number;
+    min: number;
+    max: number;
+  };
+  weight?: {
+    avg: number;
+    min: number;
+    max: number;
+  };
+  blood_pressure_systolic?: {
+    avg: number;
+    min: number;
+    max: number;
+  };
+  blood_pressure_diastolic?: {
+    avg: number;
+    min: number;
+    max: number;
+  };
+  heart_rate?: {
+    avg: number;
+    min: number;
+    max: number;
+  };
+}
+
 export interface VitalsApiResponse {
   status: string;
   count?: number;
   date?: string;
   data: VitalRecord[] | VitalRecord;
+  seven_day_stats?: SevenDayStats;
 }
 
 export interface VitalsState {

@@ -32,6 +32,7 @@ export default function WeightChartScreen({ navigation }: WeightChartScreenProps
   const [weightLabels, setWeightLabels] = useState<string[]>([]);
   const [last7DaysData, setLast7DaysData] = useState<any[]>([]);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [sevenDayStats, setSevenDayStats] = useState<any>(null);
 
   // Get user email from auth state
   const userEmail = useSelector((state: any) => state.auth?.user?.email);
@@ -45,6 +46,11 @@ export default function WeightChartScreen({ navigation }: WeightChartScreenProps
   // Process data to get last 7 days of Weight
   useEffect(() => {
     if (todayData?.data && Array.isArray(todayData.data)) {
+      // Store seven day stats from API
+      if (todayData.seven_day_stats) {
+        setSevenDayStats(todayData.seven_day_stats);
+      }
+      
       // Sort data by date (newest first)
       const sortedData = [...todayData.data].sort((a, b) => {
         const dateA = new Date(a.date || '');
@@ -214,23 +220,23 @@ export default function WeightChartScreen({ navigation }: WeightChartScreenProps
         </View>
 
         {/* Statistics Card */}
-        {weightData.length > 0 && (
+        {weightData.length > 0 && sevenDayStats && sevenDayStats.weight && (
           <View style={styles.statsCard}>
             <Text style={styles.statsTitle}>7-Day Statistics</Text>
             
             <View style={styles.statsGrid}>
               <View style={styles.statItem}>
-                <Text style={styles.statValue}>{avgWeight}kg</Text>
+                <Text style={styles.statValue}>{sevenDayStats.weight.avg}kg</Text>
                 <Text style={styles.statLabel}>Average</Text>
               </View>
               
               <View style={styles.statItem}>
-                <Text style={styles.statValue}>{minWeight}kg</Text>
+                <Text style={styles.statValue}>{sevenDayStats.weight.min}kg</Text>
                 <Text style={styles.statLabel}>Minimum</Text>
               </View>
               
               <View style={styles.statItem}>
-                <Text style={styles.statValue}>{maxWeight}kg</Text>
+                <Text style={styles.statValue}>{sevenDayStats.weight.max}kg</Text>
                 <Text style={styles.statLabel}>Maximum</Text>
               </View>
             </View>

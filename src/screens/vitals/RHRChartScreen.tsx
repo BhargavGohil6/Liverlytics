@@ -32,6 +32,7 @@ export default function RHRChartScreen({ navigation }: RHRChartScreenProps) {
   const [rhrLabels, setRhrLabels] = useState<string[]>([]);
   const [last7DaysData, setLast7DaysData] = useState<any[]>([]);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [sevenDayStats, setSevenDayStats] = useState<any>(null);
 
   // Get user email from auth state
   const userEmail = useSelector((state: any) => state.auth?.user?.email);
@@ -45,6 +46,11 @@ export default function RHRChartScreen({ navigation }: RHRChartScreenProps) {
   // Process data to get last 7 days of RHR
   useEffect(() => {
     if (todayData?.data && Array.isArray(todayData.data)) {
+      // Store seven day stats from API
+      if (todayData.seven_day_stats) {
+        setSevenDayStats(todayData.seven_day_stats);
+      }
+      
       // Sort data by date (newest first)
       const sortedData = [...todayData.data].sort((a, b) => {
         const dateA = new Date(a.date || '');
@@ -205,23 +211,23 @@ export default function RHRChartScreen({ navigation }: RHRChartScreenProps) {
         </View>
 
         {/* Statistics Card */}
-        {rhrData.length > 0 && (
+        {rhrData.length > 0 && sevenDayStats && sevenDayStats.resting_heart_rate && (
           <View style={styles.statsCard}>
             <Text style={styles.statsTitle}>7-Day Statistics</Text>
             
             <View style={styles.statsGrid}>
               <View style={styles.statItem}>
-                <Text style={styles.statValue}>{avgRHR}</Text>
+                <Text style={styles.statValue}>{sevenDayStats.resting_heart_rate.avg}</Text>
                 <Text style={styles.statLabel}>Average</Text>
               </View>
               
               <View style={styles.statItem}>
-                <Text style={styles.statValue}>{minRHR}</Text>
+                <Text style={styles.statValue}>{sevenDayStats.resting_heart_rate.min}</Text>
                 <Text style={styles.statLabel}>Minimum</Text>
               </View>
               
               <View style={styles.statItem}>
-                <Text style={styles.statValue}>{maxRHR}</Text>
+                <Text style={styles.statValue}>{sevenDayStats.resting_heart_rate.max}</Text>
                 <Text style={styles.statLabel}>Maximum</Text>
               </View>
             </View>

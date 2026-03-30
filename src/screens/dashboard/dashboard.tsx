@@ -316,19 +316,21 @@ export default function Dashboard() {
               <Droplet size={20} color="#333" />
               <Text style={styles.sectionTitle}>Diet & Fluids</Text>
             </View>
-            <Text style={styles.sectionTime}>{formatRelativeTime(data?.diet?.duration || data?.diet?.creation || '')}</Text>
+            {/* <Text style={styles.sectionTime}>{formatRelativeTime(data?.diet?.duration || data?.diet?.creation || '')}</Text> */}
           </View>
 
           <View style={styles.dietRow}>
             <View style={styles.dietItem}>
-              <Text style={styles.dietLabel}>Sodium: <Text style={styles.dietValue}>{data?.diet?.sodium ? `${data.diet.sodium} g` : '0 g'}</Text></Text>
+              <Text style={styles.dietLabel}>Sodium: <Text style={styles.dietValue}>{data?.diet?.overall_totals?.sodium ? `${data.diet.overall_totals.sodium} g` : '0 g'}</Text></Text>
             </View>
             <View style={styles.dietItem}>
-              {/* <Text style={styles.dietLabel}>Fluids: <Text style={styles.dietValue}>{data?.diet?.fluid_ml ? `${(parseFloat(data.diet.fluid_ml) / 1000).toFixed(1)} L` : '1.2 L'}</Text></Text> */}
-              <Text style={styles.dietLabel}>Fluids: <Text style={styles.dietValue}>{data?.diet?.fluid_ml}</Text></Text>
+              <Text style={styles.dietLabel}>Fluids: <Text style={styles.dietValue}>{data?.diet?.overall_totals?.fluid_ml ? `${data.diet.overall_totals.fluid_ml} ml` : '0 ml'}</Text></Text>
             </View>
+            {/* <View style={styles.dietItem}>
+              <Text style={styles.dietLabel}>Fluids: <Text style={styles.dietValue}>{data?.diet?.overall_totals?.fluid_ml ? `${(parseFloat(data.diet.overall_totals.fluid_ml) / 1000).toFixed(1)} L` : '0 L'}</Text></Text>
+            </View> */}
             <View style={styles.dietItem}>
-              <Text style={styles.dietLabel}>Protein: <Text style={styles.dietValue}>{data?.diet?.protein ? `${data.diet.protein} g` : '0 g'}</Text></Text>
+              <Text style={styles.dietLabel}>Protein: <Text style={styles.dietValue}>{data?.diet?.overall_totals?.protein ? `${data.diet.overall_totals.protein} g` : '0 g'}</Text></Text>
             </View>
           </View>
         </TouchableOpacity>

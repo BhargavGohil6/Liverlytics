@@ -8,7 +8,7 @@ import { BASE_URL } from './url';
 
 const api: AxiosInstance = axios.create({
   baseURL: BASE_URL,
-  timeout: 20000,
+  timeout: 360000,
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',

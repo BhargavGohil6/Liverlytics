@@ -79,6 +79,7 @@ export default function VitalsOverviewScreen() {
   const warnings = todayData?.warnings || [];
   
   // Format the vital values for display
+  const heartRateValue = vitalData?.heart_rate ? `${vitalData.heart_rate} bpm` : '0';
   const rhrValue = vitalData?.resting_heart_rate ? `${vitalData.resting_heart_rate} bpm` : '0';
   const glucoseValue = vitalData?.glucose ? `${vitalData.glucose} mg/dL` : '0';
   
@@ -157,6 +158,28 @@ export default function VitalsOverviewScreen() {
 
         {/* Vitals Grid */}
         <View style={styles.vitalsGrid}>
+          {/* Heart Rate Card - Clickable */}
+          <TouchableOpacity 
+            style={styles.vitalCard}
+            onPress={() => navigation.navigate('HeartRateChartScreen' as never)}
+          >
+            <View style={styles.vitalHeader}>
+              <View style={styles.vitalHeaderLeft}>
+                <Icon name="heart" size={responsive.fontSize(16)} color="#E74C3C" />
+                <Text style={styles.vitalLabel}>Heart Rate</Text>
+              </View>
+              <View style={styles.statusBadge}>
+                <Text style={styles.statusText}>normal</Text>
+              </View>
+            </View>
+            <Text style={styles.vitalValue}>{heartRateValue}</Text>
+            <Text style={styles.vitalDescription}>Current Heart Rate</Text>
+            <View style={styles.cardFooter}>
+              <Text style={styles.viewChartText}>View Chart</Text>
+              <Icon name="chevron-right" size={responsive.fontSize(14)} color={colors.primary} />
+            </View>
+          </TouchableOpacity>
+
           {/* RHR Card - Clickable */}
           <TouchableOpacity 
             style={styles.vitalCard}

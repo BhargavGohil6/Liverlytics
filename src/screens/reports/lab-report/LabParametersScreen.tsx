@@ -12,15 +12,15 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import responsive from '../../../theme/responsive'; 
 import { useNavigation } from '@react-navigation/native';
 import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from '../../../redux/store';
+import { RootState, AppDispatch } from '../../../redux/store';
 // import { addAILabReport } from '../../slices/reportSlice';
 import Toast from 'react-native-toast-message';
-import { addAILabReport } from '../slices/reportSlice';
+import { addAILabReport, AILabReportData } from '../slices/reportSlice';
 const LabParametersScreen = () => {
   const navigation = useNavigation<any>();
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   
-  const { labData: reduxLabData, loading } = useSelector((state: any) => state.reports);
+  const { labData: reduxLabData, loading, savedDocument } = useSelector((state: RootState) => state.reports);
   const { user } = useSelector((state: RootState) => state.auth);
   
   // Define the proper type for lab data
@@ -45,15 +45,18 @@ const LabParametersScreen = () => {
     if (reduxLabData && reduxLabData.medical_analysis && reduxLabData.medical_analysis.medical_data) {
       const medicalData = reduxLabData.medical_analysis.medical_data;
       
+      console.log('Medical Data from API:', JSON.stringify(medicalData, null, 2));
+      
       // Map API response to our lab data format
       const mappedLabData: LabData = {};
       
       // Map all parameters from medical_data
       Object.keys(medicalData).forEach(key => {
+        console.log(`Mapping key: ${key}`, medicalData[key]);
         mappedLabData[key] = {
           value: medicalData[key]?.value || '',
           unit: medicalData[key]?.unit || '',
-          flag: getFlagValue(medicalData[key], medicalData[key]?.normal_range),
+          flag: getFlagValue(medicalData[key], medicalData[key]?.normal_range || undefined),
         };
       });
       
@@ -61,6 +64,7 @@ const LabParametersScreen = () => {
       mappedLabData.sex = user?.gender_custom || 'Female'; // Use user's gender from auth
       mappedLabData.onDialysis = 'Yes'; // Default value, can be updated if provided in API
       
+      console.log('Mapped Lab Data:', JSON.stringify(mappedLabData, null, 2));
       setLabData(mappedLabData);
     } else if (user?.gender_custom && !reduxLabData) {
       // If there's no redux lab data but we have user gender, set it
@@ -103,7 +107,7 @@ const LabParametersScreen = () => {
           [key]: {
             ...currentParam,
             value: newValue,
-            flag: getFlagValue({ value: newValue }, normalRange),
+            flag: getFlagValue({ value: newValue }, normalRange || undefined),
           },
         };
       }
@@ -242,35 +246,44 @@ const LabParametersScreen = () => {
             
             // Helper function to safely get parameter value from multiple possible keys
             const getParamValue = (possibleKeys: string[]) => {
+              console.log('getParamValue called with keys:', possibleKeys);
               for (const key of possibleKeys) {
                 const param = labData[key];
+                console.log(`Checking key "${key}":`, param);
                 if (param && typeof param === 'object' && 'value' in param) {
                   const value = (param as LabParameter).value;
-                  if (value && value.trim() !== '') {
+                  console.log(`Value for "${key}":`, value, 'type:', typeof value);
+                  // Check if value is a non-empty string
+                  if (typeof value === 'string' && value.trim() !== '') {
+                    console.log(`Returning value for "${key}":`, value);
                     return value;
                   }
                 }
               }
+              console.log('Returning default 0');
               return '0';
             };
             
             // Build the API data object with ALL required MELD parameters
-            const aiLabReportData: any = {
+            const aiLabReportData: AILabReportData = {
               user: user?.email || '',
               
               // Required MELD parameters - must have values
-              bilirubin: getParamValue(['Bilirubin', 'Total Bilirubin', 'Direct Bilirubin']),
-              creatinine: getParamValue(['Creatinine', 'Serum Creatinine']),
-              sodium: getParamValue(['Sodium']),
-              albumin: getParamValue(['Albumin', 'Serum Albumin']),
+              bilirubin: getParamValue(['Serum Bilirubin', 'Bilirubin', 'Total Bilirubin', 'Direct Bilirubin']),
+              creatinine: getParamValue(['Serum Creatinine', 'Creatinine']),
+              sodium: getParamValue(['Sodium (Na)', 'Sodium', 'Na']),
+              albumin: getParamValue(['Serum Albumin', 'Albumin']),
               ast: getParamValue(['AST', 'Aspartate Aminotransferase', 'SGOT']),
               alt: getParamValue(['ALT', 'Alanine Aminotransferase', 'SGPT']),
-              platelet_count: getParamValue(['Platelet Count', 'Platelets']),
-              hemoglobin: getParamValue(['Hemoglobin', 'Hb']),
-              wbc: getParamValue(['WBC', 'White Blood Cells']),
-              potassium: getParamValue(['Potassium']),
-              ammonia: getParamValue(['Ammonia']),
+              platelet_count: getParamValue(['Platelet Count', 'Platelets', 'Platelet']),
+              hemoglobin: getParamValue(['Hemoglobin', 'Hb', 'Haemoglobin']),
+              wbc: getParamValue(['WBC', 'White Blood Cells', 'Leukocyte Count']),
+              potassium: getParamValue(['Potassium', 'Serum Potassium']),
+              ammonia: getParamValue(['Ammonia', 'Blood Ammonia']),
               inr: getParamValue(['INR', 'Prothrombin Time']),
+              
+              // Include the saved_document from the first API call
+              ai_uploded_lab_report: savedDocument || undefined,
             };
             
             console.log('Final API Data:', aiLabReportData);

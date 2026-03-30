@@ -34,7 +34,7 @@ type ExerciseHistoryScreenProps = {
 
 const ExerciseHistoryScreen = ({ navigation }: ExerciseHistoryScreenProps) => {
   const dispatch: AppDispatch = useDispatch();
-  const { history, historyLoading, historyError } = useSelector((state: any) => state.exercise);
+  const { history, historyLoading, historyError, aiExercise } = useSelector((state: any) => state.exercise);
   const { user } = useSelector((state: any) => state.auth);
   
   const [selectedTab, setSelectedTab] = useState<string>('All');
@@ -153,15 +153,54 @@ const ExerciseHistoryScreen = ({ navigation }: ExerciseHistoryScreenProps) => {
       };
     }
     
+    // For Steps chart, aggregate data by date (sum steps for same dates)
+    let aggregatedLogs = filteredLogs;
+    if (selectedChartTab === 'Steps') {
+      // Group logs by date string (yyyy-MM-dd)
+      const stepsByDate = new Map<string, { totalSteps: number; timestamp: number; date: string }>();
+      
+      filteredLogs.forEach(log => {
+        const dateKey = format(new Date(log.timestamp), 'yyyy-MM-dd');
+        if (stepsByDate.has(dateKey)) {
+          // If date exists, add steps to total
+          const existing = stepsByDate.get(dateKey)!;
+          existing.totalSteps += log.steps;
+        } else {
+          // If date doesn't exist, create new entry
+          stepsByDate.set(dateKey, {
+            totalSteps: log.steps,
+            timestamp: log.timestamp,
+            date: log.date,
+          });
+        }
+      });
+      
+      // Convert map back to array and sort by timestamp (newest first)
+      aggregatedLogs = Array.from(stepsByDate.values())
+        .sort((a, b) => b.timestamp - a.timestamp)
+        .map(item => ({
+          date: item.date,
+          timestamp: item.timestamp,
+          steps: item.totalSteps,
+          sleep: '',
+          rhr: 0,
+          ahr: 0,
+          oxygen: 0,
+          calories: 0,
+          bp: '',
+          synced: true,
+        }));
+    }
+    
     // Take the newest N items based on the selected period
     const maxItems = selectedPeriod === '7' ? 7 : 
                    selectedPeriod === '30' ? 30 : 
                    selectedPeriod === '90' ? 90 :
-                   selectedPeriod === 'Custom' ? filteredLogs.length : 7;
+                   selectedPeriod === 'Custom' ? aggregatedLogs.length : 7;
     
     // Since logs are newest first, slice(0, maxItems) gives the most recent ones.
     // Then reverse them to show chronologically on the chart (oldest to newest).
-    const recentLogs = [...filteredLogs.slice(0, maxItems)].reverse();
+    const recentLogs = [...aggregatedLogs.slice(0, maxItems)].reverse();
     
     // Create labels based on dates
     const labels = recentLogs.map((log, index) => {
@@ -774,38 +813,53 @@ const ExerciseHistoryScreen = ({ navigation }: ExerciseHistoryScreenProps) => {
                 <Icon name="sparkles" size={20} color="#1A1A1A" />
                 <Text style={styles.newInsightsTitle}>AI Insights</Text>
               </View>
-              <View style={styles.infoBadge}>
+              {/* <View style={styles.infoBadge}>
                 <Text style={styles.infoBadgeText}>Today</Text>
-              </View>
+              </View> */}
             </View>
 
             <View style={styles.newInsightBox}>
-              {/* Steps Insight */}
-              <View style={[styles.insightItem, { backgroundColor: '#FFF8E1' }]}>              
-                <Icon name="trending-down" size={22} color="#FBC02D" style={styles.insightIcon} />
-                <View style={styles.insightContent}>
-                  <Text style={[styles.insightItemText, { color: '#FBC02D' }]}>Activity Level</Text>
-                  <Text style={styles.insightItemSubText}>Your steps this week are lower than last week.</Text>
+              {aiExercise && aiExercise.insights && aiExercise.insights.length > 0 ? (
+                aiExercise.insights
+                  .filter((insight: string) => !insight.toLowerCase().includes('sleep'))
+                  .map((insight: string, index: number) => {
+                    // Determine icon and color based on insight content
+                    let iconName = 'information-circle';
+                    let bgColor = '#FFF8E1';
+                    let iconColor = '#FBC02D';
+                    
+                    if (insight.toLowerCase().includes('step')) {
+                      iconName = 'walk';
+                      bgColor = '#FFF8E1';
+                      iconColor = '#FBC02D';
+                    } else if (insight.toLowerCase().includes('heart') || insight.toLowerCase().includes('hr')) {
+                      iconName = 'heart';
+                      bgColor = '#E8F5E9';
+                      iconColor = '#43A047';
+                    }
+                    
+                    return (
+                      <View key={index} style={[styles.insightItem, { backgroundColor: bgColor }]}>              
+                        <Icon name={iconName} size={22} color={iconColor} style={styles.insightIcon} />
+                        <View style={styles.insightContent}>
+                          <Text style={[styles.insightItemText, { color: iconColor }]}>
+                            {insight.includes('step') ? 'Activity Level' : 
+                             insight.includes('heart') || insight.includes('hr') ? 'Heart Rate' : 'Health Insight'}
+                          </Text>
+                          <Text style={styles.insightItemSubText}>{insight}</Text>
+                        </View>
+                      </View>
+                    );
+                  })
+              ) : (
+                <View style={[styles.insightItem, { backgroundColor: '#FFF8E1' }]}>              
+                  <Icon name="information-circle" size={22} color="#FBC02D" style={styles.insightIcon} />
+                  <View style={styles.insightContent}>
+                    <Text style={[styles.insightItemText, { color: '#FBC02D' }]}>No Insights Available</Text>
+                    <Text style={styles.insightItemSubText}>Keep tracking your activities to get personalized insights!</Text>
+                  </View>
                 </View>
-              </View>
-              
-              {/* Sleep Insight - Commented out */}
-              {/* <View style={[styles.insightItem, { backgroundColor: '#FEECEE' }]}>              
-                <Icon name="moon" size={22} color="#D32F2F" style={styles.insightIcon} />
-                <View style={styles.insightContent}>
-                  <Text style={[styles.insightItemText, { color: '#D32F2F' }]}>Sleep Pattern</Text>
-                  <Text style={styles.insightItemSubText}>Sleep duration shows mild downward trend.</Text>
-                </View>
-              </View> */}
-              
-              {/* Heart Rate Insight */}
-              <View style={[styles.insightItem, { backgroundColor: '#E8F5E9' }]}>              
-                <Icon name="heart" size={22} color="#43A047" style={styles.insightIcon} />
-                <View style={styles.insightContent}>
-                  <Text style={[styles.insightItemText, { color: '#43A047' }]}>Heart Rate</Text>
-                  <Text style={styles.insightItemSubText}>Resting HR increased on 3 days compared to your baseline.</Text>
-                </View>
-              </View>
+              )}
               
               <Text style={styles.disclaimerText}>
                 These insights are informational only and not a diagnosis.

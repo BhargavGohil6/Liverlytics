@@ -38,11 +38,19 @@ export interface ExerciseApiResponse {
   };
 }
 
+export interface AiExerciseInsight {
+  status: string;
+  user: string;
+  summary: string;
+  insights: string[];
+}
+
 export interface ExerciseHistoryApiResponse {
   message: {
     status: string;
     count: number;
     data: ExerciseHistoryItem[];
+    ai_exercise?: AiExerciseInsight;
   };
 }
 
@@ -74,6 +82,7 @@ export interface ExerciseApiRequest {
 export interface ExerciseState {
   data: ExerciseData | null;
   history: ExerciseHistoryItem[];
+  aiExercise: AiExerciseInsight | null;
   historyLoading: boolean;
   historyError: string | null;
   loading: boolean;
@@ -85,6 +94,7 @@ export interface ExerciseState {
 const initialState: ExerciseState = {
   data: null,
   history: [],
+  aiExercise: null,
   historyLoading: false,
   historyError: null,
   loading: false,
@@ -211,6 +221,7 @@ const exerciseSlice = createSlice({
       .addCase(getExerciseHistory.fulfilled, (state, action: PayloadAction<ExerciseHistoryApiResponse>) => {
         state.historyLoading = false;
         state.history = action.payload.message.data;
+        state.aiExercise = action.payload.message.ai_exercise || null;
       })
       .addCase(getExerciseHistory.rejected, (state, action) => {
         state.historyLoading = false;

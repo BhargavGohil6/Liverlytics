@@ -35,6 +35,7 @@ export default function SleepChartScreen({ navigation }: SleepChartScreenProps) 
   const [last7DaysData, setLast7DaysData] = useState<any[]>([]);
   const [sleepGoal, setSleepGoal] = useState<number>(0);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [sevenDayStats, setSevenDayStats] = useState<any>(null);
 
   // Get user email from auth state
   const userEmail = useSelector((state: any) => state.auth?.user?.email);
@@ -49,6 +50,11 @@ export default function SleepChartScreen({ navigation }: SleepChartScreenProps) 
   // Process data to get last 7 days of Sleep
   useEffect(() => {
     if (todayData?.data && Array.isArray(todayData.data)) {
+      // Store seven day stats from API
+      if (todayData.seven_day_stats) {
+        setSevenDayStats(todayData.seven_day_stats);
+      }
+      
       // Sort data by date (newest first)
       const sortedData = [...todayData.data].sort((a, b) => {
         const dateA = new Date(a.date || '');
@@ -236,28 +242,28 @@ export default function SleepChartScreen({ navigation }: SleepChartScreenProps) 
         </View>
 
         {/* Statistics Card */}
-        {sleepData.length > 0 && (
+        {sleepData.length > 0 && sevenDayStats && sevenDayStats.sleep_hours && (
           <View style={styles.statsCard}>
             <Text style={styles.statsTitle}>7-Day Statistics</Text>
             
             <View style={styles.statsGrid}>
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>
-                  {Math.floor(parseFloat(avgSleepHours))}h {Math.round((parseFloat(avgSleepHours) % 1) * 60)}m
+                  {Math.floor(sevenDayStats.sleep_hours.avg)}h {Math.round((sevenDayStats.sleep_hours.avg % 1) * 60)}m
                 </Text>
                 <Text style={styles.statLabel}>Average</Text>
               </View>
               
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>
-                  {Math.floor(minSleep)}h {Math.round((minSleep % 1) * 60)}m
+                  {Math.floor(sevenDayStats.sleep_hours.min)}h {Math.round((sevenDayStats.sleep_hours.min % 1) * 60)}m
                 </Text>
                 <Text style={styles.statLabel}>Minimum</Text>
               </View>
               
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>
-                  {Math.floor(maxSleep)}h {Math.round((maxSleep % 1) * 60)}m
+                  {Math.floor(sevenDayStats.sleep_hours.max)}h {Math.round((sevenDayStats.sleep_hours.max % 1) * 60)}m
                 </Text>
                 <Text style={styles.statLabel}>Maximum</Text>
               </View>
@@ -279,6 +285,12 @@ export default function SleepChartScreen({ navigation }: SleepChartScreenProps) 
               const hours = Math.floor(totalMinutes / 60);
               const mins = totalMinutes % 60;
               const sleepDisplay = `${hours} hr and ${mins} min`;
+              
+              // Determine if sleep is within target range (7-10 hours)
+              const sleepInHours = totalMinutes / 60;
+              const isWithinTarget = sleepInHours >= 7 && sleepInHours <= 10;
+              const isLow = sleepInHours < 7;
+              const isHigh = sleepInHours > 10;
               
               const date = new Date(record.date || '');
               const formattedDate = date.toLocaleDateString('en-US', {
@@ -302,14 +314,15 @@ export default function SleepChartScreen({ navigation }: SleepChartScreenProps) 
                   </View>
                   <View style={styles.readingRight}>
                     <Text style={styles.readingValue}>{sleepDisplay}</Text>
-                    <Text style={styles.readingStatus}>
-                      {totalMinutes / 60 < sleepGoal ? 'Less' : ''}
-                    </Text>
+                    {/* <Text style={[
+                      styles.readingStatus,
+                      { color: isWithinTarget ? colors.green : colors.orange }
+                    ]}>
+                      {isLow ? 'Low' : isHigh ? 'High' : 'On Target'}
+                    </Text> */}
                     <View style={[
                       styles.statusIndicator,
-                      totalMinutes / 60 < sleepGoal ? styles.statusLow : // Less than goal
-                      totalMinutes / 60 > (sleepGoal + 3) ? styles.statusHigh : // Significantly more than goal
-                      styles.statusNormal
+                      isWithinTarget ? styles.statusNormal : styles.statusAlert
                     ]} />
                   </View>
                 </View>
@@ -547,14 +560,11 @@ const styles = StyleSheet.create({
     height: 12,
     borderRadius: 6,
   },
-  statusLow: {
+  statusAlert: {
     backgroundColor: colors.orange,
   },
   statusNormal: {
-    backgroundColor: colors.mintMist,
-  },
-  statusHigh: {
-    backgroundColor: '#2196F3',
+    backgroundColor: colors.green,
   },
   infoCard: {
     backgroundColor: colors.white,

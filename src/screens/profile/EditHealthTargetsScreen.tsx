@@ -178,7 +178,7 @@ const EditHealthTargetsScreen = ({ navigation }: { navigation: any }) => {
             />
           </View>
 
-          <View style={styles.inputGroup}>
+          {/* <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Sleep Goal (hours)</Text>
             <TextInput
               style={styles.input}
@@ -187,7 +187,7 @@ const EditHealthTargetsScreen = ({ navigation }: { navigation: any }) => {
               placeholder="Enter sleep goal"
               keyboardType="numeric"
             />
-          </View>
+          </View> */}
         </View>
 
         {/* Save Button */}

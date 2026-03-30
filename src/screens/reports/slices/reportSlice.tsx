@@ -36,6 +36,14 @@ export interface LabReportResponse {
     cleaned_text_preview: string;
     is_empty: boolean;
   };
+  saved_document?: {
+    file: string;
+    date: string;
+    user: string;
+    source: string;
+    accurate: number;
+    document_name: string;
+  };
 }
 
 export interface UserDocument {
@@ -157,6 +165,14 @@ export interface AILabReportData {
   ammonia: string;
   inr: string;
   user: string;
+  ai_uploded_lab_report?: {
+    file: string;
+    date: string;
+    user: string;
+    source: string;
+    accurate: number;
+    document_name: string;
+  };
 }
 
 export interface AILabReportResponse {
@@ -247,6 +263,14 @@ export interface LabReportState {
   meldTimestamp?: string;
   downloadReportLoading: boolean;
   downloadReportError: string | null;
+  savedDocument: {
+    file: string;
+    date: string;
+    user: string;
+    source: string;
+    accurate: number;
+    document_name: string;
+  } | null;
 }
 
 // API call for file upload
@@ -481,6 +505,7 @@ const reportSlice = createSlice({
     latestTwoAILabReportsError: null,
     downloadReportLoading: false,
     downloadReportError: null,
+    savedDocument: null,
   } as LabReportState,
 
   reducers: {
@@ -510,6 +535,10 @@ const reportSlice = createSlice({
         state.loading = false;
         state.labData = action.payload.message;
         state.uploadComplete = true;
+        // Store the saved_document from the response
+        if (action.payload.message.saved_document) {
+          state.savedDocument = action.payload.message.saved_document;
+        }
       })
       .addCase(uploadLabReport.rejected, (state, action) => {
         state.loading = false;
