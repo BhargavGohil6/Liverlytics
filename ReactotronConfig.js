@@ -7,7 +7,7 @@ const reactotron = __DEV__
       .setAsyncStorageHandler(AsyncStorage)
       .configure({
         name: 'Liverlytics App',
-        // host: '192.168.x.x', // Uncomment and set your computer's IP if connecting from physical device
+        host: '192.168.29.53', // Your computer's IP address for device connection
       })
       .useReactNative({
         networking: {

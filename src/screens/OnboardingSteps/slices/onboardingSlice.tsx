@@ -63,11 +63,11 @@ const initialState: OnboardingState = {
     weightUnit: 'kg',
   },
   dailyTargets: {
-    daily_sodium_limit: 1800.0,
-    daily_fluid_limit: 1500.0,
-    daily_protein_limit: 60.0,
-    weight_gain_alert_threshold: 1.5,
-    resting_hr_alert_threshold: 80.0,
+    daily_sodium_limit: 0,
+    daily_fluid_limit: 0,
+    daily_protein_limit: 0,
+    weight_gain_alert_threshold: 0,
+    resting_hr_alert_threshold: 0,
   },
   submitting: false,
   submitError: null,
@@ -112,17 +112,17 @@ console.log('userEmail',userEmail);
       ai_assistant: {
         selected_option:
           aiConsentOption === 'on_device'
-            ? 'use_ai_on_device'
+            ? 'use_ai_recommended'
             : aiConsentOption === 'cloud_support'
             ? 'use_ai_with_cloud'
             : 'do_not_use_ai',
       },
       daily_targets: {
-        daily_sodium_limit: parseFloat(dailyTargets.daily_sodium_limit.toString()) || 1800.0,
-        daily_fluid_limit: parseFloat(dailyTargets.daily_fluid_limit.toString()) || 1500.0,
-        daily_protein_limit: parseFloat(dailyTargets.daily_protein_limit.toString()) || 60.0,
-        weight_gain_alert_threshold: parseFloat(dailyTargets.weight_gain_alert_threshold.toString()) || 1.5,
-        resting_hr_alert_threshold: parseFloat(dailyTargets.resting_hr_alert_threshold.toString()) || 80.0,
+        daily_sodium_limit: parseFloat(dailyTargets.daily_sodium_limit.toString()) || 0,
+        daily_fluid_limit: parseFloat(dailyTargets.daily_fluid_limit.toString()) || 0,
+        daily_protein_limit: parseFloat(dailyTargets.daily_protein_limit.toString()) || 0,
+        weight_gain_alert_threshold: parseFloat(dailyTargets.weight_gain_alert_threshold.toString()) || 0,
+        resting_hr_alert_threshold: parseFloat(dailyTargets.resting_hr_alert_threshold.toString()) || 0,
       },
     };
     console.log('cirrhosis_custom.cirrhosis_single_api.store_user_consents', payload)

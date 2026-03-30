@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StyleSheet, Dimensions } from 'react-native';
 import Login from './src/screens/auth/Login';
@@ -18,10 +18,22 @@ import './ReactotronConfig'; // Import Reactotron configuration
 
 function MainApp() {
   const { login } = useSelector((state: any) => state.auth);
+  const navigationRef = useRef<any>(null);
   console.log('isLoggedIn', login);
 
+  // Handle logout - reset navigation to login screen
+  useEffect(() => {
+    if (!login && navigationRef.current) {
+      // User logged out - reset navigation to login screen
+      navigationRef.current.reset({
+        index: 0,
+        routes: [{ name: 'Login' }],
+      });
+    }
+  }, [login]);
+
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       {login ? <StackNavigation /> : <AuthNavigation />}
     </NavigationContainer>
   );

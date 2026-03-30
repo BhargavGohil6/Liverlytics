@@ -5,6 +5,7 @@ import VitalsHistoryScreen from "../screens/vitals/VitalsHistoryScreen";
 import AddVitalsScreen from "../screens/vitals/addVitals";
 import VitalsSavedSuccessScreen from "../screens/vitals/VitalsSavedSuccessScreen";
 import RHRChartScreen from "../screens/vitals/RHRChartScreen";
+import HeartRateChartScreen from "../screens/vitals/HeartRateChartScreen";
 import BPChartScreen from "../screens/vitals/BPChartScreen";
 import GlucoseChartScreen from "../screens/vitals/GlucoseChartScreen";
 import SleepChartScreen from "../screens/vitals/SleepChartScreen";
@@ -21,6 +22,7 @@ export default function VitalsStackNavigation() {
             <Stack.Screen name="VitalsHistoryScreen" component={VitalsHistoryScreen} options={{headerShown:false}}/>
             <Stack.Screen name="AddVitalsScreen" component={AddVitalsScreen} options={{headerShown:false}}/>
             <Stack.Screen name="VitalsSavedSuccessScreen" component={VitalsSavedSuccessScreen} options={{headerShown:false}}/>
+            <Stack.Screen name="HeartRateChartScreen" component={HeartRateChartScreen} options={{headerShown:false}}/>
             <Stack.Screen name="RHRChartScreen" component={RHRChartScreen} options={{headerShown:false}}/>
             <Stack.Screen name="BPChartScreen" component={BPChartScreen} options={{headerShown:false}}/>
             <Stack.Screen name="GlucoseChartScreen" component={GlucoseChartScreen} options={{headerShown:false}}/>

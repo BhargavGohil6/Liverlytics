@@ -69,6 +69,14 @@ const ReportMetadata: React.FC = () => {
     // Filter out the MELD metadata object and get only the actual lab report
     const actualLabReports = aiLabReports.filter(report => report && 'name' in report && 'parameters' in report);
 
+    // Extract AI insights from the third object in the data array (index 2)
+    const aiInsightsData = aiLabReports.length > 2 && typeof aiLabReports[2] === 'object' && 'ai_insights' in aiLabReports[2]
+      ? (aiLabReports[2] as any).ai_insights
+      : null;
+    
+    const aiInsightsText = aiInsightsData?.ai_insights || '';
+    const aiInsightsTimestamp = aiInsightsData?.timestamp || '';
+
     // Helper function to extract unit from normal range string
     const extractUnitFromRange = (range: string): string => {
       const unitMatch = range.match(/(mg\/dL|mmol\/L|g\/dL|U\/L|×10⁹\/L|mEq\/L|μmol\/L|per μL)/);
@@ -282,28 +290,43 @@ const ReportMetadata: React.FC = () => {
               <Text style={styles.newInsightsTitle}>AI Insights</Text>
             </View>
             <View style={styles.infoBadge}>
-              <Text style={styles.infoBadgeText}>{actualLabReports.length > 0 && actualLabReports[0].date ? formatRelativeTime(actualLabReports[0].date) : 'Today'}</Text>
+              <Text style={styles.infoBadgeText}>
+                {aiInsightsTimestamp ? formatRelativeTime(aiInsightsTimestamp) : (actualLabReports.length > 0 && actualLabReports[0].date ? formatRelativeTime(actualLabReports[0].date) : 'Today')}
+              </Text>
             </View>
           </View>
 
           <View style={styles.newInsightBox}>
-            {/* Sodium Insight */}
-            <View style={[styles.insightItem, { backgroundColor: '#FFF8E1' }]}>              
-              <Icon name="trending-up" size={22} color="#FBC02D" style={styles.insightIcon} />
-              <View style={styles.insightContent}>
-                <Text style={[styles.insightItemText, { color: '#FBC02D' }]}>Sodium</Text>
-                <Text style={styles.insightItemSubText}>Slightly high compared to your daily limit.</Text>
+            {/* Display AI Insights from API */}
+            {aiInsightsText ? (
+              <View style={[styles.insightItem, { backgroundColor: '#E3F2FD' }]}>
+                <Icon name="info" size={22} color="#1976D2" style={styles.insightIcon} />
+                <View style={styles.insightContent}>
+                  <Text style={[styles.insightItemText, { color: '#1976D2' }]}>AI Analysis</Text>
+                  <Text style={styles.insightItemSubText}>{aiInsightsText}</Text>
+                </View>
               </View>
-            </View>
+            ) : (
+              <>
+                {/* Sodium Insight */}
+                <View style={[styles.insightItem, { backgroundColor: '#FFF8E1' }]}>              
+                  <Icon name="trending-up" size={22} color="#FBC02D" style={styles.insightIcon} />
+                  <View style={styles.insightContent}>
+                    <Text style={[styles.insightItemText, { color: '#FBC02D' }]}>Sodium</Text>
+                    <Text style={styles.insightItemSubText}>Slightly high compared to your daily limit.</Text>
+                  </View>
+                </View>
 
-            {/* ALT Insight */}
-            <View style={[styles.insightItem, { backgroundColor: '#FEECEE' }]}>              
-              <Icon name="trending-up" size={22} color="#D32F2F" style={styles.insightIcon} />
-              <View style={styles.insightContent}>
-                <Text style={[styles.insightItemText, { color: '#D32F2F' }]}>ALT</Text>
-                <Text style={styles.insightItemSubText}>Increased compared to last report.</Text>
-              </View>
-            </View>
+                {/* ALT Insight */}
+                <View style={[styles.insightItem, { backgroundColor: '#FEECEE' }]}>              
+                  <Icon name="trending-up" size={22} color="#D32F2F" style={styles.insightIcon} />
+                  <View style={styles.insightContent}>
+                    <Text style={[styles.insightItemText, { color: '#D32F2F' }]}>ALT</Text>
+                    <Text style={styles.insightItemSubText}>Increased compared to last report.</Text>
+                  </View>
+                </View>
+              </>
+            )}
 
             <Text style={styles.disclaimerText}>These insights are informational only and not a diagnosis.</Text>
           </View>

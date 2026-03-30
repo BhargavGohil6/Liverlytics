@@ -43,6 +43,13 @@ export interface DietData {
   duration?: string;
   user?: string;
   is_today?: boolean;
+  overall_totals?: {
+    sodium?: number;
+    fluid_ml?: number;
+    protein?: number;
+    count?: number;
+    date?: string;
+  };
 }
 
 export interface ExerciseData {

@@ -23,19 +23,19 @@ const HealthTargets = () => {
 
   // Update state when Redux values change (for back/forward navigation)
   useEffect(() => {
-    if (dailyTargets?.daily_sodium_limit && dailyTargets.daily_sodium_limit !== 1800.0) {
+    if (dailyTargets?.daily_sodium_limit && dailyTargets.daily_sodium_limit !== 0) {
       setSodium(dailyTargets.daily_sodium_limit.toString());
     }
-    if (dailyTargets?.daily_protein_limit && dailyTargets.daily_protein_limit !== 60.0) {
+    if (dailyTargets?.daily_protein_limit && dailyTargets.daily_protein_limit !== 0) {
       setProtein(dailyTargets.daily_protein_limit.toString());
     }
-    if (dailyTargets?.daily_fluid_limit && dailyTargets.daily_fluid_limit !== 1500.0) {
+    if (dailyTargets?.daily_fluid_limit && dailyTargets.daily_fluid_limit !== 0) {
       setFluid(dailyTargets.daily_fluid_limit.toString());
     }
-    if (dailyTargets?.weight_gain_alert_threshold && dailyTargets.weight_gain_alert_threshold !== 1.5) {
+    if (dailyTargets?.weight_gain_alert_threshold && dailyTargets.weight_gain_alert_threshold !== 0) {
       setWeightGain(dailyTargets.weight_gain_alert_threshold.toString());
     }
-    if (dailyTargets?.resting_hr_alert_threshold && dailyTargets.resting_hr_alert_threshold !== 80.0) {
+    if (dailyTargets?.resting_hr_alert_threshold && dailyTargets.resting_hr_alert_threshold !== 0) {
       setRestingHR(dailyTargets.resting_hr_alert_threshold.toString());
     }
   }, [dailyTargets]);

@@ -20,17 +20,16 @@ import CommonLoader from '../../components/CommonLoader';
 
 const { width } = Dimensions.get('window');
 
-interface BPChartScreenProps {
+interface HeartRateChartScreenProps {
   navigation: any;
 }
 
-export default function BPChartScreen({ navigation }: BPChartScreenProps) {
+export default function HeartRateChartScreen({ navigation }: HeartRateChartScreenProps) {
   const dispatch = useDispatch<AppDispatch>();
   const { todayData, loading, error } = useSelector((state: any) => state.vitals);
   
-  const [systolicData, setSystolicData] = useState<number[]>([]);
-  const [diastolicData, setDiastolicData] = useState<number[]>([]);
-  const [bpLabels, setBpLabels] = useState<string[]>([]);
+  const [heartRateData, setHeartRateData] = useState<number[]>([]);
+  const [heartRateLabels, setHeartRateLabels] = useState<string[]>([]);
   const [last7DaysData, setLast7DaysData] = useState<any[]>([]);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [sevenDayStats, setSevenDayStats] = useState<any>(null);
@@ -44,7 +43,7 @@ export default function BPChartScreen({ navigation }: BPChartScreenProps) {
     }
   }, [dispatch, userEmail]);
 
-  // Process data to get last 7 days of BP
+  // Process data to get last 7 days of Heart Rate
   useEffect(() => {
     if (todayData?.data && Array.isArray(todayData.data)) {
       // Store seven day stats from API
@@ -63,34 +62,15 @@ export default function BPChartScreen({ navigation }: BPChartScreenProps) {
       const last7Days = sortedData.slice(0, 7);
       setLast7DaysData(last7Days);
 
-      // Extract BP values and dates
-      const systolicValues: number[] = [];
-      const diastolicValues: number[] = [];
+      // Extract Heart Rate values and dates
+      const heartRateValues: number[] = [];
       const dates: string[] = [];
 
       last7Days.forEach((record: any) => {
-        // Handle blood pressure data in different formats
-        let systolic = 0;
-        let diastolic = 0;
+        const heartRate = record.heart_rate || 0;
+        heartRateValues.push(Number(heartRate) || 0);
         
-        // Check for blood_pressure as string (e.g., "120/80")
-        if (record.blood_pressure && typeof record.blood_pressure === 'string') {
-          const bpParts = record.blood_pressure.split('/');
-          if (bpParts.length === 2) {
-            systolic = parseInt(bpParts[0], 10) || 0;
-            diastolic = parseInt(bpParts[1], 10) || 0;
-          }
-        } 
-        // Check for separate systolic and diastolic values
-        else if (record.blood_pressure_systolic !== undefined && record.blood_pressure_diastolic !== undefined) {
-          systolic = Number(record.blood_pressure_systolic) || 0;
-          diastolic = Number(record.blood_pressure_diastolic) || 0;
-        }
-
-        systolicValues.push(systolic);
-        diastolicValues.push(diastolic);
-        
-        // Format date for display
+        // Format date for display (e.g., "Jan 15")
         const date = new Date(record.date || '');
         const month = date.toLocaleString('default', { month: 'short' });
         const day = date.getDate();
@@ -98,89 +78,51 @@ export default function BPChartScreen({ navigation }: BPChartScreenProps) {
       });
 
       // Reverse to show oldest first (left to right)
-      setSystolicData(systolicValues.reverse());
-      setDiastolicData(diastolicValues.reverse());
-      setBpLabels(dates.reverse());
+      setHeartRateData(heartRateValues.reverse());
+      setHeartRateLabels(dates.reverse());
       setSelectedIndex(null);
     }
   }, [todayData]);
 
   // Calculate statistics
-  const avgSystolic = systolicData.length > 0 
-    ? (systolicData.reduce((sum, value) => sum + value, 0) / systolicData.length).toFixed(0)
+  const avgHeartRate = heartRateData.length > 0 
+    ? (heartRateData.reduce((sum, value) => sum + value, 0) / heartRateData.length).toFixed(1)
     : '0';
   
-  const avgDiastolic = diastolicData.length > 0 
-    ? (diastolicData.reduce((sum, value) => sum + value, 0) / diastolicData.length).toFixed(0)
-    : '0';
-
-  // Calculate Min/Max for proper padding boundary
-  let chartMin = 0;
-  let chartMax = 200;
-  
-  if (systolicData.length > 0 || diastolicData.length > 0) {
-    let minVal = 9999;
-    let maxVal = -9999;
-    
-    systolicData.forEach(s => { if (s > 0) { minVal = Math.min(minVal, s); maxVal = Math.max(maxVal, s); } });
-    diastolicData.forEach(d => { if (d > 0) { minVal = Math.min(minVal, d); maxVal = Math.max(maxVal, d); } });
-    
-    if (minVal === 9999) minVal = 0;
-    if (maxVal === -9999) maxVal = 100;
-    
-    const range = maxVal - minVal;
-    let padding = range * 0.2;
-    if (padding < 10) padding = 10;
-    
-    chartMin = Math.max(0, minVal - padding);
-    chartMax = maxVal + padding + (range === 0 ? 10 : 0);
-  }
-
-  const dummyData = systolicData.map((_, i) => i === 0 ? chartMax : chartMin);
+  const minHeartRate = heartRateData.length > 0 ? Math.min(...heartRateData) : 0;
+  const maxHeartRate = heartRateData.length > 0 ? Math.max(...heartRateData) : 0;
 
   const chartData = {
-    labels: bpLabels,
+    labels: heartRateLabels,
     datasets: [
       {
-        data: systolicData,
-        color: (opacity = 1) => `rgba(255, 217, 61, ${opacity})`, // Yellow for systolic
+        data: heartRateData,
+        strokeWidth: 3,
+        color: (opacity = 1) => `rgba(231, 76, 60, ${opacity})`, // Red color for heart rate
       },
-      {
-        data: diastolicData,
-        color: (opacity = 1) => `rgba(255, 107, 107, ${opacity})`, // Red for diastolic
-      },
-      {
-        data: dummyData.length > 0 ? dummyData : [chartMax, chartMin],
-        color: () => 'rgba(0,0,0,0)', // Invisible bounds
-        withDots: false,
-      }
     ],
-    legend: ['Systolic', 'Diastolic', ''],
   };
 
   const chartConfig = {
-    backgroundColor: '#fff',
-    backgroundGradientFrom: '#fff',
-    backgroundGradientTo: '#fff',
+    backgroundColor: colors.white,
+    backgroundGradientFrom: colors.white,
+    backgroundGradientTo: colors.white,
     decimalPlaces: 0,
-    color: (opacity = 1) => `rgba(255, 217, 61, ${opacity})`, // Match VitalsHistoryScreen BP color
-    labelColor: (opacity = 1) => `rgba(107, 114, 128, ${opacity})`,
-    strokeWidth: responsive.width(2),
-    style: { borderRadius: responsive.borderRadius(16) },
-    propsForDots: {
-      r: responsive.width(4),
-      strokeWidth: responsive.width(2),
-      stroke: '#FFD93D',
+    color: (opacity = 1) => `rgba(51, 51, 51, ${opacity})`,
+    labelColor: (opacity = 1) => `rgba(102, 102, 102, ${opacity})`,
+    style: {
+      borderRadius: responsive.borderRadius(16),
     },
-    propsForLabels: {
-      fontSize: 12,
-      fontWeight: '500',
-    }
+    propsForDots: {
+      r: '4',
+      strokeWidth: '2',
+      stroke: colors.primary,
+    },
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <CommonLoader visible={loading} message="Loading BP data..." />
+      <CommonLoader visible={loading} message="Loading heart rate data..." />
       
       {/* Header */}
       <View style={styles.header}>
@@ -190,7 +132,7 @@ export default function BPChartScreen({ navigation }: BPChartScreenProps) {
         >
           <Icon name="arrow-left" size={responsive.fontSize(24)} color={colors.darkGray} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Blood Pressure</Text>
+        <Text style={styles.headerTitle}>Heart Rate</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -204,17 +146,17 @@ export default function BPChartScreen({ navigation }: BPChartScreenProps) {
           <View style={[styles.chartHeader, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }]}>
             <View>
               <Text style={styles.chartTitle}>7-Day Trend</Text>
-              <Text style={styles.chartSubtitle}>Blood Pressure (mmHg)</Text>
+              <Text style={styles.chartSubtitle}>Heart Rate (bpm)</Text>
             </View>
-            {systolicData.length > 0 && diastolicData.length > 0 && (
+            {heartRateData.length > 0 && (
               <View style={{ alignItems: 'flex-end' }}>
                 <Text style={styles.chartSubtitle}>
-                  {selectedIndex !== null ? bpLabels[selectedIndex] : 'Latest'}
+                  {selectedIndex !== null ? heartRateLabels[selectedIndex] : 'Latest'}
                 </Text>
-                <Text style={[styles.chartTitle, { color: '#FF5252' }]}>
+                <Text style={[styles.chartTitle, { color: '#E74C3C' }]}>
                   {selectedIndex !== null 
-                    ? `${systolicData[selectedIndex]}/${diastolicData[selectedIndex]}`
-                    : `${systolicData[systolicData.length - 1]}/${diastolicData[diastolicData.length - 1]}`}
+                    ? heartRateData[selectedIndex]
+                    : heartRateData[heartRateData.length - 1]} bpm
                 </Text>
               </View>
             )}
@@ -223,7 +165,7 @@ export default function BPChartScreen({ navigation }: BPChartScreenProps) {
           {error ? (
             <View style={styles.errorContainer}>
               <Icon name="alert-circle" size={40} color={colors.orange} />
-              <Text style={styles.errorText}>Unable to load BP data</Text>
+              <Text style={styles.errorText}>Unable to load heart rate data</Text>
               <Text style={styles.errorSubText}>{error}</Text>
               <TouchableOpacity 
                 style={styles.retryButton}
@@ -232,10 +174,10 @@ export default function BPChartScreen({ navigation }: BPChartScreenProps) {
                 <Text style={styles.retryText}>Retry</Text>
               </TouchableOpacity>
             </View>
-          ) : (systolicData.length === 0 || diastolicData.length === 0) ? (
+          ) : heartRateData.length === 0 ? (
             <View style={styles.noDataContainer}>
               <Icon name="activity" size={40} color={colors.gray666} />
-              <Text style={styles.noDataText}>No BP data available</Text>
+              <Text style={styles.noDataText}>No heart rate data available</Text>
               <Text style={styles.noDataSubText}>Add your vitals to see trends</Text>
               <TouchableOpacity 
                 style={styles.addButton}
@@ -246,18 +188,16 @@ export default function BPChartScreen({ navigation }: BPChartScreenProps) {
             </View>
           ) : (
             <View style={styles.chartContainer}>
-              <View style={{ position: 'relative' }}>
               <LineChart
                 data={chartData}
                 width={width - responsive.padding(40)}
-                height={responsive.height(200)}
+                height={220}
                 chartConfig={chartConfig}
                 bezier
                 style={styles.chart}
+                yAxisLabel=""
                 fromZero={false}
-                withShadow={false}
                 onDataPointClick={(data) => {
-                  if (data.value === chartMax || data.value === chartMin) return;
                   if (selectedIndex === data.index) {
                     setSelectedIndex(null);
                   } else {
@@ -265,46 +205,29 @@ export default function BPChartScreen({ navigation }: BPChartScreenProps) {
                   }
                 }}
               />
-              </View>
-              <View style={styles.chartLegend}>
-                <View style={styles.legendItem}>
-                  <View style={[styles.legendDot, { backgroundColor: '#FFD93D' }]} />
-                  <Text style={styles.legendText}>Systolic</Text>
-                </View>
-                <View style={styles.legendItem}>
-                  <View style={[styles.legendDot, { backgroundColor: '#FF6B6B' }]} />
-                  <Text style={styles.legendText}>Diastolic</Text>
-                </View>
-              </View>
             </View>
           )}
         </View>
 
         {/* Statistics Card */}
-        {(systolicData.length > 0 || diastolicData.length > 0) && sevenDayStats && sevenDayStats.blood_pressure_systolic && sevenDayStats.blood_pressure_diastolic && (
+        {heartRateData.length > 0 && sevenDayStats && sevenDayStats.heart_rate && (
           <View style={styles.statsCard}>
             <Text style={styles.statsTitle}>7-Day Statistics</Text>
             
             <View style={styles.statsGrid}>
               <View style={styles.statItem}>
-                <Text style={styles.statValue}>
-                  {Math.round(sevenDayStats.blood_pressure_systolic.avg)}/{Math.round(sevenDayStats.blood_pressure_diastolic.avg)}
-                </Text>
+                <Text style={styles.statValue}>{sevenDayStats.heart_rate.avg}</Text>
                 <Text style={styles.statLabel}>Average</Text>
               </View>
               
               <View style={styles.statItem}>
-                <Text style={styles.statValue}>
-                  {sevenDayStats.blood_pressure_systolic.max}/{sevenDayStats.blood_pressure_diastolic.max}
-                </Text>
-                <Text style={styles.statLabel}>Maximum</Text>
+                <Text style={styles.statValue}>{sevenDayStats.heart_rate.min}</Text>
+                <Text style={styles.statLabel}>Minimum</Text>
               </View>
               
               <View style={styles.statItem}>
-                <Text style={styles.statValue}>
-                  {sevenDayStats.blood_pressure_systolic.min}/{sevenDayStats.blood_pressure_diastolic.min}
-                </Text>
-                <Text style={styles.statLabel}>Minimum</Text>
+                <Text style={styles.statValue}>{sevenDayStats.heart_rate.max}</Text>
+                <Text style={styles.statLabel}>Maximum</Text>
               </View>
             </View>
           </View>
@@ -316,7 +239,7 @@ export default function BPChartScreen({ navigation }: BPChartScreenProps) {
             <Text style={styles.readingsTitle}>Recent Readings</Text>
             
             {last7DaysData.map((record: any, index: number) => {
-              const bp = record.blood_pressure || '0/0';
+              const heartRate = record.heart_rate || 0;
               const date = new Date(record.date || '');
               const formattedDate = date.toLocaleDateString('en-US', {
                 weekday: 'short',
@@ -338,11 +261,11 @@ export default function BPChartScreen({ navigation }: BPChartScreenProps) {
                     </Text>
                   </View>
                   <View style={styles.readingRight}>
-                    <Text style={styles.readingValue}>{bp} mmHg</Text>
+                    <Text style={styles.readingValue}>{heartRate} bpm</Text>
                     <View style={[
                       styles.statusIndicator,
-                      bp.split('/')[0] > 130 || bp.split('/')[1] > 80 ? styles.statusHigh : 
-                      bp.split('/')[0] < 90 || bp.split('/')[1] < 60 ? styles.statusLow : 
+                      heartRate < 60 ? styles.statusLow : 
+                      heartRate > 100 ? styles.statusHigh : 
                       styles.statusNormal
                     ]} />
                   </View>
@@ -356,12 +279,13 @@ export default function BPChartScreen({ navigation }: BPChartScreenProps) {
         <View style={styles.infoCard}>
           <View style={styles.infoHeader}>
             <Icon name="info" size={16} color={colors.primary} />
-            <Text style={styles.infoTitle}>About Blood Pressure</Text>
+            <Text style={styles.infoTitle}>About Heart Rate</Text>
           </View>
           <Text style={styles.infoText}>
-            Blood pressure is the force of your blood against your artery walls as your heart pumps. 
-            Normal BP is less than 120/80 mmHg. 
-            High blood pressure (hypertension) is 130/80 mmHg or higher.
+            Heart rate is the number of times your heart beats per minute. 
+            A normal resting heart rate for adults ranges from 60 to 100 beats per minute. 
+            Factors like fitness level, age, and overall health can affect your heart rate.
+            Monitoring your heart rate helps track cardiovascular health.
           </Text>
         </View>
       </ScrollView>
@@ -393,7 +317,7 @@ const styles = StyleSheet.create({
     color: colors.darkGray,
   },
   headerSpacer: {
-    width: 40,
+    width: 40, // To balance the header layout
   },
   content: {
     flex: 1,
@@ -405,7 +329,7 @@ const styles = StyleSheet.create({
   chartCard: {
     backgroundColor: colors.white,
     borderRadius: responsive.borderRadius(16),
-    padding: responsive.padding(20),
+    padding: responsive.padding(15),
     marginBottom: responsive.margin(16),
     shadowColor: colors.black,
     shadowOffset: { width: 0, height: 2 },
@@ -429,33 +353,11 @@ const styles = StyleSheet.create({
   chartContainer: {
     alignItems: 'center',
     marginVertical: responsive.margin(8),
+    marginLeft: -responsive.padding(10),
   },
   chart: {
     marginVertical: responsive.margin(8),
     borderRadius: responsive.borderRadius(16),
-  },
-  chartLegend: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginTop: responsive.margin(12),
-    justifyContent: 'center',
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: responsive.margin(8),
-    marginBottom: responsive.margin(8),
-  },
-  legendDot: {
-    width: responsive.width(8),
-    height: responsive.height(8),
-    borderRadius: responsive.borderRadius(4),
-    marginRight: responsive.margin(6),
-  },
-  legendText: {
-    fontSize: responsive.fontSize(12),
-    color: '#666',
-    marginLeft: responsive.margin(4),
   },
   errorContainer: {
     alignItems: 'center',

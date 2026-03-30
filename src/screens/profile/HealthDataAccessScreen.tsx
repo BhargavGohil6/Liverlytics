@@ -211,7 +211,7 @@ const HealthDataAccessScreen: React.FC<HealthDataAccessScreenProps> = ({ navigat
               />
             </View>
 
-            <View style={styles.permissionItem}>
+            {/* <View style={styles.permissionItem}>
               <View style={styles.permissionInfo}>
                 <Icon name="logo-google" size={24} color="#52ab3c" />
                 <View style={styles.permissionText}>
@@ -226,7 +226,7 @@ const HealthDataAccessScreen: React.FC<HealthDataAccessScreenProps> = ({ navigat
                 thumbColor={googleFit ? '#ffffff' : '#ffffff'}
                 ios_backgroundColor="#d1d5db"
               />
-            </View>
+            </View> */}
           </View>
 
           {/* <View style={styles.card}>
