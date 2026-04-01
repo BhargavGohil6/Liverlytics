@@ -387,32 +387,32 @@ const ExerciseHistoryScreen = ({ navigation }: ExerciseHistoryScreenProps) => {
   
   // Helper function to calculate average sleep
   // Commented out - Sleep functionality disabled
-  // const calculateAverageSleep = (data: LogEntry[]) => {
-  //   if (!data || data.length === 0) return '0h 0m';
-  //   
-  //   const validData = data.filter(log => log.sleep && log.sleep !== '');
-  //   if (validData.length === 0) return '0h 0m';
-  //   
-  //   const totalSleepInMinutes = validData.reduce((sum, log) => {
-  //     const [hoursStr, minutesStr] = log.sleep.split('h ');
-  //     const hours = parseInt(hoursStr) || 0;
-  //     const minutes = parseInt(minutesStr.replace('m', '')) || 0;
-  //     return sum + (hours * 60 + minutes);
-  //   }, 0);
-  //   
-  //   const avgSleepInMinutes = totalSleepInMinutes / validData.length;
-  //   const avgHours = Math.floor(avgSleepInMinutes / 60);
-  //   const avgMinutes = Math.round(avgSleepInMinutes % 60);
-  //   
-  //   return `${avgHours}h ${avgMinutes}m`;
-  // };
+  const calculateAverageSleep = (data: LogEntry[]) => {
+    if (!data || data.length === 0) return '0h 0m';
+    
+    const validData = data.filter(log => log.sleep && log.sleep !== '');
+    if (validData.length === 0) return '0h 0m';
+    
+    const totalSleepInMinutes = validData.reduce((sum, log) => {
+      const [hoursStr, minutesStr] = log.sleep.split('h ');
+      const hours = parseInt(hoursStr) || 0;
+      const minutes = parseInt(minutesStr.replace('m', '')) || 0;
+      return sum + (hours * 60 + minutes);
+    }, 0);
+    
+    const avgSleepInMinutes = totalSleepInMinutes / validData.length;
+    const avgHours = Math.floor(avgSleepInMinutes / 60);
+    const avgMinutes = Math.round(avgSleepInMinutes % 60);
+    
+    return `${avgHours}h ${avgMinutes}m`;
+  };
   
-  // const getSleepInMinutes = (sleepString: string) => {
-  //   const [hoursStr, minutesStr] = sleepString.split('h ');
-  //   const hours = parseInt(hoursStr) || 0;
-  //   const minutes = parseInt(minutesStr.replace('m', '')) || 0;
-  //   return hours * 60 + minutes;
-  // };
+  const getSleepInMinutes = (sleepString: string) => {
+    const [hoursStr, minutesStr] = sleepString.split('h ');
+    const hours = parseInt(hoursStr) || 0;
+    const minutes = parseInt(minutesStr.replace('m', '')) || 0;
+    return hours * 60 + minutes;
+  };
   
   // Handler for download buttons
   const handleDownloadCSV = () => {
@@ -656,18 +656,18 @@ const ExerciseHistoryScreen = ({ navigation }: ExerciseHistoryScreenProps) => {
                                               selectedChartTab.toLowerCase().includes('active') ? 'ahr' : 
                                               selectedChartTab.toLowerCase() === 'oxygen' ? 'oxygen' :
                                               selectedChartTab.toLowerCase() === 'calories' ? 'calories' :
-                                              // selectedChartTab.toLowerCase() === 'sleep' ? 'sleep' : 
+                                              selectedChartTab.toLowerCase() === 'sleep' ? 'sleep' : 
                                               'steps')}%
                 </Text>
               </View>
             </View>
             {/* Commented out Sleep stat item */}
-            {/* selectedChartTab.toLowerCase() === 'sleep' ? (
+            selectedChartTab.toLowerCase() === 'sleep' ? (
               <View style={styles.statItem}>
                 <Text style={styles.statLabel}>Avg Sleep</Text>
                 <Text style={styles.statValue}>{calculateAverageSleep(logs)}</Text>
               </View>
-            ) :  */}
+            ) : 
             {selectedChartTab.toLowerCase() === 'oxygen' ? (
               <View style={styles.statItem}>
                 <Text style={styles.statLabel}>Avg Oxygen</Text>
@@ -690,8 +690,8 @@ const ExerciseHistoryScreen = ({ navigation }: ExerciseHistoryScreenProps) => {
                       value = isNaN(log.ahr) ? 0 : log.ahr;
                     } else if (selectedChartTab.toLowerCase() === 'calories') {
                       value = isNaN(log.calories) ? 0 : log.calories;
-                    // } else if (selectedChartTab.toLowerCase() === 'sleep') {
-                    //   value = isNaN(getSleepInMinutes(log.sleep)) ? 0 : getSleepInMinutes(log.sleep);
+                    } else if (selectedChartTab.toLowerCase() === 'sleep') {
+                      value = isNaN(getSleepInMinutes(log.sleep)) ? 0 : getSleepInMinutes(log.sleep);
                     } else {
                       value = isNaN(log.steps) ? 0 : log.steps;
                     }
@@ -895,7 +895,7 @@ const ExerciseHistoryScreen = ({ navigation }: ExerciseHistoryScreenProps) => {
               <View style={styles.logStats}>
                 <View style={styles.logStatsRow}>
                   <Text style={styles.logStat}>Steps: {log.steps}</Text>
-                  {/* <Text style={styles.logStat}>Sleep: {log.sleep}</Text> */}
+                  <Text style={styles.logStat}>Sleep: {log.sleep}</Text>
                   <Text style={styles.logStat}>RHR: {log.rhr} bpm</Text>
                 </View>
                 <View style={styles.logStatsRow}>

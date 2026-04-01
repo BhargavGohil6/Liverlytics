@@ -100,9 +100,51 @@ export interface DashboardData {
     status: string;
     summary?: string;
     ai_insights?: string;
-    blood_pressure?: string;
-    heart_rate?: string;
-    sodium?: string;
+    blood_pressure?: string | {
+      bp_analysis?: string;
+      bp_color?: string;
+      bp_status?: 'HIGH' | 'NORMAL' | 'LOW';
+    };
+    heart_rate?: string | {
+      hr_analysis?: string;
+      hr_color?: string;
+      hr_status?: 'HIGH' | 'NORMAL' | 'LOW';
+    };
+    resting_heart_rate?: string | {
+      resting_hr_analysis?: string;
+      resting_hr_color?: string;
+      resting_hr_status?: 'HIGH' | 'NORMAL' | 'LOW';
+    };
+    sodium?: string | {
+      sodium_analysis?: string;
+      sodium_color?: string;
+      sodium_status?: 'HIGH' | 'NORMAL' | 'LOW';
+    };
+    glucose?: string | {
+      glucose_analysis?: string;
+      glucose_color?: string;
+      glucose_status?: 'HIGH' | 'NORMAL' | 'LOW';
+    };
+    steps?: string | {
+      steps_analysis?: string;
+      steps_color?: string;
+      steps_status?: 'NOT_RECORDED' | 'HIGH' | 'NORMAL' | 'LOW';
+    };
+    fluids?: string | {
+      fluids_analysis?: string;
+      fluids_color?: string;
+      fluids_status?: 'NOT_RECORDED' | 'HIGH' | 'NORMAL' | 'LOW';
+    };
+    oxygen?: string | {
+      oxygen_analysis?: string;
+      oxygen_color?: string;
+      oxygen_status?: 'HIGH' | 'NORMAL' | 'LOW';
+    };
+    sleep?: string | {
+      sleep_analysis?: string;
+      sleep_color?: string;
+      sleep_status?: 'NOT_RECORDED' | 'HIGH' | 'NORMAL' | 'LOW';
+    };
     timestamp?: string;
   };
 }

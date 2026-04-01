@@ -89,8 +89,9 @@ export const loginUser = createAsyncThunk<
       await EncryptedStorage.setItem('user_sid', msg.sid);
     }
 
-    // Set onboarding flag to false by default (will be updated after onboarding)
-    await EncryptedStorage.setItem('onboarding_completed', 'false');
+    // Set onboarding flag based on consent_status
+    const isConsent1 = msg?.consent_status === '1' || data?.message?.consent_status === '1';
+    await EncryptedStorage.setItem('onboarding_completed', isConsent1 ? 'true' : 'false');
 
     return data;
   } catch (error: any) {
@@ -225,6 +226,8 @@ const authSlice = createSlice({
         state.apiKey = responseData.api_key || '72b96de8ae8c469';
         state.apiSecret = responseData.api_secret || responseData.sid || '96b6b5699febb74';
         state.login = true;
+        // Check consent_status for onboarding
+        state.onboardingCompleted = responseData.consent_status === '1';
       })
 
       .addCase(loginUser.rejected, (state, action) => {

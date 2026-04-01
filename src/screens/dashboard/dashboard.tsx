@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   View, 
   Text, 
@@ -47,6 +47,52 @@ import { formatRelativeTime } from '../../utils/timeUtils';
 export default function Dashboard() {
   const navigation = useNavigation<any>();
   const dispatch = useDispatch<AppDispatch>();
+  const [showAllInsights, setShowAllInsights] = useState(false);
+  
+  // Type guard for sodium object
+  const isSodiumObject = (sodium: any): sodium is { sodium_analysis?: string; sodium_color?: string; sodium_status?: 'HIGH' | 'NORMAL' | 'LOW' } => {
+    return typeof sodium === 'object' && sodium !== null && 'sodium_analysis' in sodium;
+  };
+  
+  // Type guard for blood_pressure object
+  const isBloodPressureObject = (bp: any): bp is { bp_analysis?: string; bp_color?: string; bp_status?: 'HIGH' | 'NORMAL' | 'LOW' } => {
+    return typeof bp === 'object' && bp !== null && 'bp_analysis' in bp;
+  };
+  
+  // Type guard for heart_rate object
+  const isHeartRateObject = (hr: any): hr is { hr_analysis?: string; hr_color?: string; hr_status?: 'HIGH' | 'NORMAL' | 'LOW' } => {
+    return typeof hr === 'object' && hr !== null && 'hr_analysis' in hr;
+  };
+  
+  // Type guard for resting_heart_rate object
+  const isRestingHeartRateObject = (rhr: any): rhr is { resting_hr_analysis?: string; resting_hr_color?: string; resting_hr_status?: 'HIGH' | 'NORMAL' | 'LOW' } => {
+    return typeof rhr === 'object' && rhr !== null && 'resting_hr_analysis' in rhr;
+  };
+  
+  // Type guard for glucose object
+  const isGlucoseObject = (glucose: any): glucose is { glucose_analysis?: string; glucose_color?: string; glucose_status?: 'HIGH' | 'NORMAL' | 'LOW' } => {
+    return typeof glucose === 'object' && glucose !== null && 'glucose_analysis' in glucose;
+  };
+  
+  // Type guard for steps object
+  const isStepsObject = (steps: any): steps is { steps_analysis?: string; steps_color?: string; steps_status?: 'NOT_RECORDED' | 'HIGH' | 'NORMAL' | 'LOW' } => {
+    return typeof steps === 'object' && steps !== null && 'steps_analysis' in steps;
+  };
+  
+  // Type guard for fluids object
+  const isFluidsObject = (fluids: any): fluids is { fluids_analysis?: string; fluids_color?: string; fluids_status?: 'NOT_RECORDED' | 'HIGH' | 'NORMAL' | 'LOW' } => {
+    return typeof fluids === 'object' && fluids !== null && 'fluids_analysis' in fluids;
+  };
+  
+  // Type guard for oxygen object
+  const isOxygenObject = (oxygen: any): oxygen is { oxygen_analysis?: string; oxygen_color?: string; oxygen_status?: 'HIGH' | 'NORMAL' | 'LOW' } => {
+    return typeof oxygen === 'object' && oxygen !== null && 'oxygen_analysis' in oxygen;
+  };
+  
+  // Type guard for sleep object
+  const isSleepObject = (sleep: any): sleep is { sleep_analysis?: string; sleep_color?: string; sleep_status?: 'NOT_RECORDED' | 'HIGH' | 'NORMAL' | 'LOW' } => {
+    return typeof sleep === 'object' && sleep !== null && 'sleep_analysis' in sleep;
+  };
   
   // Get time of day for greeting
   const getTimeOfDay = () => {
@@ -142,55 +188,237 @@ export default function Dashboard() {
                 <Sparkles size={20} color="#1A1A1A" />
                 <Text style={styles.newInsightsTitle}>AI Insights</Text>
               </View>
-              {/* <View style={styles.infoBadge}>
-                <Text style={styles.infoBadgeText}>{formatRelativeTime(data?.ai_insights?.timestamp || '')}</Text>
-              </View> */}
             </View>
 
+            {/* Overall Summary - Always shown at top */}
+            {data?.ai_insights?.ai_insights && (
+              <View style={[styles.insightItem, { backgroundColor: '#F3E5F5', marginBottom: responsive.margin(16) }]}>
+                <Sparkles size={22} color="#7B1FA2" style={styles.insightIcon} />
+                <View style={styles.insightContent}>
+                  <Text style={[styles.insightItemText, { color: '#7B1FA2' }]}>Overall Summary</Text>
+                  <Text style={styles.insightItemSubText}>{data.ai_insights.ai_insights}</Text>
+                </View>
+              </View>
+            )}
+
+            {/* Key Insights - Limited display with expand option */}
             <View style={styles.newInsightBox}>
               {/* Sodium Insight */}
-              {data?.ai_insights?.sodium && (
-                <View style={[styles.insightItem, { backgroundColor: '#FFF8E1' }]}>
-                  <ArrowUpRight size={22} color="#FBC02D" style={styles.insightIcon} />
+              {(showAllInsights || !showAllInsights) && isSodiumObject(data?.ai_insights?.sodium) && data.ai_insights.sodium.sodium_analysis && (
+                <View style={[styles.insightItem, { 
+                  backgroundColor: data.ai_insights.sodium.sodium_status === 'HIGH' ? '#FFF8E1' : 
+                                 data.ai_insights.sodium.sodium_status === 'LOW' ? '#FEECEE' : 
+                                 '#E8F5E9'
+                }]}>
+                  {data.ai_insights.sodium.sodium_status === 'HIGH' ? (
+                    <ArrowUpRight size={22} color="#FBC02D" style={styles.insightIcon} />
+                  ) : data.ai_insights.sodium.sodium_status === 'LOW' ? (
+                    <ArrowDownRight size={22} color="#FBC02D" style={styles.insightIcon} />
+                  ) : (
+                    <Minus size={22} color="#FBC02D" style={styles.insightIcon} />
+                  )}
                   <View style={styles.insightContent}>
-                    <Text style={[styles.insightItemText, { color: '#FBC02D' }]}>Sodium</Text>
-                    <Text style={styles.insightItemSubText}>{data.ai_insights.sodium}</Text>
+                    <Text style={[styles.insightItemText, { color: data.ai_insights.sodium.sodium_color || '#FBC02D' }]}>Sodium</Text>
+                    <Text style={styles.insightItemSubText}>{data.ai_insights.sodium.sodium_analysis}</Text>
                   </View>
                 </View>
               )}
 
               {/* Blood Pressure Insight */}
-              {data?.ai_insights?.blood_pressure && (
-                <View style={[styles.insightItem, { backgroundColor: '#E8F5E9' }]}>              
-                  <Minus size={22} color="#43A047" style={styles.insightIcon} />
+              {(showAllInsights || !showAllInsights) && isBloodPressureObject(data?.ai_insights?.blood_pressure) && data.ai_insights.blood_pressure.bp_analysis && (
+                <View style={[styles.insightItem, { 
+                  backgroundColor: data.ai_insights.blood_pressure.bp_status === 'HIGH' ? '#FFF8E1' : 
+                                 data.ai_insights.blood_pressure.bp_status === 'LOW' ? '#FEECEE' : 
+                                 '#E8F5E9'
+                }]}>
+                  {data.ai_insights.blood_pressure.bp_status === 'HIGH' ? (
+                    <ArrowUpRight size={22} color="#FFA500" style={styles.insightIcon} />
+                  ) : data.ai_insights.blood_pressure.bp_status === 'LOW' ? (
+                    <ArrowDownRight size={22} color="#FFA500" style={styles.insightIcon} />
+                  ) : (
+                    <Minus size={22} color="#43A047" style={styles.insightIcon} />
+                  )}
                   <View style={styles.insightContent}>
-                    <Text style={[styles.insightItemText, { color: '#43A047' }]}>Blood Pressure</Text>
-                    <Text style={styles.insightItemSubText}>{data.ai_insights.blood_pressure}</Text>
+                    <Text style={[styles.insightItemText, { color: data.ai_insights.blood_pressure.bp_color || '#43A047' }]}>Blood Pressure</Text>
+                    <Text style={styles.insightItemSubText}>{data.ai_insights.blood_pressure.bp_analysis}</Text>
                   </View>
                 </View>
               )}
 
               {/* Heart Rate Insight */}
-              {data?.ai_insights?.heart_rate && (
-                <View style={[styles.insightItem, { backgroundColor: '#FEECEE' }]}>
-                  <ArrowDownRight size={22} color="#D32F2F" style={styles.insightIcon} />
+              {(showAllInsights || !showAllInsights) && isHeartRateObject(data?.ai_insights?.heart_rate) && data.ai_insights.heart_rate.hr_analysis && (
+                <View style={[styles.insightItem, { 
+                  backgroundColor: data.ai_insights.heart_rate.hr_status === 'HIGH' ? '#FEECEE' : 
+                                 data.ai_insights.heart_rate.hr_status === 'LOW' ? '#FFF8E1' : 
+                                 '#E8F5E9'
+                }]}>
+                  {data.ai_insights.heart_rate.hr_status === 'HIGH' ? (
+                    <ArrowUpRight size={22} color="#D32F2F" style={styles.insightIcon} />
+                  ) : data.ai_insights.heart_rate.hr_status === 'LOW' ? (
+                    <ArrowDownRight size={22} color="#D32F2F" style={styles.insightIcon} />
+                  ) : (
+                    <Minus size={22} color="#00AA00" style={styles.insightIcon} />
+                  )}
                   <View style={styles.insightContent}>
-                    <Text style={[styles.insightItemText, { color: '#D32F2F' }]}>Heart Rate</Text>
-                    <Text style={styles.insightItemSubText}>{data.ai_insights.heart_rate}</Text>
+                    <Text style={[styles.insightItemText, { color: data.ai_insights.heart_rate.hr_color || '#D32F2F' }]}>Heart Rate</Text>
+                    <Text style={styles.insightItemSubText}>{data.ai_insights.heart_rate.hr_analysis}</Text>
                   </View>
                 </View>
               )}
 
-              {/* Main AI Insights Summary */}
-              {data?.ai_insights?.ai_insights && (
-                <View style={[styles.insightItem, { backgroundColor: '#F3E5F5' }]}>
-                  <Sparkles size={22} color="#7B1FA2" style={styles.insightIcon} />
+              {/* Glucose Insight - Only shown when expanded or if it's one of first 4 */}
+              {showAllInsights && isGlucoseObject(data?.ai_insights?.glucose) && data.ai_insights.glucose.glucose_analysis && (
+                <View style={[styles.insightItem, { 
+                  backgroundColor: data.ai_insights.glucose.glucose_status === 'HIGH' ? '#FFF8E1' : 
+                                 data.ai_insights.glucose.glucose_status === 'LOW' ? '#FEECEE' : 
+                                 '#E8F5E9'
+                }]}>
+                  {data.ai_insights.glucose.glucose_status === 'HIGH' ? (
+                    <ArrowUpRight size={22} color="#FBC02D" style={styles.insightIcon} />
+                  ) : data.ai_insights.glucose.glucose_status === 'LOW' ? (
+                    <ArrowDownRight size={22} color="#FBC02D" style={styles.insightIcon} />
+                  ) : (
+                    <Minus size={22} color="#4CAF50" style={styles.insightIcon} />
+                  )}
                   <View style={styles.insightContent}>
-                    <Text style={[styles.insightItemText, { color: '#7B1FA2' }]}>Overall Summary</Text>
-                    <Text style={styles.insightItemSubText}>{data.ai_insights.ai_insights}</Text>
+                    <Text style={[styles.insightItemText, { color: data.ai_insights.glucose.glucose_color || '#4CAF50' }]}>Glucose</Text>
+                    <Text style={styles.insightItemSubText}>{data.ai_insights.glucose.glucose_analysis}</Text>
                   </View>
                 </View>
               )}
+
+              {/* Resting Heart Rate Insight - Only shown when expanded */}
+              {showAllInsights && isRestingHeartRateObject(data?.ai_insights?.resting_heart_rate) && data.ai_insights.resting_heart_rate.resting_hr_analysis && (
+                <View style={[styles.insightItem, { 
+                  backgroundColor: data.ai_insights.resting_heart_rate.resting_hr_status === 'HIGH' ? '#FEECEE' : 
+                                 data.ai_insights.resting_heart_rate.resting_hr_status === 'LOW' ? '#FFF8E1' : 
+                                 '#E8F5E9'
+                }]}>
+                  {data.ai_insights.resting_heart_rate.resting_hr_status === 'HIGH' ? (
+                    <ArrowUpRight size={22} color="#D32F2F" style={styles.insightIcon} />
+                  ) : data.ai_insights.resting_heart_rate.resting_hr_status === 'LOW' ? (
+                    <ArrowDownRight size={22} color="#D32F2F" style={styles.insightIcon} />
+                  ) : (
+                    <Minus size={22} color="#00AA00" style={styles.insightIcon} />
+                  )}
+                  <View style={styles.insightContent}>
+                    <Text style={[styles.insightItemText, { color: data.ai_insights.resting_heart_rate.resting_hr_color || '#D32F2F' }]}>Resting Heart Rate</Text>
+                    <Text style={styles.insightItemSubText}>{data.ai_insights.resting_heart_rate.resting_hr_analysis}</Text>
+                  </View>
+                </View>
+              )}
+
+              {/* Steps Insight - Only shown when expanded */}
+              {showAllInsights && isStepsObject(data?.ai_insights?.steps) && 
+               data.ai_insights.steps.steps_analysis && 
+               data.ai_insights.steps.steps_color !== '#808080' &&
+               data.ai_insights.steps.steps_status !== 'NOT_RECORDED' && (
+                <View style={[styles.insightItem, { 
+                  backgroundColor: data.ai_insights.steps.steps_status === 'HIGH' ? '#E8F5E9' : 
+                                 data.ai_insights.steps.steps_status === 'LOW' ? '#FFF8E1' : 
+                                 '#E8F5E9'
+                }]}>
+                  {data.ai_insights.steps.steps_status === 'HIGH' ? (
+                    <ArrowUpRight size={22} color="#4CAF50" style={styles.insightIcon} />
+                  ) : data.ai_insights.steps.steps_status === 'LOW' ? (
+                    <ArrowDownRight size={22} color="#FF9800" style={styles.insightIcon} />
+                  ) : (
+                    <Minus size={22} color="#4CAF50" style={styles.insightIcon} />
+                  )}
+                  <View style={styles.insightContent}>
+                    <Text style={[styles.insightItemText, { color: data.ai_insights.steps.steps_color || '#4CAF50' }]}>Steps</Text>
+                    <Text style={styles.insightItemSubText}>{data.ai_insights.steps.steps_analysis}</Text>
+                  </View>
+                </View>
+              )}
+
+              {/* Fluids Insight - Only shown when expanded */}
+              {showAllInsights && isFluidsObject(data?.ai_insights?.fluids) && 
+               data.ai_insights.fluids.fluids_analysis && 
+               data.ai_insights.fluids.fluids_color !== '#808080' &&
+               data.ai_insights.fluids.fluids_status !== 'NOT_RECORDED' && (
+                <View style={[styles.insightItem, { 
+                  backgroundColor: data.ai_insights.fluids.fluids_status === 'HIGH' ? '#E3F2FD' : 
+                                 data.ai_insights.fluids.fluids_status === 'LOW' ? '#FFF8E1' : 
+                                 '#E3F2FD'
+                }]}>
+                  {data.ai_insights.fluids.fluids_status === 'HIGH' ? (
+                    <ArrowUpRight size={22} color="#2196F3" style={styles.insightIcon} />
+                  ) : data.ai_insights.fluids.fluids_status === 'LOW' ? (
+                    <ArrowDownRight size={22} color="#FF9800" style={styles.insightIcon} />
+                  ) : (
+                    <Minus size={22} color="#2196F3" style={styles.insightIcon} />
+                  )}
+                  <View style={styles.insightContent}>
+                    <Text style={[styles.insightItemText, { color: data.ai_insights.fluids.fluids_color || '#2196F3' }]}>Fluids</Text>
+                    <Text style={styles.insightItemSubText}>{data.ai_insights.fluids.fluids_analysis}</Text>
+                  </View>
+                </View>
+              )}
+
+              {/* Oxygen Insight - Only shown when expanded */}
+              {showAllInsights && isOxygenObject(data?.ai_insights?.oxygen) && 
+               data.ai_insights.oxygen.oxygen_analysis && (
+                <View style={[styles.insightItem, { 
+                  backgroundColor: data.ai_insights.oxygen.oxygen_status === 'HIGH' ? '#E8F5E9' : 
+                                 data.ai_insights.oxygen.oxygen_status === 'LOW' ? '#FEECEE' : 
+                                 '#E8F5E9'
+                }]}>
+                  {data.ai_insights.oxygen.oxygen_status === 'HIGH' ? (
+                    <ArrowUpRight size={22} color="#4CAF50" style={styles.insightIcon} />
+                  ) : data.ai_insights.oxygen.oxygen_status === 'LOW' ? (
+                    <ArrowDownRight size={22} color="#D32F2F" style={styles.insightIcon} />
+                  ) : (
+                    <Minus size={22} color="#4CAF50" style={styles.insightIcon} />
+                  )}
+                  <View style={styles.insightContent}>
+                    <Text style={[styles.insightItemText, { color: data.ai_insights.oxygen.oxygen_color || '#4CAF50' }]}>Oxygen</Text>
+                    <Text style={styles.insightItemSubText}>{data.ai_insights.oxygen.oxygen_analysis}</Text>
+                  </View>
+                </View>
+              )}
+
+              {/* Sleep Insight - Only shown when expanded */}
+              {showAllInsights && isSleepObject(data?.ai_insights?.sleep) && 
+               data.ai_insights.sleep.sleep_analysis && 
+               data.ai_insights.sleep.sleep_color !== '#808080' &&
+               data.ai_insights.sleep.sleep_status !== 'NOT_RECORDED' && (
+                <View style={[styles.insightItem, { 
+                  backgroundColor: data.ai_insights.sleep.sleep_status === 'HIGH' ? '#F3E5F5' : 
+                                 data.ai_insights.sleep.sleep_status === 'LOW' ? '#FFF8E1' : 
+                                 '#F3E5F5'
+                }]}>
+                  {data.ai_insights.sleep.sleep_status === 'HIGH' ? (
+                    <ArrowUpRight size={22} color="#7B1FA2" style={styles.insightIcon} />
+                  ) : data.ai_insights.sleep.sleep_status === 'LOW' ? (
+                    <ArrowDownRight size={22} color="#FF9800" style={styles.insightIcon} />
+                  ) : (
+                    <Minus size={22} color="#7B1FA2" style={styles.insightIcon} />
+                  )}
+                  <View style={styles.insightContent}>
+                    <Text style={[styles.insightItemText, { color: data.ai_insights.sleep.sleep_color || '#7B1FA2' }]}>Sleep</Text>
+                    <Text style={styles.insightItemSubText}>{data.ai_insights.sleep.sleep_analysis}</Text>
+                  </View>
+                </View>
+              )}
+
+              {/* Read More / Show Less Text */}
+              <View style={styles.readMoreContainer}>
+                <Text 
+                  style={styles.readMoreText}
+                  onPress={() => setShowAllInsights(!showAllInsights)}
+                >
+                  {showAllInsights ? 'Show Less' : 'Read More'}
+                </Text>
+                <ChevronRight 
+                  size={14} 
+                  color="#4CAF50" 
+                  style={[
+                    styles.readMoreIcon,
+                    showAllInsights && styles.readMoreIconExpanded
+                  ]} 
+                />
+              </View>
 
               <Text style={styles.disclaimerText}>These insights are informational only and not a diagnosis.</Text>
             </View>
@@ -731,9 +959,27 @@ const styles = StyleSheet.create({
   disclaimerText: {
     fontSize: responsive.fontSize(12),
     color: '#9E9E9E',
-    marginTop: responsive.margin(8),
+    marginTop: responsive.margin(12),
     textAlign: 'left',
     lineHeight: responsive.height(18),
+  },
+  readMoreContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    marginTop: responsive.margin(8),
+  },
+  readMoreText: {
+    fontSize: responsive.fontSize(13),
+    fontWeight: '600',
+    color: '#4CAF50',
+    marginRight: responsive.margin(2),
+  },
+  readMoreIcon: {
+    marginLeft: responsive.margin(2),
+  },
+  readMoreIconExpanded: {
+    transform: [{ rotate: '90deg' }],
   },
   bottomSpacing: {
     height: responsive.height(20),

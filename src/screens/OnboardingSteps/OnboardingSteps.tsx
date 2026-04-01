@@ -25,6 +25,7 @@ import Allset from './Allset';
 import BasicDetailsScreen from './BasicDetailsScreen';
 import { useDispatch, useSelector } from 'react-redux';
 import { submitAllConsents } from './slices/onboardingSlice';
+import { setOnboardingCompleted } from '../auth/slices/authSlice';
 import { useNavigation } from '@react-navigation/native';
 import { useRoute } from '@react-navigation/native';
 import {
@@ -134,6 +135,8 @@ export default function OnboardingSteps() {
   }).current;
 
   const scrollToNext = () => {
+    console.log('🔵 scrollToNext called, currentIndex:', currentIndex);
+    
     if (currentIndex === 1 && !allAgreementsAccepted) {
       Toast.show({ type: 'error', text1: 'Please accept all agreements' });
       return;
@@ -145,9 +148,14 @@ export default function OnboardingSteps() {
     }
 
     if (currentIndex < slides.length - 1) {
+      // Show wearable popup at Step 4 before moving to Step 5
       if (currentIndex === 3 && !hasRespondedToWearablePopup) { 
+        console.log('🔴 Showing wearable popup');
         setShowWearablePopup(true);
+        // Don't scroll yet - wait for popup response
+        return;
       }
+      console.log('🟢 Scrolling to next index:', currentIndex + 1);
       flatListRef.current?.scrollToIndex({ index: currentIndex + 1 });
     } else {
       // Last slide - submit consents
@@ -168,6 +176,7 @@ export default function OnboardingSteps() {
           
           if (isSuccess) {
             console.log('✅ Onboarding completed successfully!');
+            dispatch(setOnboardingCompleted());
             console.log('🔄 Navigating to Dashboard...');
             console.log('Navigation methods available:', Object.keys(navigation));
             
@@ -337,26 +346,47 @@ export default function OnboardingSteps() {
       </Text>
 
       <CommonPopup
-        visible={showWearablePopup && currentIndex === 4}
+        visible={showWearablePopup}
         title="Connect Your Wearable"
         message="Connect your smartwatch to automatically sync your health data like steps, heart rate, sleep, oxygen, and blood pressure.This helps us give you accurate insights and personalized recommendations."
         showBottomButtons={true}
         bottomPrimaryButtonText="Yes"
         bottomSecondaryButtonText="Skip"
         onBottomPrimaryPress={() => {
+          console.log('✅ Wearable popup YES clicked, currentIndex:', currentIndex);
           setShowWearablePopup(false);
           setHasRespondedToWearablePopup(true);
+          // Scroll to next screen after popup is closed
+          setTimeout(() => {
+            console.log('🔄 Scrolling to index:', currentIndex + 1);
+            if (flatListRef.current) {
+              flatListRef.current.scrollToIndex({ index: currentIndex + 1, animated: true });
+            }
+          }, 100);
         }}
         onBottomSecondaryPress={() => {
+          console.log('✅ Wearable popup SKIP clicked, currentIndex:', currentIndex);
           setShowWearablePopup(false);
           setHasRespondedToWearablePopup(true);
-          if (currentIndex < slides.length - 1) {
-            flatListRef.current?.scrollToIndex({ index: currentIndex + 1 });
-          }
+          // Scroll to next screen after popup is closed
+          setTimeout(() => {
+            console.log('🔄 Scrolling to index:', currentIndex + 1);
+            if (flatListRef.current) {
+              flatListRef.current.scrollToIndex({ index: currentIndex + 2, animated: true });
+            }
+          }, 100);
         }}
         onClose={() => {
+          console.log('❌ Wearable popup CLOSED, currentIndex:', currentIndex);
           setShowWearablePopup(false);
           setHasRespondedToWearablePopup(true);
+          // Scroll to next screen after popup is closed
+          setTimeout(() => {
+            console.log('🔄 Scrolling to index:', currentIndex + 1);
+            if (flatListRef.current) {
+              flatListRef.current.scrollToIndex({ index: currentIndex + 1, animated: true });
+            }
+          }, 100);
         }}
       />
     </SafeAreaView>
