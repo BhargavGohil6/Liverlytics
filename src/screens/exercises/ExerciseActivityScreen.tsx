@@ -273,7 +273,7 @@ const ExerciseActivityScreen = ({ navigation }: { navigation: any }) => {
             </View>
 
             {/* Sleep Input */}
-            {/* <View style={styles.card}>
+            <View style={styles.card}>
               <View style={styles.inputHeader}>
                 <Icon name="moon-outline" size={20} color="#1f2937" />
                 <Text style={styles.inputLabel}>Sleep Duration</Text>
@@ -305,7 +305,7 @@ const ExerciseActivityScreen = ({ navigation }: { navigation: any }) => {
                 </View>
               </View>
               <Text style={styles.inputHint}>Prefilled when synced; editable anytime.</Text>
-            </View> */}
+            </View>
 
             {/* Action Buttons */}
             <View style={styles.actions}>
