@@ -127,6 +127,9 @@ export default function WeightChartScreen({ navigation }: WeightChartScreenProps
       strokeWidth: '2',
       stroke: '#F44336',
     },
+    propsForLabels: {
+      rotation: -35,
+    },
   };
 
   return (

@@ -616,6 +616,9 @@ const ExerciseHistoryScreen = ({ navigation }: ExerciseHistoryScreenProps) => {
                   r: responsive.width(4),
                   strokeWidth: responsive.width(2),
                   stroke: getChartColor(selectedChartTab)
+                },
+                propsForLabels: {
+                  rotation: -35,
                 }
               }}
               bezier
@@ -706,58 +709,70 @@ const ExerciseHistoryScreen = ({ navigation }: ExerciseHistoryScreenProps) => {
         {/* Calendar Modal */}
         <Modal
           visible={showCalendar}
-          transparent={true}
           animationType="slide"
+          transparent={true}
           onRequestClose={() => setShowCalendar(false)}
         >
           <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Select Date Range</Text>
+            <View style={styles.calendarContainer}>
+              <View style={styles.calendarHeader}>
+                <Text style={styles.calendarTitle}>Select Date Range</Text>
                 <TouchableOpacity onPress={() => setShowCalendar(false)}>
                   <Icon name="close" size={24} color="#333" />
                 </TouchableOpacity>
               </View>
+              
               <Calendar
                 current={new Date().toISOString().split('T')[0]}
                 minDate={'2020-01-01'}
                 maxDate={new Date().toISOString().split('T')[0]}
                 onDayPress={(day) => {
                   if (!tempStartDate || (tempStartDate && tempEndDate)) {
-                    // First selection or resetting after complete selection
+                    // If no start date is selected or both dates are already selected, set new start date
                     setTempStartDate(day.dateString);
                     setTempEndDate('');
+                  } else if (day.dateString < tempStartDate) {
+                    // If selected date is before start date, set it as new start date
+                    setTempStartDate(day.dateString);
                   } else {
-                    // Second selection - determine which is start and which is end
-                    const selectedDate = new Date(day.dateString);
-                    const currentStartDate = new Date(tempStartDate);
-                    
-                    if (selectedDate < currentStartDate) {
-                      // Selected date is earlier than current start date
-                      setTempStartDate(day.dateString);
-                      setTempEndDate(tempStartDate);
-                    } else {
-                      // Selected date is later than or equal to current start date
-                      setTempEndDate(day.dateString);
-                    }
+                    // Set end date
+                    setTempEndDate(day.dateString);
                   }
                 }}
+                markingType={'period'}
                 markedDates={{
-                  [tempStartDate]: {selected: true, startingDay: true, color: colors.primary},
+                  ...(tempStartDate && {
+                    [tempStartDate]: {
+                      startingDay: true,
+                      color: colors.primary,
+                      textColor: 'white',
+                    },
+                  }),
                   ...(tempEndDate && {
-                    [tempEndDate]: {selected: true, endingDay: true, color: colors.primary},
+                    [tempEndDate]: {
+                      endingDay: true,
+                      color: colors.primary,
+                      textColor: 'white',
+                    },
                   }),
-                  ...(tempStartDate && tempEndDate && {
-                    ...getDatesInRange(tempStartDate, tempEndDate).reduce((acc, date) => ({
-                      ...acc,
-                      [date]: {selected: true, color: colors.primary + '80'},
-                    }), {}),
-                  }),
+                  ...(tempStartDate &&
+                    tempEndDate && {
+                      ...getDatesInRange(tempStartDate, tempEndDate).reduce(
+                        (acc, date) => ({
+                          ...acc,
+                          [date]: {
+                            color: `${colors.primary}40`,
+                            textColor: colors.darkGray,
+                          },
+                        }),
+                        {}
+                      ),
+                    }),
                 }}
-                markingType="period"
                 theme={{
                   todayTextColor: colors.primary,
                   selectedDayBackgroundColor: colors.primary,
+                  selectedDayTextColor: 'white',
                   arrowColor: colors.primary,
                   monthTextColor: colors.darkGray,
                   textMonthFontWeight: '600',
@@ -766,28 +781,23 @@ const ExerciseHistoryScreen = ({ navigation }: ExerciseHistoryScreenProps) => {
                   textDayHeaderFontSize: 14,
                 }}
               />
-              <View style={styles.modalButtons}>
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.cancelButton]}
+              
+              <View style={styles.calendarFooter}>
+                <TouchableOpacity 
+                  style={[styles.calendarButton, styles.cancelButton]}
                   onPress={() => {
                     setTempStartDate('');
                     setTempEndDate('');
+                    setStartDate('');
+                    setEndDate('');
+                    setSelectedPeriod('7');
                     setShowCalendar(false);
                   }}
                 >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                  <Text style={[styles.buttonText, { color: colors.darkGray }]}>Reset</Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
-                  style={[styles.modalButton, styles.resetButton]}
-                  onPress={() => {
-                    setTempStartDate('');
-                    setTempEndDate('');
-                  }}
-                >
-                  <Text style={styles.resetButtonText}>Reset</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.applyButton, (!tempStartDate || !tempEndDate) && styles.disabledButton]}
+                  style={[styles.calendarButton, styles.applyButton, (!tempStartDate || !tempEndDate) && styles.disabledButton]}
                   onPress={() => {
                     if (tempStartDate && tempEndDate) {
                       setStartDate(tempStartDate);
@@ -798,7 +808,7 @@ const ExerciseHistoryScreen = ({ navigation }: ExerciseHistoryScreenProps) => {
                   }}
                   disabled={!tempStartDate || !tempEndDate}
                 >
-                  <Text style={styles.applyButtonText}>Apply</Text>
+                  <Text style={[styles.buttonText, { color: 'white' }]}>Apply</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -806,60 +816,47 @@ const ExerciseHistoryScreen = ({ navigation }: ExerciseHistoryScreenProps) => {
         </Modal>
 
         {/* AI Insights */}
-        {(!history || !history.ai_insights || history.ai_insights.status !== 'no_ai_insights') && (
+        {aiExercise && aiExercise.insights && aiExercise.insights.length > 0 && aiExercise.status !== 'no_ai_insights' && (
           <View style={styles.newAiInsightsCard}>
             <View style={styles.insightsHeader}>
               <View style={styles.sectionTitleRow}>
                 <Icon name="sparkles" size={20} color="#1A1A1A" />
                 <Text style={styles.newInsightsTitle}>AI Insights</Text>
               </View>
-              {/* <View style={styles.infoBadge}>
-                <Text style={styles.infoBadgeText}>Today</Text>
-              </View> */}
             </View>
 
             <View style={styles.newInsightBox}>
-              {aiExercise && aiExercise.insights && aiExercise.insights.length > 0 ? (
-                aiExercise.insights
-                  .filter((insight: string) => !insight.toLowerCase().includes('sleep'))
-                  .map((insight: string, index: number) => {
-                    // Determine icon and color based on insight content
-                    let iconName = 'information-circle';
-                    let bgColor = '#FFF8E1';
-                    let iconColor = '#FBC02D';
-                    
-                    if (insight.toLowerCase().includes('step')) {
-                      iconName = 'walk';
-                      bgColor = '#FFF8E1';
-                      iconColor = '#FBC02D';
-                    } else if (insight.toLowerCase().includes('heart') || insight.toLowerCase().includes('hr')) {
-                      iconName = 'heart';
-                      bgColor = '#E8F5E9';
-                      iconColor = '#43A047';
-                    }
-                    
-                    return (
-                      <View key={index} style={[styles.insightItem, { backgroundColor: bgColor }]}>              
-                        <Icon name={iconName} size={22} color={iconColor} style={styles.insightIcon} />
-                        <View style={styles.insightContent}>
-                          <Text style={[styles.insightItemText, { color: iconColor }]}>
-                            {insight.includes('step') ? 'Activity Level' : 
-                             insight.includes('heart') || insight.includes('hr') ? 'Heart Rate' : 'Health Insight'}
-                          </Text>
-                          <Text style={styles.insightItemSubText}>{insight}</Text>
-                        </View>
+              {aiExercise.insights
+                .filter((insight: string) => !insight.toLowerCase().includes('sleep'))
+                .map((insight: string, index: number) => {
+                  // Determine icon and color based on insight content
+                  let iconName = 'information-circle';
+                  let bgColor = '#FFF8E1';
+                  let iconColor = '#FBC02D';
+                  
+                  if (insight.toLowerCase().includes('step')) {
+                    iconName = 'walk';
+                    bgColor = '#FFF8E1';
+                    iconColor = '#FBC02D';
+                  } else if (insight.toLowerCase().includes('heart') || insight.toLowerCase().includes('hr')) {
+                    iconName = 'heart';
+                    bgColor = '#E8F5E9';
+                    iconColor = '#43A047';
+                  }
+                  
+                  return (
+                    <View key={index} style={[styles.insightItem, { backgroundColor: bgColor }]}>              
+                      <Icon name={iconName} size={22} color={iconColor} style={styles.insightIcon} />
+                      <View style={styles.insightContent}>
+                        <Text style={[styles.insightItemText, { color: iconColor }]}>
+                          {insight.includes('step') ? 'Activity Level' : 
+                           insight.includes('heart') || insight.includes('hr') ? 'Heart Rate' : 'Health Insight'}
+                        </Text>
+                        <Text style={styles.insightItemSubText}>{insight}</Text>
                       </View>
-                    );
-                  })
-              ) : (
-                <View style={[styles.insightItem, { backgroundColor: '#FFF8E1' }]}>              
-                  <Icon name="information-circle" size={22} color="#FBC02D" style={styles.insightIcon} />
-                  <View style={styles.insightContent}>
-                    <Text style={[styles.insightItemText, { color: '#FBC02D' }]}>No Insights Available</Text>
-                    <Text style={styles.insightItemSubText}>Keep tracking your activities to get personalized insights!</Text>
-                  </View>
-                </View>
-              )}
+                    </View>
+                  );
+                })}
               
               <Text style={styles.disclaimerText}>
                 These insights are informational only and not a diagnosis.
@@ -960,60 +957,53 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: 'flex-end',
   },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    width: '90%',
-    maxWidth: 400,
+  calendarContainer: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
     padding: 16,
+    maxHeight: '80%',
   },
-  modalHeader: {
+  calendarHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
   },
-  modalTitle: {
-    fontSize: 18,
+  calendarTitle: {
+    fontSize: responsive.fontSize(18),
     fontWeight: '600',
-    color: '#333',
+    color: colors.darkGray,
   },
-  modalButtons: {
+  calendarFooter: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
     marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
   },
-  modalButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
+  calendarButton: {
+    flex: 1,
+    paddingVertical: 12,
     borderRadius: 8,
-    marginLeft: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 8,
   },
   cancelButton: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#f5f5f5',
   },
   applyButton: {
     backgroundColor: colors.primary,
   },
-  resetButton: {
-    backgroundColor: '#f0f0f0',
-  },
   disabledButton: {
     opacity: 0.5,
   },
-  cancelButtonText: {
-    color: '#666',
-    fontWeight: '600',
-  },
-  applyButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-  resetButtonText: {
-    color: '#666',
+  buttonText: {
+    fontSize: responsive.fontSize(14),
     fontWeight: '600',
   },
   container: {

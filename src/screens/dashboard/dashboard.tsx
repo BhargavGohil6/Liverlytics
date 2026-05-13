@@ -43,11 +43,33 @@ import { fetchDashboardData } from './slices/DashboardSlices';
 import {colors,font} from '../../theme/index';
 import CommonButton from '../../components/CommonButton';
 import { formatRelativeTime } from '../../utils/timeUtils';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { requestHealthPermissions } from '../../services/health/HealthService';
+import { HEALTH_SYNC_PERMISSION_KEY } from '../../services/health/BackgroundSync';
 
 export default function Dashboard() {
   const navigation = useNavigation<any>();
   const dispatch = useDispatch<AppDispatch>();
   const [showAllInsights, setShowAllInsights] = useState(false);
+
+  useEffect(() => {
+    const checkPermissionOnLoad = async () => {
+      try {
+        const isPermitted = await AsyncStorage.getItem(HEALTH_SYNC_PERMISSION_KEY);
+        if (isPermitted !== 'true') {
+          // If permission hasn't been granted yet, explicitly prompt the user on Dashboard
+          const result = await requestHealthPermissions();
+          if (result.granted) {
+            await AsyncStorage.setItem(HEALTH_SYNC_PERMISSION_KEY, 'true');
+          }
+        }
+      } catch (error) {
+        console.log('Error checking health permissions on dashboard load:', error);
+      }
+    };
+    checkPermissionOnLoad();
+  }, []);
+
   
   // Type guard for sodium object
   const isSodiumObject = (sodium: any): sodium is { sodium_analysis?: string; sodium_color?: string; sodium_status?: 'HIGH' | 'NORMAL' | 'LOW' } => {
@@ -203,8 +225,8 @@ export default function Dashboard() {
 
             {/* Key Insights - Limited display with expand option */}
             <View style={styles.newInsightBox}>
-              {/* Sodium Insight */}
-              {(showAllInsights || !showAllInsights) && isSodiumObject(data?.ai_insights?.sodium) && data.ai_insights.sodium.sodium_analysis && (
+              {/* Sodium Insight - Always visible (1st) */}
+              {isSodiumObject(data?.ai_insights?.sodium) && data.ai_insights.sodium.sodium_analysis && (
                 <View style={[styles.insightItem, { 
                   backgroundColor: data.ai_insights.sodium.sodium_status === 'HIGH' ? '#FFF8E1' : 
                                  data.ai_insights.sodium.sodium_status === 'LOW' ? '#FEECEE' : 
@@ -224,8 +246,8 @@ export default function Dashboard() {
                 </View>
               )}
 
-              {/* Blood Pressure Insight */}
-              {(showAllInsights || !showAllInsights) && isBloodPressureObject(data?.ai_insights?.blood_pressure) && data.ai_insights.blood_pressure.bp_analysis && (
+              {/* Blood Pressure Insight - Only shown when expanded */}
+              {showAllInsights && isBloodPressureObject(data?.ai_insights?.blood_pressure) && data.ai_insights.blood_pressure.bp_analysis && (
                 <View style={[styles.insightItem, { 
                   backgroundColor: data.ai_insights.blood_pressure.bp_status === 'HIGH' ? '#FFF8E1' : 
                                  data.ai_insights.blood_pressure.bp_status === 'LOW' ? '#FEECEE' : 
@@ -245,8 +267,8 @@ export default function Dashboard() {
                 </View>
               )}
 
-              {/* Heart Rate Insight */}
-              {(showAllInsights || !showAllInsights) && isHeartRateObject(data?.ai_insights?.heart_rate) && data.ai_insights.heart_rate.hr_analysis && (
+              {/* Heart Rate Insight - Only shown when expanded */}
+              {showAllInsights && isHeartRateObject(data?.ai_insights?.heart_rate) && data.ai_insights.heart_rate.hr_analysis && (
                 <View style={[styles.insightItem, { 
                   backgroundColor: data.ai_insights.heart_rate.hr_status === 'HIGH' ? '#FEECEE' : 
                                  data.ai_insights.heart_rate.hr_status === 'LOW' ? '#FFF8E1' : 

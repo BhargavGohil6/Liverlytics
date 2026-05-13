@@ -14,12 +14,17 @@ import { PersistGate } from 'redux-persist/integration/react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ProfileMainScreen from './src/screens/profile/ProfileMainScreen'
 
+import { useAutoHealthSync } from './src/hooks/useAutoHealthSync';
+
 import './ReactotronConfig'; // Import Reactotron configuration
 
 function MainApp() {
   const { login } = useSelector((state: any) => state.auth);
   const navigationRef = useRef<any>(null);
   console.log('isLoggedIn', login);
+
+  // Call the auto-sync hook to run in the background
+  useAutoHealthSync();
 
   // Handle logout - reset navigation to login screen
   useEffect(() => {

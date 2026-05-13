@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useDispatch, useSelector } from 'react-redux';
+import { useFocusEffect } from '@react-navigation/native';
 import { RootState } from '../../redux/store';
 import { logout } from '../auth/slices/authSlice';
 import { getUserProfile, getDailyHealthTargets, getProfilePhoto } from './slices/profileSlice';
@@ -34,11 +35,28 @@ const ProfileMainScreen: React.FC<ProfileMainScreenProps> = ({ navigation }) => 
   // Fetch user profile, daily health targets and profile photo on component mount
   useEffect(() => {
     if (user?.email) {
+      console.log('ProfileMainScreen - useEffect - Fetching profile data for:', user.email);
       dispatch(getUserProfile({ user: user.email }) as any);
       dispatch(getDailyHealthTargets({ user: user.email }) as any);
       dispatch(getProfilePhoto({ user: user.email }) as any);
     }
   }, [dispatch, user?.email]);
+
+  // Refetch data every time the screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      if (user?.email) {
+        console.log('ProfileMainScreen - useFocusEffect - Screen focused, fetching profile data for:', user.email);
+        dispatch(getUserProfile({ user: user.email }) as any);
+        dispatch(getDailyHealthTargets({ user: user.email }) as any);
+        dispatch(getProfilePhoto({ user: user.email }) as any);
+      }
+      
+      return () => {
+        // Cleanup if needed
+      };
+    }, [dispatch, user?.email])
+  );
 
   const handleLogout = () => {
     dispatch(logout());
@@ -116,6 +134,17 @@ const ProfileMainScreen: React.FC<ProfileMainScreenProps> = ({ navigation }) => 
               <View style={styles.menuLeft}>
                 <Text style={styles.menuLabel}>Wearable Sync</Text>
                 <Text style={styles.menuSubtext}>Health Connect, Smartwatch</Text>
+              </View>
+              <Icon name="chevron-forward" size={20} color="#9ca3af" />
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => navigation.navigate('AIAssistantSettingsScreen')}
+            >
+              <View style={styles.menuLeft}>
+                <Text style={styles.menuLabel}>AI Processing Consent</Text>
+                <Text style={styles.menuSubtext}>On-device, cloud processing opt-in</Text>
               </View>
               <Icon name="chevron-forward" size={20} color="#9ca3af" />
             </TouchableOpacity>

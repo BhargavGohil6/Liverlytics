@@ -74,7 +74,7 @@ const MELDHistoryScreen = ({ navigation }: { navigation: MELDHistoryScreenNaviga
     date: entry.date,
     meldNa: parseFloat(entry.meld_scores.meld_na.toString()) || 0,
     meld30: parseFloat(entry.meld_scores.meld_3.toString()) || 0,
-    source: entry.notes || 'Manual', // Assuming notes field contains source info
+    source: entry.source === 'AI Lab Report' ? 'AI Report' : 'Manual', // Show 'AI Report' for 'AI Lab Report', otherwise 'Manual'
     name: entry.name,
     serum_creatinine: entry.serum_creatinine,
     serum_sodium: entry.serum_sodium,
@@ -243,8 +243,8 @@ const MELDHistoryScreen = ({ navigation }: { navigation: MELDHistoryScreenNaviga
               </View>
 
               <View style={styles.newInsightBox}>
-                {meldHistory && meldHistory.ai_insights?.ai_insights && meldHistory.ai_insights.ai_insights.length > 0 && (
-                meldHistory.ai_insights.ai_insights.map((insight, index) => {
+                {meldHistory && meldHistory.ai_insights?.insights && meldHistory.ai_insights.insights.length > 0 && (
+                meldHistory.ai_insights.insights.map((insight, index) => {
                   // Determine icon and color based on insight content
                   let iconName = "trending-up";
                   let iconColor = "#FBC02D";
@@ -270,7 +270,6 @@ const MELDHistoryScreen = ({ navigation }: { navigation: MELDHistoryScreenNaviga
                   
                   return (
                     <View key={index} style={[styles.insightItem, { backgroundColor: bgColor }]}>              
-                      <Icon name={iconName} size={22} color={iconColor} style={styles.insightIcon} />
                       <View style={styles.insightContent}>
                         {/* <Text style={[styles.insightItemText, { color: iconColor }]}>
                           Key Finding

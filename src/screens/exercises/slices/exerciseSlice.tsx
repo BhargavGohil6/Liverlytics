@@ -77,6 +77,7 @@ export interface ExerciseApiRequest {
   sleep_minutes: string;
   steps: string;
   user: string;
+  sync_data?: string;
 }
 
 export interface ExerciseState {

@@ -118,6 +118,9 @@ export default function HeartRateChartScreen({ navigation }: HeartRateChartScree
       strokeWidth: '2',
       stroke: colors.primary,
     },
+    propsForLabels: {
+      rotation: -35,
+    },
   };
 
   return (

@@ -289,11 +289,11 @@ const ReportMetadata: React.FC = () => {
               <MaterialCommunityIcons name="lightbulb" size={20} color="#1A1A1A" />
               <Text style={styles.newInsightsTitle}>AI Insights</Text>
             </View>
-            <View style={styles.infoBadge}>
+            {/* <View style={styles.infoBadge}>
               <Text style={styles.infoBadgeText}>
                 {aiInsightsTimestamp ? formatRelativeTime(aiInsightsTimestamp) : (actualLabReports.length > 0 && actualLabReports[0].date ? formatRelativeTime(actualLabReports[0].date) : 'Today')}
               </Text>
-            </View>
+            </View> */}
           </View>
 
           <View style={styles.newInsightBox}>

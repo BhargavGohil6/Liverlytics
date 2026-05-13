@@ -118,6 +118,9 @@ export default function StepsChartScreen({ navigation }: StepsChartScreenProps) 
       strokeWidth: '2',
       stroke: '#4CAF50',
     },
+    propsForLabels: {
+      rotation: -35,
+    },
   };
 
   return (

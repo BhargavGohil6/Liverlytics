@@ -119,6 +119,9 @@ export default function GlucoseChartScreen({ navigation }: GlucoseChartScreenPro
       strokeWidth: '2',
       stroke: '#4CAF50',
     },
+    propsForLabels: {
+      rotation: -35,
+    },
     yAxisInterval: 20,
   };
 

@@ -149,6 +149,9 @@ export default function SleepChartScreen({ navigation }: SleepChartScreenProps) 
       strokeWidth: '2',
       stroke: '#9C27B0',
     },
+    propsForLabels: {
+      rotation: -35,
+    },
   };
 
   return (
