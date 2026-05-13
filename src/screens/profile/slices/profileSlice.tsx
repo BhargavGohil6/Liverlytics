@@ -72,6 +72,9 @@ export interface UserProfile {
   user_emails: any[];
   defaults: any[];
   block_modules: any[];
+  
+  // AI consent profile from API
+  ai_consent_profile?: 'use_ai_recommended' | 'use_ai_with_cloud' | 'do_not_use_ai';
 }
 
 export interface GetUserProfileResponse {
@@ -173,6 +176,7 @@ export const updateUserProfile = createAsyncThunk<
       address: profileData.address,
       mobile_no: profileData.mobile_no,
       gender_custom: profileData.gender_custom,
+      country_code: profileData.country_code,
       bio: profileData.bio,
     });
     return response.data;
@@ -360,11 +364,91 @@ export const updateDailyHealthTargets = createAsyncThunk<
 //   }
 // });
 
+// AI Assistant Settings interfaces
+export interface AISettings {
+  email: string;
+  ai_setting: 'use_ai_recommended' | 'use_ai_with_cloud' | 'do_not_use_ai';
+  date: string;
+}
+
+export interface GetAISettingsResponse {
+  message: {
+    status: string;
+    data?: AISettings;
+    option_1?: string;
+    option_1_description?: string;
+    option_2?: string;
+    option_2_description?: string;
+    option_3?: string;
+    option_3_description?: string;
+  };
+}
+
+export interface SaveAISettingsPayload {
+  email: string;
+  ai_setting: 'use_ai_recommended' | 'use_ai_with_cloud' | 'do_not_use_ai';
+  date: string;
+}
+
+export interface SaveAISettingsResponse {
+  message: {
+    status: string;
+    message?: string;
+  };
+}
+
+// API call to get AI assistant settings
+export const getAISettings = createAsyncThunk<
+  GetAISettingsResponse,
+  { email: string },
+  { rejectValue: string }
+>('profile/getAISettings', async (payload, { rejectWithValue }) => {
+  try {
+    const response = await api.get('/cirrhosis_custom.cirrhosis_ai_assistant_settings.get_ai_assistant_settings', {
+      params: {
+        email: payload.email,
+      },
+    });
+    return response.data;
+  } catch (error: any) {
+    const msg =
+      error.response?.data?.message?.message ||
+      error.response?.data?.message ||
+      error.message ||
+      'Failed to fetch AI settings';
+
+    return rejectWithValue(msg);
+  }
+});
+
+// API call to save AI assistant settings
+export const saveAISettings = createAsyncThunk<
+  SaveAISettingsResponse,
+  SaveAISettingsPayload,
+  { rejectValue: string }
+>('profile/saveAISettings', async (payload, { rejectWithValue }) => {
+  try {
+    const response = await api.post('/cirrhosis_custom.cirrhosis_ai_assistant_settings.store_ai_assistant_settings', payload);
+    return response.data;
+  } catch (error: any) {
+    const msg =
+      error.response?.data?.message?.message ||
+      error.response?.data?.message ||
+      error.message ||
+      'Failed to save AI settings';
+
+    return rejectWithValue(msg);
+  }
+});
+
 interface ProfileState {
   userProfile: UserProfile | null;
   dailyHealthTargets: DailyHealthTarget[] | null;
   loading: boolean;
   error: string | null;
+  aiSettings: AISettings | null;
+  aiSettingsLoading: boolean;
+  aiSettingsError: string | null;
 }
 
 const initialState: ProfileState = {
@@ -372,6 +456,9 @@ const initialState: ProfileState = {
   dailyHealthTargets: null,
   loading: false,
   error: null,
+  aiSettings: null,
+  aiSettingsLoading: false,
+  aiSettingsError: null,
 };
 
 const profileSlice = createSlice({
@@ -487,6 +574,34 @@ const profileSlice = createSlice({
       .addCase(getProfilePhoto.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Failed to fetch profile photo';
+      })
+      .addCase(getAISettings.pending, (state) => {
+        state.aiSettingsLoading = true;
+        state.aiSettingsError = null;
+      })
+      .addCase(getAISettings.fulfilled, (state, action: PayloadAction<GetAISettingsResponse>) => {
+        state.aiSettingsLoading = false;
+        state.aiSettingsError = null;
+        if (action.payload.message.data) {
+          state.aiSettings = action.payload.message.data;
+        }
+      })
+      .addCase(getAISettings.rejected, (state, action) => {
+        state.aiSettingsLoading = false;
+        state.aiSettingsError = action.payload || 'Failed to fetch AI settings';
+      })
+      .addCase(saveAISettings.pending, (state) => {
+        state.aiSettingsLoading = true;
+        state.aiSettingsError = null;
+      })
+      .addCase(saveAISettings.fulfilled, (state, action: PayloadAction<SaveAISettingsResponse>) => {
+        state.aiSettingsLoading = false;
+        state.aiSettingsError = null;
+        // AI settings will be refreshed by calling getAISettings after save
+      })
+      .addCase(saveAISettings.rejected, (state, action) => {
+        state.aiSettingsLoading = false;
+        state.aiSettingsError = action.payload || 'Failed to save AI settings';
       });
   },
 });

@@ -29,6 +29,7 @@ export interface MeldScores {
 
 export interface MeldHistoryEntry {
   name: string;
+  source?: string;
   serum_creatinine: string;
   serum_sodium: string;
   total_bilirubin: string;

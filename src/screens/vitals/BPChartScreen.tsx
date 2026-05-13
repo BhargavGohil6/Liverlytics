@@ -175,6 +175,7 @@ export default function BPChartScreen({ navigation }: BPChartScreenProps) {
     propsForLabels: {
       fontSize: 12,
       fontWeight: '500',
+      rotation: -35,
     }
   };
 

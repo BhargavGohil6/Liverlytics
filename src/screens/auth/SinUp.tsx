@@ -103,6 +103,7 @@ export default function SinUp({ navigation }: SignUpProps) {
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
         <Image
           source={require('../../assets/Transparent 1.png')}

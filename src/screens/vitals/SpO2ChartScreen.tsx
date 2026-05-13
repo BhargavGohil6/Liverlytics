@@ -120,6 +120,9 @@ export default function SpO2ChartScreen({ navigation }: SpO2ChartScreenProps) {
       strokeWidth: '2',
       stroke: '#2196F3',
     },
+    propsForLabels: {
+      rotation: -35,
+    },
   };
 
   return (

@@ -62,9 +62,16 @@ const IOSHealthService = {
 
   async getHealthData(): Promise<HealthData> {
     try {
+      // Check if we have access to the native module
+      const healthModule = NativeModules.AppleHealthKit || NativeModules.RNAppleHealthKit;
+      if (!healthModule) {
+        console.error('❌ Native HealthKit module not found in NativeModules for getHealthData');
+        return this.getDefaultHealthData();
+      }
+
       // Check if HealthKit is available
       const isAvailable = await new Promise<boolean>((resolve) => {
-        AppleHealthKit.isAvailable((error: Object, result: boolean) => {
+        healthModule.isAvailable((error: Object, result: boolean) => {
           if (error) {
             console.error('Error checking HealthKit availability:', error);
             resolve(false);
@@ -82,7 +89,7 @@ const IOSHealthService = {
       let steps = 0;
       try {
         const stepsResult = await new Promise<HealthValue[]>((resolve, reject) => {
-          AppleHealthKit.getDailyStepCountSamples({
+          healthModule.getDailyStepCountSamples({
             startDate: new Date(new Date().setHours(0, 0, 0, 0)).toISOString(),
             endDate: new Date().toISOString(),
           }, (error: string, result: HealthValue[]) => {
@@ -104,8 +111,8 @@ const IOSHealthService = {
       let sleepHours = 0;
       try {
         const sleepResult = await new Promise<HealthValue[]>((resolve, reject) => {
-          AppleHealthKit.getSleepSamples({
-            startDate: new Date(new Date().setHours(0, 0, 0, 0)).toISOString(),
+          healthModule.getSleepSamples({
+            startDate: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
             endDate: new Date().toISOString(),
           }, (error: string, result: HealthValue[]) => {
             if (error) {
@@ -118,7 +125,12 @@ const IOSHealthService = {
         });
 
         if (sleepResult && sleepResult.length > 0) {
-          const totalSleepMs = sleepResult.reduce((acc: number, sleep: HealthValue) => {
+          // Filter out AWAKE and INBED to avoid double counting if actual sleep stages exist
+          const asleepRecords = sleepResult.filter(s => (s.value as any) !== 'INBED' && (s.value as any) !== 'AWAKE');
+          // Fallback to INBED if no specific asleep stages are recorded
+          const recordsToUse = asleepRecords.length > 0 ? asleepRecords : sleepResult.filter(s => (s.value as any) === 'INBED');
+
+          const totalSleepMs = recordsToUse.reduce((acc: number, sleep: HealthValue) => {
             if (sleep.startDate && sleep.endDate) {
               const start = new Date(sleep.startDate).getTime();
               const end = new Date(sleep.endDate).getTime();
@@ -126,7 +138,7 @@ const IOSHealthService = {
             }
             return acc;
           }, 0);
-          sleepHours = Math.round(totalSleepMs / (1000 * 60 * 60)); // Convert ms to hours
+          sleepHours = totalSleepMs / (1000 * 60 * 60); // Convert ms to hours
         }
       } catch (error) {
         console.warn('Error getting sleep data:', error);
@@ -136,7 +148,7 @@ const IOSHealthService = {
       let heartRate = 0;
       try {
         const heartRateResult = await new Promise<HealthValue[]>((resolve, reject) => {
-          AppleHealthKit.getHeartRateSamples({
+          healthModule.getHeartRateSamples({
             startDate: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // Last 24 hours
             endDate: new Date().toISOString(),
           }, (error: string, result: HealthValue[]) => {
@@ -161,7 +173,7 @@ const IOSHealthService = {
       let calories = 0;
       try {
         const caloriesResult = await new Promise<HealthValue[]>((resolve, reject) => {
-          AppleHealthKit.getActiveEnergyBurned({
+          healthModule.getActiveEnergyBurned({
             startDate: new Date(new Date().setHours(0, 0, 0, 0)).toISOString(),
             endDate: new Date().toISOString(),
           }, (error: string, result: HealthValue[]) => {
@@ -183,7 +195,7 @@ const IOSHealthService = {
       let distance = 0;
       try {
         const distanceResult = await new Promise<HealthValue>((resolve, reject) => {
-          AppleHealthKit.getDistanceWalkingRunning({
+          healthModule.getDistanceWalkingRunning({
             startDate: new Date(new Date().setHours(0, 0, 0, 0)).toISOString(),
             endDate: new Date().toISOString(),
           }, (error: string, result: HealthValue) => {
@@ -205,7 +217,7 @@ const IOSHealthService = {
       let systolic, diastolic;
       try {
         const bpResult = await new Promise<any[]>((resolve, reject) => {
-          AppleHealthKit.getBloodPressureSamples({
+          healthModule.getBloodPressureSamples({
             startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // Last 7 days
             endDate: new Date().toISOString(),
           }, (error: string, result: any[]) => {
@@ -229,7 +241,7 @@ const IOSHealthService = {
 
       return {
         steps: Math.round(steps),
-        sleepHours: Math.round(sleepHours),
+        sleepHours: Math.max(0, Number(sleepHours.toFixed(2))),
         heartRate: Math.round(heartRate),
         calories: Math.round(calories),
         distance: Math.round(distance),

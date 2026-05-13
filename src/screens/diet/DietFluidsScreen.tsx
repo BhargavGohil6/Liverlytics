@@ -259,15 +259,15 @@ const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
   
   // Check if daily totals exceed user targets
   const checkIfTargetsExceeded = () => {
-    // Default targets
-    const defaultSodiumTarget = 2000; // mg
-    const defaultFluidTarget = 1800; // mL
-    const defaultProteinTarget = 50; // g
+    // Default targets (fallback values)
+    const defaultSodiumTarget = 0; // mg
+    const defaultFluidTarget = 0; // mL
+    const defaultProteinTarget = 0; // g
     
-    // Use limits from API if available
-    const sodiumTarget = daily_limits?.daily_sodium_limit || defaultSodiumTarget;
-    const fluidTarget = daily_limits?.daily_fluid_limit || defaultFluidTarget;
-    const proteinTarget = (daily_limits as any)?.daily_protein_limit || defaultProteinTarget;
+    // Use limits from API if available, otherwise use defaults
+    const sodiumTarget = daily_limits?.daily_sodium_limit ?? defaultSodiumTarget;
+    const fluidTarget = daily_limits?.daily_fluid_limit ?? defaultFluidTarget;
+    const proteinTarget = (daily_limits as any)?.daily_protein_limit ?? defaultProteinTarget;
     
     // Check if current totals exceed targets
     const isSodiumExceeded = totalSodium > sodiumTarget;
@@ -328,15 +328,15 @@ const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
             <View style={styles.totalsRow}>
               <View style={[styles.totalItem, { flex: 1, marginRight: responsive.margin(8), marginBottom: responsive.margin(8) }] }>
                 <Text style={styles.totalLabel}>Sodium</Text>
-                <Text style={styles.totalValue}>{totalSodium.toLocaleString()} mg</Text>
+                <Text style={[styles.totalValue, isSodiumExceeded && styles.exceededValue]}>{totalSodium.toLocaleString()} mg</Text>
               </View>
               <View style={[styles.totalItem, { flex: 1, marginRight: responsive.margin(8), marginBottom: responsive.margin(8) }] }>
                 <Text style={styles.totalLabel}>Fluid</Text>
-                <Text style={styles.totalValue}>{totalFluid.toLocaleString()} mL</Text>
+                <Text style={[styles.totalValue, isFluidExceeded && styles.exceededValue]}>{totalFluid.toLocaleString()} mL</Text>
               </View>
-              <View style={[styles.totalItem, { flex: 1 }] }>
+              <View style={[styles.totalItem, { flex: 1 }]}>
                 <Text style={styles.totalLabel}>Protein</Text>
-                <Text style={styles.totalValue}>{totalProtein.toLocaleString()} g</Text>
+                <Text style={[styles.totalValue, isProteinExceeded && styles.exceededValue]}>{totalProtein.toLocaleString()} g</Text>
               </View>
             </View>
             <Text style={[styles.timestamp, (isSodiumExceeded || isFluidExceeded || isProteinExceeded) ? styles.alertText : null]}>
@@ -354,7 +354,7 @@ const DietFluidsScreen = ({ navigation }: DietFluidsScreenProps) => {
                 style={[styles.input, { flex: 1 }]}
                 value={itemName}
                 onChangeText={setItemName}
-                placeholder="e.g., Chicken soup"
+                placeholder="e.g., Matar paneer"
               />
               <Icon name="create-outline" size={responsive.fontSize(20)} color={colors.coolGray} />
             </View>
@@ -676,6 +676,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.primary,
     textAlign: 'center',
+  },
+  exceededValue: {
+    color: colors.alertRed,
   },
   timestamp: {
     fontSize: responsive.fontSize(13),

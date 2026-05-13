@@ -53,7 +53,7 @@ const EditHealthTargetsScreen = ({ navigation }: { navigation: any }) => {
     }
 
     // Validate inputs
-    if (!sodiumLimit || !fluidLimit || !proteinLimit || !weightGainThreshold || !hrThreshold || !sleepGoal) {
+    if (!sodiumLimit || !fluidLimit || !proteinLimit || !weightGainThreshold || !hrThreshold ) {
       Toast.show({
         type: 'error',
         text1: 'Validation Error',

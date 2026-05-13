@@ -19,6 +19,8 @@ import { addExercise } from './slices/exerciseSlice';
 import { RootState } from '../../redux/store';
 import { AppDispatch } from '../../redux/store';
 import { requestHealthPermissions, getHealthData } from '../../services/health/HealthService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { HEALTH_SYNC_PERMISSION_KEY } from '../../services/health/BackgroundSync';
 
 const ExerciseActivityScreen = ({ navigation }: { navigation: any }) => {
   const [syncing, setSyncing] = useState(false);
@@ -42,6 +44,9 @@ const ExerciseActivityScreen = ({ navigation }: { navigation: any }) => {
       const permissionResult = await requestHealthPermissions();
       
       if (permissionResult.granted) {
+        // Flag that user has given permission so background sync can occur
+        await AsyncStorage.setItem(HEALTH_SYNC_PERMISSION_KEY, 'true');
+
         // Fetch health data
         const healthData = await getHealthData();
         
@@ -326,6 +331,7 @@ const ExerciseActivityScreen = ({ navigation }: { navigation: any }) => {
                     sleep_minutes: sleepMinutes,
                     steps: steps,
                     user: user?.email || '', // Fallback to default email
+                    sync_data: '',
                   };
                   
                   // Dispatch the addExercise action

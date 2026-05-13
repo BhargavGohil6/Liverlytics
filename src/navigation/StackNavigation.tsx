@@ -52,6 +52,7 @@ import AlertThresholdsScreen from "../screens/profile/AlertThresholdsScreen";
 import ResetPasswordScreen from "../screens/reminders/ResetPasswordScreen";
 import ChangePasswordScreen from "../screens/profile/ChangePasswordScreen";
 import EditHealthTargetsScreen from "../screens/profile/EditHealthTargetsScreen";
+import AIAssistantSettingsScreen from "../screens/profile/AIAssistantSettingsScreen";
 
 const Stack = createStackNavigator();
 
@@ -108,6 +109,7 @@ export default function AuthNavigation() {
         <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{headerShown:false}}/>
         <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{headerShown:false}}/>
         <Stack.Screen name="EditHealthTargetsScreen" component={EditHealthTargetsScreen} options={{headerShown:false}}/>
+        <Stack.Screen name="AIAssistantSettingsScreen" component={AIAssistantSettingsScreen} options={{headerShown:false}}/>
         </Stack.Navigator>
     );
 }
