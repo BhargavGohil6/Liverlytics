@@ -124,6 +124,16 @@ const AIConsent = () => {
         onPress={handleSelect}
         layout="column"
       />
+      {selectedOption === 'cloud_support' && (
+        <View style={styles.cloudNoteContainer}>
+          <Text style={styles.cloudNoteTitle}>Cloud AI Consent</Text>
+          <Text style={styles.cloudNoteText}>
+            When you choose cloud support, selected health data will be shared
+            with our trusted third-party cloud AI service for advanced analysis.
+            No data is shared unless you explicitly select this option.
+          </Text>
+        </View>
+      )}
     </ScrollView>
   );
 };
@@ -222,6 +232,26 @@ const styles = StyleSheet.create({
   selectedText: {
     color: PRIMARY_COLOR,
     fontWeight: '600',
+  },
+  cloudNoteContainer: {
+    marginHorizontal: responsive.margin(16),
+    marginTop: responsive.margin(12),
+    padding: responsive.padding(12),
+    backgroundColor: '#F8FAFC',
+    borderRadius: responsive.borderRadius(12),
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+  },
+  cloudNoteTitle: {
+    fontSize: responsive.fontSize(15),
+    fontWeight: '700',
+    color: '#1f2937',
+    marginBottom: responsive.margin(6),
+  },
+  cloudNoteText: {
+    fontSize: responsive.fontSize(13),
+    color: '#475569',
+    lineHeight: responsive.fontSize(18),
   },
   headingContainer: {
      flex: 1,

@@ -48,6 +48,10 @@ export interface ResetPasswordWithOtpPayload {
   new_password: string;
 }
 
+export interface ResendRegistrationOtpPayload {
+  email: string;
+}
+
 // Using the shared API client instead of direct axios call
 import api from '../../../services/api';
 
@@ -62,6 +66,9 @@ const SEND_RESET_OTP_URL =
 
 const RESET_PASSWORD_WITH_OTP_URL =
   '/cirrhosis_custom.cirrhosis_auth.reset_password_with_otp';
+
+const RESEND_REGISTRATION_OTP_URL =
+  '/cirrhosis_custom.cirrhosis_auth.resend_registration_otp';
 
 // Login Thunk
 export const loginUser = createAsyncThunk<
@@ -126,6 +133,11 @@ export const registerUser = createAsyncThunk<
 
     const msg = data.message;
 
+    // Check for pending_verification status
+    if (data.status === 'pending_verification' || msg?.status === 'pending_verification') {
+      return data;
+    }
+
     // Check if the response indicates failure
     if (data.status === 'fail' || (msg && msg.status === 'fail')) {
       const errorMsg = (msg && msg.message) || data.message || 'Registration failed';
@@ -152,6 +164,75 @@ export const registerUser = createAsyncThunk<
     return rejectWithValue(msg);
   }
 });
+
+export const verifyRegistrationOtp = createAsyncThunk<
+  any,
+  { email: string; otp: string },
+  { rejectValue: string }
+>('auth/verifyRegistrationOtp', async (payload, { rejectWithValue }) => {
+  try {
+    const response = await api.post('/cirrhosis_custom.cirrhosis_auth.verify_registration_otp', payload);
+    
+    const data = response.data;
+    console.log('Verify Registration OTP Response:', data);
+    
+    const msg = data.message;
+
+    // Check if the response indicates failure
+    if (data.status === 'fail' || (msg && msg.status === 'fail')) {
+      const errorMsg = (msg && msg.message) || data.message || 'OTP verification failed';
+      return rejectWithValue(errorMsg);
+    }
+
+    // If successful and we get a session ID, store it
+    if (msg?.sid) {
+      await EncryptedStorage.setItem('user_sid', msg.sid);
+      await EncryptedStorage.setItem('onboarding_completed', 'false');
+    }
+
+    return data;
+  } catch (error: any) {
+    console.log('Verify Registration OTP Error:', error.response?.data || error);
+    const msg =
+      error.response?.data?.message?.message ||
+      error.response?.data?.message ||
+      error.message ||
+      'OTP verification failed';
+
+    return rejectWithValue(msg);
+  }
+});
+
+export const resendRegistrationOtp = createAsyncThunk<
+  any,
+  ResendRegistrationOtpPayload,
+  { rejectValue: string }
+>('auth/resendRegistrationOtp', async (payload, { rejectWithValue }) => {
+  try {
+    const response = await api.post(RESEND_REGISTRATION_OTP_URL, payload);
+    const data = response.data;
+    console.log('Resend Registration OTP Response:', data);
+
+    const msg = data.message;
+
+    if (data.status === 'fail' || (msg && msg.status === 'fail')) {
+      const errorMsg = (msg && msg.message) || data.message || 'Resend OTP failed';
+      return rejectWithValue(errorMsg);
+    }
+
+    return data;
+  } catch (error: any) {
+    console.log('Resend Registration OTP Error:', error.response?.data || error);
+    const msg =
+      error.response?.data?.message?.message ||
+      error.response?.data?.message ||
+      error.message ||
+      'Resend OTP failed';
+
+    return rejectWithValue(msg);
+  }
+});
+
 
 const authSlice = createSlice({
   name: 'auth',
@@ -243,7 +324,12 @@ const authSlice = createSlice({
         state.loading = false;
         const response = action.payload;
         
-        // Handle the case where response data is at the top level of the response
+        // Handle both successful registration and pending verification
+        if (response.status === 'pending_verification' || response.message?.status === 'pending_verification') {
+          // No user data yet, just return
+          return;
+        }
+
         const responseData = response.message || response;
         
         state.user = {
@@ -256,9 +342,7 @@ const authSlice = createSlice({
         };
         state.gender_custom = responseData.gender_custom;
         state.sid = responseData.sid;
-        // Extract token from response, fallback to hardcoded if not provided
         state.token = responseData.token || `token ${responseData.api_key || '72b96de8ae8c469'}:${responseData.api_secret || responseData.sid || '96b6b5699febb74'}`;
-        // Extract API key and secret from response, fallback to defaults if not provided
         state.apiKey = responseData.api_key || '72b96de8ae8c469';
         state.apiSecret = responseData.api_secret || responseData.sid || '96b6b5699febb74';
         state.login = true;
@@ -266,6 +350,45 @@ const authSlice = createSlice({
       .addCase(registerUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Registration failed';
+      })
+      .addCase(verifyRegistrationOtp.pending, state => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(verifyRegistrationOtp.fulfilled, (state, action: PayloadAction<any>) => {
+        state.loading = false;
+        const response = action.payload;
+        const responseData = response.message || response;
+        
+        state.user = {
+          email: responseData.user || responseData.email || '',
+          full_name: responseData.full_name || 'User',
+          gender_custom: responseData.gender_custom,
+          age: responseData.age?.toString(),
+          country_code: responseData.country_code,
+          weight: responseData.weight?.toString(),
+        };
+        state.gender_custom = responseData.gender_custom;
+        state.sid = responseData.sid;
+        state.token = responseData.token || `token ${responseData.api_key || '72b96de8ae8c469'}:${responseData.api_secret || responseData.sid || '96b6b5699febb74'}`;
+        state.apiKey = responseData.api_key || '72b96de8ae8c469';
+        state.apiSecret = responseData.api_secret || responseData.sid || '96b6b5699febb74';
+        state.login = true;
+      })
+      .addCase(verifyRegistrationOtp.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'OTP verification failed';
+      })
+      .addCase(resendRegistrationOtp.pending, state => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(resendRegistrationOtp.fulfilled, state => {
+        state.loading = false;
+      })
+      .addCase(resendRegistrationOtp.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to resend OTP';
       })
       .addCase(changePassword.pending, state => {
         state.loading = true;
