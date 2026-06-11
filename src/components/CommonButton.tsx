@@ -1,5 +1,5 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, TouchableOpacityProps } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, TouchableOpacityProps, ActivityIndicator } from 'react-native';
 import responsive  from '../theme/responsive.js';
 
 interface ButtonProps extends Omit<TouchableOpacityProps, 'onPress'> {
@@ -12,6 +12,7 @@ interface ButtonProps extends Omit<TouchableOpacityProps, 'onPress'> {
   fontSize?: number;
   style?: {};
   disabled?: boolean;
+  loading?: boolean;
 }
 
 const CommonButton: React.FC<ButtonProps> = ({
@@ -24,16 +25,19 @@ const CommonButton: React.FC<ButtonProps> = ({
   fontSize = 16,
   style = {},
   disabled = false,
+  loading = false,
   ...props
 }) => {
+  const isDisabled = disabled || loading;
+
   return (
     <TouchableOpacity
       onPress={onPress}
-      disabled={disabled}
+      disabled={isDisabled}
       style={[
         styles.button,
         { 
-          backgroundColor: disabled ? '#ccc' : bgColor, 
+          backgroundColor: isDisabled ? '#ccc' : bgColor, 
           borderRadius: radius, 
           paddingVertical 
         },
@@ -41,7 +45,11 @@ const CommonButton: React.FC<ButtonProps> = ({
       ]}
       {...props}
     >
-      <Text style={[styles.text, { color: disabled ? '#666' : textColor, fontSize }]}>{title}</Text>
+      {loading ? (
+        <ActivityIndicator size="small" color={textColor} />
+      ) : (
+        <Text style={[styles.text, { color: isDisabled ? '#666' : textColor, fontSize }]}>{title}</Text>
+      )}
     </TouchableOpacity>
   );
 };

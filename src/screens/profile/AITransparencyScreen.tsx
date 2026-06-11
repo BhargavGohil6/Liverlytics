@@ -49,7 +49,7 @@ const AITransparencyScreen: React.FC<AITransparencyScreenProps> = ({ navigation 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>On-Device vs Cloud Processing</Text>
             <Text style={styles.paragraph}>
-              Basic health trend analysis is performed on your device to protect privacy. More complex predictive modeling may be processed in secure cloud environments with end-to-end encryption. You can choose your preferred processing method in settings.
+              Basic health trend analysis is performed on your device to protect privacy. More complex predictive modeling may be processed in secure third-party cloud AI environments with end-to-end encryption. You can choose your preferred processing method in settings.
             </Text>
           </View>
           

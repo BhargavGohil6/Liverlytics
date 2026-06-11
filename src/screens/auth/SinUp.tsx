@@ -80,6 +80,18 @@ export default function SinUp({ navigation }: SignUpProps) {
         })
       ).unwrap();
 
+      // Check if registration requires OTP verification
+      if (result.status === 'pending_verification' || result.message?.status === 'pending_verification') {
+        Toast.show({
+          type: 'info',
+          text1: 'Verification Required',
+          text2: '6-digit OTP sent to your email. Please verify to complete registration.',
+        });
+
+        navigation.navigate('VerifyRegistrationOtp', { email: form.email.trim() });
+        return;
+      }
+
       // Success → directly onboarding pe bhejo
       Toast.show({
         type: 'success',
@@ -162,6 +174,8 @@ export default function SinUp({ navigation }: SignUpProps) {
           fontSize={22}
           style={styles.buttion}
           onPress={handleRegister}
+          loading={loading}
+          disabled={loading}
         />
         <View style={styles.footer}>
           <Text>Already have an account? </Text>

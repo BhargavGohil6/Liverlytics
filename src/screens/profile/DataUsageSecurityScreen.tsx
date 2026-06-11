@@ -63,7 +63,7 @@ const DataUsageSecurityScreen: React.FC<DataUsageSecurityScreenProps> = ({ navig
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Third-Party Sharing</Text>
             <Text style={styles.paragraph}>
-              We do not sell or share your personal health information with third parties for marketing purposes. Data may be shared with healthcare providers you authorize or for research purposes with your explicit consent.
+              We do not sell or share your personal health information with third parties for marketing purposes. Data may be shared with our trusted third-party AI provider only if you opt in for cloud AI analysis, and with healthcare providers you authorize or for research purposes with your explicit consent.
             </Text>
           </View>
           
