@@ -63,7 +63,7 @@ const DataUsageSecurityScreen: React.FC<DataUsageSecurityScreenProps> = ({ navig
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Third-Party Sharing</Text>
             <Text style={styles.paragraph}>
-              We do not sell or share your personal health information with third parties for marketing purposes. Data may be shared with our trusted third-party AI provider only if you opt in for cloud AI analysis, and with healthcare providers you authorize or for research purposes with your explicit consent.
+              We do not sell or share your personal health information with third parties for marketing purposes. If you opt in to cloud AI support and agree before upload, selected lab reports, extracted text, lab values, and related health information are shared with OpenAI, our third-party AI provider, only to extract lab values, calculate MELD scores, and generate health insights. OpenAI is not used for advertising, marketing, or tracking. Data may also be shared with healthcare providers you authorize or for research purposes with your explicit consent.
             </Text>
           </View>
           

@@ -31,7 +31,7 @@ export default function TabNavigation() {
         options={{
           tabBarIcon: ({ focused }) => (
             <View style={styles.navItem}>
-              <Home size={24} color={focused ? colors.primary : colors.lightGray} />
+              <Home size={responsive.width(24)} color={focused ? colors.primary : colors.lightGray} />
               <Text style={[styles.navText, focused && styles.navTextActive]}>Home</Text>
             </View>
           ),
@@ -43,7 +43,7 @@ export default function TabNavigation() {
         options={{
           tabBarIcon: ({ focused }) => (
             <View style={styles.navItem}>
-              <BarChart3 size={24} color={focused ? colors.primary : colors.lightGray} />
+              <BarChart3 size={responsive.width(24)} color={focused ? colors.primary : colors.lightGray} />
               <Text style={[styles.navText, focused && styles.navTextActive]}>Reports</Text>
             </View>
           ),
@@ -72,7 +72,7 @@ export default function TabNavigation() {
         options={{
           tabBarIcon: ({ focused }) => (
             <View style={styles.navItem}>
-              <User size={24} color={focused ? colors.primary : colors.lightGray} />
+              <User size={responsive.width(24)} color={focused ? colors.primary : colors.lightGray} />
               <Text style={[styles.navText, focused && styles.navTextActive]}>Profile</Text>
             </View>
           ),

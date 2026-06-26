@@ -10,16 +10,13 @@ import responsive from '../../theme/responsive';
 import {
   CoolGray,
   PRIMARY_COLOR,
-  LightgrayColor,
   Navyblue,
   BlueishGray,
 } from '../../theme/color';
-import Icon from 'react-native-vector-icons/FontAwesome5';
-import Icon1 from 'react-native-vector-icons/Feather';
-import { setAIConsentOption, setAIConsentData } from './slices/onboardingSlice';
+import { setAIConsentOption } from './slices/onboardingSlice';
 import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '../../redux/store';
 import axios from 'axios';
-import Toast from 'react-native-toast-message';
 import RadioButton from 'react-native-radio-buttons-group';
 
 const AIConsent = () => {
@@ -48,7 +45,6 @@ const AIConsent = () => {
 
       if (response.data.message.status === 'success') {
         setData(response.data.message);
-        dispatch(setAIConsentData(response.data.message));
       }
     } catch (error: any) {
       // Alert.alert('Error', 'Failed to load AI consent settings.');
@@ -67,8 +63,10 @@ const AIConsent = () => {
     },
     {
       id: 'cloud_support',
-      label: data?.option_2 || 'Use AI with Cloud Support',
-      description: data?.option_2_description,
+      label: 'Use AI with Cloud Support (OpenAI)',
+      description:
+        data?.option_2_description ||
+        'Send selected lab reports, extracted lab values, and related health information to OpenAI, our third-party AI provider, for MELD calculations and health insights.',
       selected: selectedOption === 'cloud_support',
     },
     {
@@ -98,7 +96,8 @@ const AIConsent = () => {
         {/* <Text style={styles.heading}>AI Assistance Consent</Text> */}
         <Text style={styles.description}>
           AI helps interpret your vitals and lab reports. Processing happens
-          on-device for privacy. Cloud processing is only used if you opt in.
+          on-device for privacy unless you choose cloud support with OpenAI.
+          OpenAI processing is optional and requires your permission.
         </Text>
       </View>
      
@@ -114,13 +113,13 @@ const AIConsent = () => {
             </View>
           ),
           value: btn.id,
-          selected: btn.x,
+          selected: selectedOption === btn.id,
           layout: 'column',
           containerStyle: styles.radioContainer,
           onPress: handleSelect,
           color: PRIMARY_COLOR,
         }))}
-        selectedId={selectedOption}
+        selectedId={selectedOption || undefined}
         onPress={handleSelect}
         layout="column"
       />
@@ -128,9 +127,11 @@ const AIConsent = () => {
         <View style={styles.cloudNoteContainer}>
           <Text style={styles.cloudNoteTitle}>Cloud AI Consent</Text>
           <Text style={styles.cloudNoteText}>
-            When you choose cloud support, selected health data will be shared
-            with our trusted third-party cloud AI service for advanced analysis.
-            No data is shared unless you explicitly select this option.
+            When you choose cloud support, selected lab reports, extracted text,
+            lab values, and related health information may be shared with OpenAI,
+            our third-party AI provider, to extract lab values, calculate MELD
+            scores, and generate health insights. You will still be asked to
+            agree before each lab report upload.
           </Text>
         </View>
       )}
@@ -154,6 +155,12 @@ const styles = StyleSheet.create({
     width:responsive.width(320),
     //  paddingHorizontal: responsive.padding(16),
     marginHorizontal: responsive.margin(16),
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: responsive.padding(24),
   },
   heading: {
     fontSize: responsive.fontSize(24),

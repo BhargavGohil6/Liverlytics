@@ -42,14 +42,14 @@ const AITransparencyScreen: React.FC<AITransparencyScreenProps> = ({ navigation 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Data Processing</Text>
             <Text style={styles.paragraph}>
-              Health data is processed through machine learning algorithms to identify trends, detect anomalies, and provide recommendations. All AI processing is performed with your explicit consent and can be disabled at any time in your privacy settings.
+              Health data is processed through AI systems to identify trends, extract lab values, calculate MELD scores, and provide health insights. Cloud AI processing is performed only with your explicit consent and can be disabled at any time in AI Assistant Settings.
             </Text>
           </View>
           
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>On-Device vs Cloud Processing</Text>
             <Text style={styles.paragraph}>
-              Basic health trend analysis is performed on your device to protect privacy. More complex predictive modeling may be processed in secure third-party cloud AI environments with end-to-end encryption. You can choose your preferred processing method in settings.
+              Basic health trend analysis is performed on your device to protect privacy. If you choose cloud support, selected lab reports, extracted text, lab values, and related health information are sent to OpenAI, our third-party AI provider, to process the report and generate insights. You will be asked to agree before each lab report upload.
             </Text>
           </View>
           
@@ -84,7 +84,7 @@ const AITransparencyScreen: React.FC<AITransparencyScreenProps> = ({ navigation 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>User Control</Text>
             <Text style={styles.paragraph}>
-              You maintain full control over AI processing of your data. You can opt out of AI features at any time, and your data will not be used for AI training without explicit consent.
+              You maintain control over AI processing of your data. You can opt out of AI features at any time. If you do not agree to send a specific lab report to OpenAI, cancel the upload and enter lab values manually.
             </Text>
           </View>
         </View>

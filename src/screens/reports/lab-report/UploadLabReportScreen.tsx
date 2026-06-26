@@ -22,9 +22,17 @@ const UploadLabReportScreen = () => {
   const dispatch: any = useDispatch();
   
   const { loading, error, uploadComplete } = useSelector((state: any) => state.reports);
+  const aiConsentSetting = useSelector((state: any) =>
+    state.profile?.aiSettings?.ai_setting ||
+    state.profile?.userProfile?.ai_consent_profile ||
+    state.onboarding?.aiConsentOption
+  );
   
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [fileName, setFileName] = useState<string>('');
+
+  const cloudAIEnabled =
+    aiConsentSetting === 'use_ai_with_cloud' || aiConsentSetting === 'cloud_support';
   
   const requestFilePermissions = async () => {
     if (Platform.OS === 'android') {
@@ -113,12 +121,37 @@ const UploadLabReportScreen = () => {
       Alert.alert('Error', 'Please select a file first');
       return;
     }
-    
-    dispatch(uploadLabReport({
-      fileuri: selectedFile.uri,
-      filename: selectedFile.name,
-      filetype: selectedFile.type,
-    }));
+
+    if (!cloudAIEnabled) {
+      Alert.alert(
+        'Cloud AI Consent Required',
+        'Lab report upload uses OpenAI, our third-party AI provider. To upload a PDF, image, or CSV for AI extraction, first choose "Use AI with Cloud Support (OpenAI)" in AI Assistant Settings. If you do not want to share this report with OpenAI, please cancel and enter lab values manually.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'AI Settings',
+            onPress: () => navigation.navigate('AIAssistantSettingsScreen'),
+          },
+        ],
+      );
+      return;
+    }
+
+    Alert.alert(
+      'Send Lab Report to OpenAI?',
+      'Liverlytics will send the selected lab report file, extracted text, lab values, and related health information to OpenAI, our third-party AI provider. OpenAI is used to extract lab values, calculate MELD scores, and generate health insights. This information is health-related personal data. Do not upload if you do not want this report shared with OpenAI.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Agree & Upload',
+          onPress: () => dispatch(uploadLabReport({
+            fileuri: selectedFile.uri,
+            filename: selectedFile.name,
+            filetype: selectedFile.type,
+          })),
+        },
+      ],
+    );
   };
 
   return (
@@ -133,7 +166,7 @@ const UploadLabReportScreen = () => {
           <View style={styles.headerContent}>
             <Text style={styles.headerTitle}>Upload Lab Report</Text>
             <Text style={styles.headerSubtitle}>
-              AI will extract lab values for MELD calculation
+              Cloud AI can extract lab values for MELD calculation
             </Text>
           </View>
         </View>
@@ -142,6 +175,25 @@ const UploadLabReportScreen = () => {
         <View style={styles.uploadSection}>
           <Text style={styles.uploadTitle}>Upload PDF, Image, or CSV</Text>
           <Text style={styles.uploadSubtitle}>Supported: PDF, JPG, PNG, CSV</Text>
+
+          <View style={styles.aiDisclosureBox}>
+            <Text style={styles.aiDisclosureTitle}>Third-Party AI Disclosure</Text>
+            <Text style={styles.aiDisclosureText}>
+              Uploading sends your selected report file, extracted text, lab values, and related
+              health information to OpenAI, our third-party AI provider, to extract lab values,
+              calculate MELD scores, and generate health insights. You will be asked to agree
+              before each upload.
+            </Text>
+          </View>
+
+          {!cloudAIEnabled && (
+            <View style={styles.aiWarningBox}>
+              <Text style={styles.aiWarningText}>
+                Cloud AI with OpenAI is not enabled. Reports will not be uploaded for AI
+                processing unless you enable cloud support and agree before upload.
+              </Text>
+            </View>
+          )}
           
           {fileName ? (
             <View style={styles.selectedFileContainer}>
@@ -185,7 +237,9 @@ const UploadLabReportScreen = () => {
           onPress={handleUpload}
           disabled={!selectedFile || loading}
         >
-          <Text style={styles.continueButtonText}>{loading ? 'Processing...' : 'Continue'}</Text>
+          <Text style={styles.continueButtonText}>
+            {loading ? 'Processing...' : cloudAIEnabled ? 'Agree & Continue' : 'Continue'}
+          </Text>
           <Icon name="arrow-forward" size={responsive.fontSize(20)} color="#fff" />
         </TouchableOpacity>
 
@@ -246,6 +300,39 @@ const styles = StyleSheet.create({
     fontSize: responsive.fontSize(12),
     color: '#999',
     marginTop: responsive.margin(4),
+  },
+  aiDisclosureBox: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: responsive.borderRadius(8),
+    padding: responsive.padding(12),
+    marginTop: responsive.margin(14),
+    marginBottom: responsive.margin(12),
+  },
+  aiDisclosureTitle: {
+    fontSize: responsive.fontSize(14),
+    color: '#1F2937',
+    fontWeight: '700',
+    marginBottom: responsive.margin(6),
+  },
+  aiDisclosureText: {
+    fontSize: responsive.fontSize(12),
+    color: '#374151',
+    lineHeight: responsive.fontSize(18),
+  },
+  aiWarningBox: {
+    backgroundColor: '#FFF7ED',
+    borderWidth: 1,
+    borderColor: '#FDBA74',
+    borderRadius: responsive.borderRadius(8),
+    padding: responsive.padding(10),
+    marginBottom: responsive.margin(12),
+  },
+  aiWarningText: {
+    fontSize: responsive.fontSize(12),
+    color: '#9A3412',
+    lineHeight: responsive.fontSize(17),
   },
   uploadButtons: {
     flexDirection: 'row',

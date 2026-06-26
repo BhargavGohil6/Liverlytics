@@ -97,8 +97,8 @@ const AIAssistantSettingsScreen: React.FC<AIAssistantSettingsScreenProps> = ({ n
     },
     {
       id: 'use_ai_with_cloud',
-      title: 'Use AI with Cloud Support',
-      description: 'Enhanced AI features with secure cloud processing for better insights.',
+      title: 'Use AI with Cloud Support (OpenAI)',
+      description: 'Send selected lab reports, extracted text, lab values, and related health information to OpenAI, our third-party AI provider, for MELD calculations and health insights. You will still be asked to agree before each lab report upload.',
       icon: 'cloud-outline',
     },
     {
@@ -136,7 +136,8 @@ const AIAssistantSettingsScreen: React.FC<AIAssistantSettingsScreenProps> = ({ n
           <Icon name="information-circle-outline" size={24} color="#52ab3c" />
           <Text style={styles.descriptionText}>
             AI helps interpret your vitals and lab reports. Processing happens on-device for
-            privacy. Cloud processing is only used if you opt in.
+            privacy unless you choose cloud support with OpenAI. OpenAI processing is optional
+            and requires your permission before lab report uploads.
           </Text>
         </View>
 

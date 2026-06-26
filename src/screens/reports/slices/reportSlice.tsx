@@ -427,11 +427,13 @@ export const fetchLatestTwoAILabReports = createAsyncThunk<
 // API call to fetch user documents
 export const fetchUserDocuments = createAsyncThunk<
   UserDocumentsResponse,
-  void,
+  { user: string },
   { rejectValue: string }
->('reports/fetchUserDocuments', async (_, { rejectWithValue }) => {
+>('reports/fetchUserDocuments', async ({ user }, { rejectWithValue }) => {
   try {
-    const response = await api.get('/cirrhosis_custom.cirrhosis_vital_img.get_user_documents');
+    const response = await api.get('/cirrhosis_custom.cirrhosis_vital_img.get_user_documents', {
+      params: { user },
+    });
     return response.data;
   } catch (error: any) {
     const msg =
