@@ -33,26 +33,30 @@ interface ReportItem {
 }
 
 const ViewLabReports: React.FC = () => {
-    const navigation = useNavigation<any>();
-    const dispatch = useDispatch<AppDispatch>();
-    const { userDocuments, loading } = useSelector((state: RootState) => state.reports);
+  const navigation = useNavigation<any>();
+  const dispatch = useDispatch<AppDispatch>();
+  const { userDocuments, loading } = useSelector((state: RootState) => state.reports);
+  const { user } = useSelector((state: RootState) => state.auth);
 
-    useEffect(() => {
-        dispatch(fetchUserDocuments());
-    }, [dispatch]);
+  useEffect(() => {
+    const userEmail = user?.email;
+    if (userEmail) {
+      dispatch(fetchUserDocuments({ user: userEmail }));
+    }
+  }, [dispatch, user]);
 
-    const formattedReports: ReportItem[] = userDocuments.map((doc) => {
-        const dateObj = new Date(doc.date);
-        return {
-            id: doc.name,
-            name: doc.name, // Store the document name for API call
-            date: dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-            time: dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
-            source: doc.source,
-            accuracy: Math.round(doc.accurate),
-            iconName: doc.source.toLowerCase().includes('pdf') ? 'description' : 'image',
-        };
-    });
+  const formattedReports: ReportItem[] = userDocuments.map((doc) => {
+    const dateObj = new Date(doc.date);
+    return {
+      id: doc.name,
+      name: doc.name,
+      date: dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      time: dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
+      source: doc.source,
+      accuracy: Math.round(doc.accurate),
+      iconName: doc.source.toLowerCase().includes('pdf') ? 'description' : 'image',
+    };
+  });
 
   const [activeTab, setActiveTab] = React.useState<string>('Reports');
 

@@ -594,10 +594,13 @@ const profileSlice = createSlice({
         state.aiSettingsLoading = true;
         state.aiSettingsError = null;
       })
-      .addCase(saveAISettings.fulfilled, (state, action: PayloadAction<SaveAISettingsResponse>) => {
+      .addCase(saveAISettings.fulfilled, (state, action) => {
         state.aiSettingsLoading = false;
         state.aiSettingsError = null;
-        // AI settings will be refreshed by calling getAISettings after save
+        state.aiSettings = action.meta.arg;
+        if (state.userProfile) {
+          state.userProfile.ai_consent_profile = action.meta.arg.ai_setting;
+        }
       })
       .addCase(saveAISettings.rejected, (state, action) => {
         state.aiSettingsLoading = false;
